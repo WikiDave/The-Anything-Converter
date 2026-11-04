@@ -127,6 +127,7 @@ jobs:
       - name: Rooktest (starten in eigen venster, converteren, afsluiten)
         env:
           EXPECT_WINDOW: native
+          ALLOW_NO_SPEECH: ${{ matrix.platform == 'mac-x64' && '1' || '0' }}
         run: |
           if [ "${{ matrix.platform }}" = linux-x64 ]; then
             xvfb-run -a python desktop/smoke_test.py "$EXE"

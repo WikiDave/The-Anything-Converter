@@ -247,18 +247,19 @@ def capabilities():
     """Welke extra hulpprogramma's zijn er (voor uitleg in de interface)."""
     from converter import ebook, ocr, pdftools, webshot
     from converter.document import have
+    speech_error = None
     try:
         import pywhispercpp.model  # noqa: F401
         speech = True
-    except Exception:  # noqa: BLE001
-        speech = False
+    except Exception as e:  # noqa: BLE001
+        speech, speech_error = False, f"{type(e).__name__}: {e}"
     try:
         import py7zr  # noqa: F401
         sevenzip = True
     except Exception:  # noqa: BLE001
         sevenzip = False
     return jsonify(ocr=ocr.engine(), calibre=bool(ebook.calibre()), pymupdf=pdftools.have_pymupdf(),
-                   speech=speech, sevenzip=sevenzip,
+                   speech=speech, speech_error=speech_error, sevenzip=sevenzip,
                    libreoffice=have("soffice") or have("libreoffice"), chrome=bool(webshot.chromium()))
 
 

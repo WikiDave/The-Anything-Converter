@@ -95,7 +95,11 @@ def main():
         convert("test.png", sample_png(), "jpg")
         caps = call("/api/capabilities")
         print("  mogelijkheden:", caps)
-        assert caps["pymupdf"] and caps["speech"] and caps["sevenzip"], "PDF-gereedschap, spraak of 7z ontbreekt"
+        assert caps["pymupdf"] and caps["sevenzip"], "PDF-gereedschap of 7z ontbreekt"
+        # Intel-Macs: pywhispercpp heeft daar alleen een oude versie; spraak is daar optioneel
+        if not caps["speech"]:
+            print("  LET OP: spraakherkenning niet beschikbaar:", caps.get("speech_error"))
+            assert os.environ.get("ALLOW_NO_SPEECH") == "1", "spraakherkenning ontbreekt"
         convert("test.pdf", sample_pdf(), "docx")
         convert("test.pdf", sample_pdf(), "xlsx")
         convert("test.png", sample_png(), "svg")
