@@ -20,6 +20,27 @@ bestanden worden na 1 uur automatisch opgeruimd. De interface heeft een retro te
 > Let op: "groter maken" werkt voor video's, audio en afbeeldingen (meer bitrate/kwaliteit/resolutie).
 > Al gecomprimeerde bestanden (zip, jpg in een zip, …) kunnen verliesvrij nauwelijks kleiner.
 
+## Terminalversie (Windows Terminal, PowerShell, bash, SSH)
+
+Dezelfde ASCII-layout als de web-app, maar als terminalprogramma: werkt in Windows Terminal/PowerShell, in
+bash/zsh op macOS en Linux, en via SSH op een server zonder scherm. Muis en toetsenbord werken allebei.
+
+- **Converteren**: bestand kiezen in de mapboom (of een pad plakken), formaat, kwaliteit of doelgrootte, knippen,
+  resolutie; het resultaat komt naast het bestand (of in een gekozen map) met een ORIGINEEL/NIEUW-vergelijking.
+- **Link & torrent**: video-links, magnet-links en .torrent-bestanden, met viruscheck na het downloaden.
+- **Virusscan**: elk bestand of map scannen; VirusTotal-sleutel instellen.
+- Toetsen: `ctrl+s` start, `ctrl+t` kleur (groen/amber/cyaan), `ctrl+o` pad, `ctrl+q` afsluiten.
+
+Starten:
+
+| Waar | Commando |
+|---|---|
+| Windows (na de .msi) | `anything-converter-tui` in een nieuwe terminal |
+| Ubuntu/Debian (.deb) | `anything-converter-tui` |
+| AppImage | `./AnythingConverter-Linux.AppImage tui` |
+| macOS | `"/Applications/Anything Converter.app/Contents/MacOS/anything-converter-tui"` |
+| Vanuit de broncode / via SSH | `pip install -r requirements.txt` en `python tui.py [bestand]` |
+
 ## Talen
 
 De web-app is er in 14 talen: Nederlands, English, Deutsch, Español, Français, Português, Русский, Türkçe,
