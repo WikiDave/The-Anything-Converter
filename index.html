@@ -109,15 +109,18 @@ input::placeholder, textarea::placeholder { font-family: var(--mono); }
 .drop-art { display: inline-block; text-align: left; line-height: 1.15; }
 .drop p { margin: 6px 0; }
 .drop .big { font-size: 16px; font-weight: 700; color: var(--hi); margin-top: 14px; }
-.sample-row { margin-top: 12px; text-align: center; }
+.sample-row { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; }
+.q-empty { padding: 8px 0; }
 .dl-frame { margin-top: 18px; }
 .dl-intro { margin: 0 0 12px; }
-.dl-grid { display: flex; flex-wrap: wrap; gap: 8px 10px; }
-.dl-btn { color: var(--fg); text-decoration: none; border: 1px dashed var(--dim); padding: 6px 10px; white-space: nowrap; }
-.dl-btn em { color: var(--dim); }
-.dl-btn:hover, .dl-btn:focus-visible { outline: none; background: var(--fg); color: var(--bg); text-shadow: none; border-color: var(--fg); }
-.dl-btn:hover em, .dl-btn:focus-visible em { color: var(--bg); }
-.dl-btn.mine { border: 1px solid var(--fg); color: var(--hi); box-shadow: 0 0 10px var(--glow); }
+.dl-row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+.dl-pick { flex: 1 1 260px; }
+.dl-go {
+  color: var(--bg); background: var(--fg); text-decoration: none; padding: 8px 16px; font-weight: 700;
+  letter-spacing: .08em; text-shadow: none; white-space: nowrap; box-shadow: 0 0 10px var(--glow);
+}
+.dl-go:hover, .dl-go:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
+.dl-steps { margin: 14px 0 6px; color: var(--hi); white-space: pre-wrap; line-height: 1.6; }
 .dim-link { color: var(--dim); }
 .dim-link:hover { color: var(--fg); }
 
@@ -288,6 +291,22 @@ select option { background: var(--bg); color: var(--fg); }
 .pg-tools button:hover, .pg-tools button:focus-visible { outline: none; background: var(--fg); color: var(--bg); text-shadow: none; }
 #wmRow { margin: 0 0 8px; }
 
+/* archief-werkbank */
+.arch-pw, .arch-find { margin-bottom: 10px; }
+.arch-pw input, .arch-find input { flex: 1; }
+.ar-tree { max-height: 520px; overflow: auto; border: 1px dashed var(--faint); padding: 6px 8px; font-variant-numeric: tabular-nums; }
+.ar-row { display: flex; align-items: baseline; gap: 0; white-space: pre; min-height: 24px; line-height: 24px; }
+.ar-row.off .ar-name { color: var(--dim); text-decoration: line-through; }
+.ar-pre { color: var(--dim); }
+.ar-box { background: none; border: 0; padding: 0 6px 0 0; color: var(--fg); cursor: pointer; }
+.ar-box:hover, .ar-box:focus-visible { outline: none; color: var(--bg); background: var(--fg); text-shadow: none; }
+.ar-name { color: var(--hi); overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 auto; text-align: left; }
+button.ar-name { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+button.ar-name:hover, button.ar-name:focus-visible { outline: none; text-decoration: underline; }
+.ar-size { color: var(--dim); margin-left: 12px; font-size: 12px; flex: 0 0 auto; }
+.ar-act { flex: 0 0 auto; margin-left: 6px; }
+.ar-act .btn { padding: 0 4px; }
+
 .statusline {
   display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px;
   margin-top: 26px; padding-top: 10px; border-top: 1px solid var(--faint); font-size: 12px;
@@ -349,26 +368,35 @@ select option { background: var(--bg); color: var(--fg); }
    └───────────┘</pre>
       <p class="big">&gt; SLEEP BESTANDEN HIERHEEN<span class="cursor">_</span></p>
       <p class="dim">één of meerdere tegelijk · [ENTER] / klik om te bladeren</p>
-      <p class="dim small">video: mp4 · mov · webm · mkv &nbsp;|&nbsp; audio: mp3 · wav · m4a · ogg · flac<br>afbeelding: jpg · png · webp · gif · bmp · avif · svg &nbsp;|&nbsp; pdf: samenvoegen · splitsen · comprimeren</p>
+      <p class="dim small">video: mp4 · mov · webm · mkv &nbsp;|&nbsp; audio: mp3 · wav · m4a · ogg · flac<br>afbeelding: jpg · png · webp · gif · bmp · avif · svg &nbsp;|&nbsp; pdf: samenvoegen · splitsen · comprimeren<br>archief: zip · rar · 7z · tar · gz · bz2 · xz · iso · cab: bekijken · uitpakken · aanpassen · omzetten</p>
     </label>
     <div class="sample-row">
+      <button id="newArchBtn" class="btn" type="button">[ + NIEUW LEEG ARCHIEF ]</button>
       <button id="sampleBtn" class="btn" type="button">[ PROBEER MET 3 TESTBEELDEN ]</button>
     </div>
-    <fieldset class="frame dl-frame">
-      <legend>DESKTOP-APP</legend>
-      <p class="dl-intro">Alles in één installer: ook <strong>youtube- en andere video-links ophalen</strong>, met ffmpeg ingebouwd. Geen python of andere installaties nodig.</p>
-      <div class="dl-grid" id="dlGrid">
-        <a class="dl-btn" data-os="win" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-Windows.msi" target="_blank" rel="noopener">[ ↓ WINDOWS <em>.msi</em> ]</a>
-        <a class="dl-btn" data-os="mac" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-macOS-AppleSilicon.dmg" target="_blank" rel="noopener">[ ↓ MAC M1–M4 <em>.dmg</em> ]</a>
-        <a class="dl-btn" data-os="mac" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-macOS-Intel.dmg" target="_blank" rel="noopener">[ ↓ MAC INTEL <em>.dmg</em> ]</a>
-        <a class="dl-btn" data-os="linux" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-Linux.deb" target="_blank" rel="noopener">[ ↓ UBUNTU/DEBIAN <em>.deb</em> ]</a>
-        <a class="dl-btn" data-os="linux" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-Linux.AppImage" target="_blank" rel="noopener">[ ↓ LINUX <em>.AppImage</em> ]</a>
+    <fieldset class="frame dl-frame" id="dlFrame">
+      <legend>DOWNLOADS</legend>
+      <p class="dl-intro">De converter als app voor je computer of telefoon. Op de computer zit alles erin, ook <strong>youtube- en andere video-links ophalen</strong>.</p>
+      <div class="dl-row">
+        <label class="field dl-pick"><span>SYSTEEM&gt;</span>
+          <span class="sel"><select id="dlSelect" aria-label="Kies je systeem">
+            <optgroup label="computer">
+              <option value="win">Windows 10/11 · .msi</option>
+              <option value="mac-arm">Mac met M1–M4 · .dmg</option>
+              <option value="mac-intel">Mac met Intel · .dmg</option>
+              <option value="deb">Ubuntu / Debian / Mint · .deb</option>
+              <option value="appimage">Andere Linux · .AppImage</option>
+            </optgroup>
+            <optgroup label="telefoon / tablet">
+              <option value="android">Android 10+ · .apk</option>
+              <option value="ios">iPhone / iPad · web-app</option>
+            </optgroup>
+          </select></span>
+        </label>
+        <a id="dlGo" class="dl-go" href="#" target="_blank" rel="noopener">[ ↓ DOWNLOAD ]</a>
       </div>
-      <p class="dim small" id="dlHint"></p>
-      <p class="dim small">// eerste keer openen (de app is niet betaald ondertekend):<br>
-      // windows: "windows heeft uw pc beschermd" → meer informatie → toch uitvoeren<br>
-      // mac: open, sluit de melding → systeeminstellingen → privacy en beveiliging → toch openen<br>
-      // <a class="dim-link" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest" target="_blank" rel="noopener">alle downloads en versies</a></p>
+      <pre id="dlSteps" class="dl-steps"></pre>
+      <p class="dim small">// <a class="dim-link" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest" target="_blank" rel="noopener">alle downloads en versies</a></p>
     </fieldset>
   </section>
 
@@ -387,6 +415,7 @@ select option { background: var(--bg); color: var(--fg); }
     <div class="tabs" role="tablist" aria-label="Werkwijze">
       <button type="button" role="tab" data-mode="convert" aria-selected="true">[ CONVERTEREN ]</button>
       <button type="button" role="tab" data-mode="pdf" aria-selected="false">[ PDF-WERKBANK ]</button>
+      <button type="button" role="tab" data-mode="arch" aria-selected="false">[ ARCHIEF-WERKBANK ]</button>
     </div>
 
     <div class="mode-pdf" hidden>
@@ -465,6 +494,64 @@ select option { background: var(--bg); color: var(--fg); }
           </div>
         </div>
         <p class="dim small">// comprimeren zet de pagina's om naar afbeeldingen; tekst is daarna niet meer te selecteren.</p>
+      </fieldset>
+    </div>
+
+    <div class="mode-arch" hidden>
+      <fieldset class="frame">
+        <legend id="archTitle">INHOUD</legend>
+        <div id="archPw" class="row arch-pw" hidden>
+          <span class="prompt">WACHTWOORD&gt;</span>
+          <input id="archPwInput" type="password" aria-label="Wachtwoord van het archief" autocomplete="off">
+          <button id="archPwBtn" class="btn" type="button">[ OPENEN ]</button>
+        </div>
+        <div class="pg-toolbar">
+          <button id="arAll" class="btn small" type="button">[ ALLES ]</button>
+          <button id="arNone" class="btn small" type="button">[ NIETS ]</button>
+          <button id="arInvert" class="btn small" type="button">[ OMKEREN ]</button>
+          <button id="arExpand" class="btn small" type="button">[ ALLE MAPPEN OPEN ]</button>
+          <button id="arCollapse" class="btn small" type="button">[ ALLE MAPPEN DICHT ]</button>
+        </div>
+        <div class="row arch-find">
+          <span class="prompt">ZOEK&gt;</span>
+          <input id="arFind" type="text" placeholder="bijv. .jpg of foto" aria-label="Zoek in het archief">
+        </div>
+        <p class="dim small" id="arStats"></p>
+        <div id="arTree" class="ar-tree" role="tree" aria-label="Inhoud van het archief"></div>
+        <p class="dim small">// [x] = gaat mee in het nieuwe archief. klik op een map om hem open of dicht te klappen. [↓] slaat één bestand los op.</p>
+      </fieldset>
+
+      <fieldset class="frame">
+        <legend>TOEVOEGEN</legend>
+        <div class="grid">
+          <label class="field"><span>IN MAP&gt;</span><input id="arAddDir" type="text" placeholder="(hoofdmap)"></label>
+          <div class="row">
+            <button id="arAddBtn" class="btn" type="button">[ + BESTANDEN TOEVOEGEN ]</button>
+            <input id="arAddInput" type="file" multiple hidden>
+          </div>
+        </div>
+        <p class="dim small">// toegevoegde bestanden staan in de boom met een +. losse bestanden uit de lijst bovenaan gaan ook mee.</p>
+      </fieldset>
+
+      <fieldset class="frame">
+        <legend>UITVOER</legend>
+        <div class="grid">
+          <label class="field"><span>FORMAAT&gt;</span><span class="sel"><select id="arFormat">
+            <option value="zip">.zip · werkt overal</option>
+            <option value="7z">.7z · klein, 7-zip/winrar</option>
+            <option value="tar.xz">.tar.xz · kleinst</option>
+            <option value="tar.gz">.tar.gz</option>
+            <option value="tar.bz2">.tar.bz2</option>
+            <option value="tar">.tar · zonder compressie</option>
+            <option value="iso">.iso · schijfkopie</option>
+            <option value="rar" disabled>.rar · kan niet (alleen WinRAR mag rar maken)</option>
+          </select></span></label>
+          <label class="field"><span>BESTANDSNAAM&gt;</span><input id="arName" type="text" placeholder="archief"></label>
+        </div>
+        <label class="check" id="arPwRow"><input id="arPwOn" type="checkbox"><span>Met wachtwoord beveiligen <em>(AES-256, alleen .zip)</em></span></label>
+        <div class="row" id="arPwNewRow" hidden><span class="prompt">WACHTWOORD&gt;</span><input id="arPwNew" type="password" autocomplete="new-password" aria-label="Wachtwoord voor het nieuwe archief"></div>
+        <p class="dim small" id="arOutHint"></p>
+        <p class="dim small">// openen kan ook rar en cab. rar maken mag alleen winrar (gesloten formaat); kies .7z of .zip, die opent winrar ook.</p>
       </fieldset>
     </div>
 
@@ -610,6 +697,8 @@ const EXT = {
   audio: new Set(["mp3", "wav", "m4a", "aac", "ogg", "oga", "opus", "flac"]),
   image: new Set(["jpg", "jpeg", "jfif", "png", "webp", "gif", "bmp", "avif", "svg", "ico", "heic", "heif"]),
   pdf: new Set(["pdf"]),
+  archive: new Set(["zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "tbz", "tbz2", "xz", "txz", "zst", "tzst", "lz", "lzma",
+    "cab", "iso", "jar", "cpio", "lzh", "lha", "xar", "ar"]),
   unsupportedVideo: new Set(["avi", "wmv", "flv", "mpg", "mpeg", "3gp", "vob"]),
 };
 const TARGETS = {
@@ -617,13 +706,14 @@ const TARGETS = {
   audio: ["mp3", "m4a", "ogg", "wav", "webm"],
   image: ["jpg", "png", "webp", "gif", "pdf", "bmp", "ico"],
   pdf: ["pdf", "jpg", "png", "txt"],
+  archive: ["zip", "7z", "tar.xz", "tar.gz", "tar.bz2", "tar", "iso"],
   other: ["zip"],
 };
-const LABEL = { video: "Video", audio: "Audio", image: "Afbeelding", pdf: "PDF", other: "Overig" };
-const CAT_ORDER = ["video", "audio", "image", "pdf", "other"];
+const LABEL = { video: "Video", audio: "Audio", image: "Afbeelding", pdf: "PDF", archive: "Archief", other: "Overig" };
+const CAT_ORDER = ["video", "audio", "image", "pdf", "archive", "other"];
 const AUDIO_OUT = new Set(["mp3", "m4a", "ogg", "wav"]);
 const NO_TARGET = new Set(["wav", "bmp", "ico"]);
-const hasTarget = (c, f) => (c === "pdf" ? f === "pdf" : !NO_TARGET.has(f));
+const hasTarget = (c, f) => (c === "archive" ? false : c === "pdf" ? f === "pdf" : !NO_TARGET.has(f));
 
 // De converters hieronder werken op "het huidige bestand"; processItem() zet deze per bestand.
 let file = null, cat = null, ext = "", info = {}, duration = 0;
@@ -713,10 +803,20 @@ $("sampleBtn").addEventListener("click", async () => {
     await mk("testbeeld-3.png", 240, "TESTBEELD 3")]);
 });
 
+$("newArchBtn").addEventListener("click", () => {
+  if (busy) return;
+  showPanel();
+  setMode("arch");
+  $("arName").placeholder = "nieuw-archief";
+  $("arAddBtn").focus();
+  status("nieuw leeg archief: voeg bestanden toe");
+});
+
 function categorize(f) {
   const e = extOf(f.name);
   if (EXT.unsupportedVideo.has(e)) return "other";
   if (e === "pdf" || f.type === "application/pdf") return "pdf";
+  if (EXT.archive.has(e)) return "archive";
   if (EXT.video.has(e) || (f.type.startsWith("video/") && !EXT.audio.has(e))) return "video";
   if (EXT.audio.has(e) || f.type.startsWith("audio/")) return "audio";
   if (EXT.image.has(e) || f.type.startsWith("image/")) return "image";
@@ -736,7 +836,8 @@ async function addFiles(list) {
   staleResult();
   showPanel();
   // PDF's erbij? Dan meteen naar de werkbank.
-  if (mode === "convert" && fresh.some((it) => it.cat === "pdf")) setMode("pdf");
+  if (mode === "convert" && fresh.some((it) => it.cat === "archive")) setMode("arch");
+  else if (mode === "convert" && fresh.some((it) => it.cat === "pdf")) setMode("pdf");
   for (const it of fresh) {
     try {
       if (it.cat === "video" || it.cat === "audio") await probeMedia(it);
@@ -748,7 +849,7 @@ async function addFiles(list) {
       it.cat = "other"; it.info = {}; it.duration = 0;
     }
     it.state = "ready";
-    renderQueue(); refresh(); syncPages();
+    renderQueue(); refresh(); syncPages(); syncArch();
   }
   status(`${items.length} ${items.length === 1 ? "bestand" : "bestanden"} geladen`);
 }
@@ -794,6 +895,9 @@ function rowStatus(it) {
 function renderQueue() {
   const ol = $("queue");
   ol.innerHTML = "";
+  if (!items.length) {
+    ol.innerHTML = '<li class="q-empty dim small">// nog niets in de lijst. bestanden voor het archief voeg je toe bij TOEVOEGEN.</li>';
+  }
   items.forEach((it, i) => {
     const li = document.createElement("li");
     li.className = "q-row q-" + it.state;
@@ -839,20 +943,23 @@ function updateRow(it) {
 }
 function staleResult() {
   $("result").hidden = true;
-  $("goBtn").textContent = mode === "pdf" ? "[ ▶ MAAK PDF ]" : "[ ▶ START ]";
+  $("goBtn").textContent = goLabel();
   for (const x of items) if (x.state === "done" || x.state === "error") { x.state = "ready"; x.out = null; x.err = ""; }
 }
 function removeItem(it) {
   if (busy) return;
   staleResult();
   items.splice(items.indexOf(it), 1);
-  if (!items.length) return resetAll();
-  renderQueue(); refresh(); syncPages();
+  if (!items.length && !(mode === "arch" && arEntries.some((e) => e.added))) return resetAll();
+  renderQueue(); refresh(); syncPages(); syncArch();
 }
 function resetAll() {
   if (busy) return;
   items.length = 0;
   pages = [];
+  arEntries = []; arOpen.clear();
+  $("arName").value = ""; $("arAddDir").value = "";
+  if (mode !== "convert") setMode("convert");
   try { $("preview").pause(); $("previewAudio").pause(); } catch {}
   $("panel").hidden = true; $("dropWrap").hidden = false;
   $("result").hidden = true; $("progress").hidden = true;
@@ -1042,9 +1149,10 @@ function optsFor(it, s) {
 }
 
 $("goBtn").addEventListener("click", async () => {
-  if (!items.length || busy) return;
+  if (busy || (!items.length && !(mode === "arch" && arEntries.length))) return;
   if (items.some((it) => it.state === "reading")) return showError("Even wachten: nog niet alle bestanden zijn gelezen.");
-  if (mode === "pdf") return runWorkbenchClick();
+  if (mode === "pdf") return runWorkbenchClick(runPdfWorkbench, showPdfResult, "PDF opbouwen");
+  if (mode === "arch") return runWorkbenchClick(runArchiveWorkbench, showArchResult, "Archief maken");
   let s;
   try { s = readSettings(); } catch (err) { return showError(err.message); }
 
@@ -1077,20 +1185,22 @@ $("goBtn").addEventListener("click", async () => {
   showSummary();
 });
 
-async function runWorkbenchClick() {
+const goLabel = () => ({ pdf: "[ ▶ MAAK PDF ]", arch: "[ ▶ MAAK ARCHIEF ]" })[mode] || "[ ▶ START ]";
+
+async function runWorkbenchClick(run, show, label) {
   busy = true;
   $("goBtn").disabled = true; $("goBtn").textContent = "[ BEZIG... ]";
   $("addBtn").disabled = true; $("resetBtn").disabled = true;
   $("result").hidden = true; $("progress").hidden = false;
-  step(4); setProgress(0, "PDF opbouwen");
+  step(4); setProgress(0, label);
   try {
-    showPdfResult(await runPdfWorkbench());
+    show(await run());
   } catch (err) {
     console.error(err);
     showError(err instanceof UserError ? err.message : "Er ging iets mis: " + (err?.message || err));
   } finally {
     busy = false;
-    $("goBtn").disabled = false; $("goBtn").textContent = "[ ▶ MAAK PDF ]";
+    $("goBtn").disabled = false; $("goBtn").textContent = goLabel();
     $("addBtn").disabled = false; $("resetBtn").disabled = false;
   }
 }
@@ -1103,6 +1213,7 @@ async function processItem(it, opts) {
     if (cat === "image") out = await convertImage(opts);
     else if (cat === "other") out = await zipFile(opts);
     else if (cat === "pdf") out = await convertPdf(opts);
+    else if (cat === "archive") out = await convertArchive(opts);
     else if (opts.fmt === "gif") out = await videoToGif(opts);
     else out = await convertMedia(opts);
     out.target = opts.target;
@@ -1565,7 +1676,27 @@ async function saveAll() {
   await saveBlob(blob, `anything-converter-${done.length}-bestanden.zip`);
 }
 
+// In de Android-app: bestand in stukjes doorgeven aan Android, dat het in Downloads zet.
+async function androidSave(blob, name) {
+  const A = window.AnythingAndroid;
+  if (!A.begin(name, blob.type || "application/octet-stream")) throw new Error("Opslaan op de telefoon lukte niet.");
+  const CH = 3 * 1024 * 1024; // veelvoud van 3: losse base64-stukken passen precies aan elkaar
+  for (let o = 0; o < blob.size; o += CH) {
+    const buf = new Uint8Array(await blob.slice(o, o + CH).arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+    if (!A.chunk(btoa(bin))) throw new Error("Opslaan op de telefoon lukte niet.");
+    setNote(`opslaan ${Math.min(100, Math.round((o + CH) / blob.size * 100))}%`);
+  }
+  A.end();
+  setNote("opgeslagen in Downloads/Anything Converter: " + name);
+}
+
 async function saveBlob(blob, name) {
+  if (window.AnythingAndroid) {
+    try { await androidSave(blob, name); } catch (err) { setNote(err.message); }
+    return;
+  }
   const dl = await downloadsCap();
   if (dl) {
     try {
@@ -1735,9 +1866,11 @@ function setMode(m) {
   document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.mode === m)));
   document.querySelectorAll(".mode-convert").forEach((el) => (el.hidden = m !== "convert"));
   document.querySelectorAll(".mode-pdf").forEach((el) => (el.hidden = m !== "pdf"));
+  document.querySelectorAll(".mode-arch").forEach((el) => (el.hidden = m !== "arch"));
   $("result").hidden = true;
-  $("goBtn").textContent = m === "pdf" ? "[ ▶ MAAK PDF ]" : "[ ▶ START ]";
+  $("goBtn").textContent = goLabel();
   if (m === "pdf") syncPages();
+  else if (m === "arch") syncArch();
   else refresh();
 }
 document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => { if (!busy) setMode(b.dataset.mode); }));
@@ -2086,17 +2219,513 @@ function showPdfResult(out) {
   status(`klaar: ${out.name} (${human(after)})`);
 }
 
-// ---------------------------------------------------------------- desktop-app: juiste download uitlichten
+// ---------------------------------------------------------------- archieven (libarchive.js, meegeleverd in vendor/)
+let laP = null;
+function libarchive() {
+  return (laP ??= (async () => {
+    const base = new URL("vendor/libarchive/", document.baseURI);
+    const m = await import(new URL("libarchive.js", base).href);
+    m.Archive.init({ workerUrl: new URL("worker-bundle.js", base).href });
+    return m;
+  })());
+}
+// Schrijven: zip via zip.js (ook met AES-wachtwoord), de rest via libarchive.js.
+// libarchive.js 2.0.2 schrijft zonder compressiefilter een leeg bestand. Daarom schrijven we 7z, tar en iso
+// met een gzip-laag eromheen en halen die er in de browser meteen weer af (DecompressionStream).
+const ARCH_OUT = ["zip", "7z", "tar", "tar.gz", "tar.xz", "tar.bz2", "iso"];
+const ZIPJS = "https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.23.0/index.js";
+let zipjsP = null;
+const zipjs = () => (zipjsP ??= import(ZIPJS).then((z) => { z.configure({ useWebWorkers: false }); return z; }));
+function archSpec(m, fmt) {
+  const F = m.ArchiveFormat, C = m.ArchiveCompression;
+  return {
+    "tar.gz": [F.PAX, C.GZIP, false], "tar.xz": [F.PAX, C.XZ, false], "tar.bz2": [F.PAX, C.BZIP2, false],
+    "7z": [F.SEVEN_ZIP, C.GZIP, true], tar: [F.PAX, C.GZIP, true], iso: [F.ISO9660, C.GZIP, true],
+  }[fmt];
+}
+// Dubbele paden krijgen _2, _3 ... (een iPhone noemt foto's uit de bibliotheek allemaal "image.jpg")
+function uniquePath(path, taken) {
+  let p = path, n = 2;
+  const dot = path.lastIndexOf("."), slash = path.lastIndexOf("/");
+  const [stem, ext] = dot > slash + 0 && dot > 0 ? [path.slice(0, dot), path.slice(dot)] : [path, ""];
+  while (taken.has(p.toLowerCase())) p = `${stem}_${n++}${ext}`;
+  taken.add(p.toLowerCase());
+  return p;
+}
+// "foto.tar.gz" -> "foto"
+const archStem = (name) => name.replace(/\.(tar\.(gz|bz2|xz|zst)|tgz|tbz2?|txz|tzst|[^.]+)$/i, "");
+
+const archState = new Map(); // item -> { ar, list:[{file,path}], enc, pw, all:Map|null }
+async function openArchive(it, pw = null) {
+  const { Archive } = await libarchive();
+  const ar = await Archive.open(it.file);
+  if (pw) await ar.usePassword(pw);
+  let enc = null;
+  try { enc = await ar.hasEncryptedData(); } catch {}
+  if (enc && !pw) {
+    // versleuteld: namen zijn vaak wel leesbaar, uitpakken pas met wachtwoord
+    try {
+      const list = await ar.getFilesArray();
+      const st = { ar, list, enc, pw, all: null, locked: false, needPw: true };
+      archState.set(it, st);
+      return st;
+    } catch {
+      const st = { ar, list: [], enc: true, pw, all: null, locked: true, needPw: true };
+      archState.set(it, st);
+      return st;
+    }
+  }
+  let list;
+  try {
+    list = await ar.getFilesArray();
+  } catch (err) {
+    if (enc || /passphrase|password|encrypt/i.test(err?.message || "")) {
+      const st = { ar, list: [], enc: true, pw, all: null, locked: true };
+      archState.set(it, st);
+      return st;
+    }
+    throw err;
+  }
+  const st = { ar, list, enc, pw, all: null, locked: false };
+  archState.set(it, st);
+  return st;
+}
+// Eén bestand uitpakken; bij veel bestanden in één keer alles (veel sneller).
+async function entryFile(e, many = false) {
+  if (e.file) return e.file;
+  const st = archState.get(e.item);
+  if (many && !st.all) st.all = await extractAll(st);
+  if (st.all) {
+    const f = st.all.get(e.inner);
+    if (f) return f;
+  }
+  try {
+    return await e.cf.extract();
+  } catch (err) {
+    if (st.enc || /passphrase|password/i.test(err?.message || "")) {
+      fail("Dit archief heeft een wachtwoord. Vul het in bij INHOUD (boven de boom) en probeer opnieuw.");
+    }
+    throw err;
+  }
+}
+async function extractAll(st) {
+  try {
+    await st.ar.extractFiles();
+  } catch (err) {
+    if (/passphrase|password/i.test(err?.message || "")) fail("Dit archief heeft een wachtwoord. Vul het in bij INHOUD en probeer opnieuw.");
+    throw err;
+  }
+  const map = new Map();
+  for (const { file, path } of await st.ar.getFilesArray()) map.set(path + file.name, file);
+  return map;
+}
+
+// Inhoud van alle archieven + losse bestanden in de werkbank
+let arEntries = []; // { key, path, size, item, inner, cf, file, on, added }
+let arOpen = new Set();
+let arKey = 1;
+const arArchives = () => items.filter((it) => it.cat === "archive" && it.state !== "reading");
+
+// Eén synchronisatie tegelijk: anders lezen gelijktijdige aanroepen hetzelfde archief dubbel in.
+let archSync = Promise.resolve();
+function syncArch() {
+  archSync = archSync.then(doSyncArch, doSyncArch);
+  return archSync;
+}
+async function doSyncArch() {
+  if (mode !== "arch") return;
+  const archives = arArchives();
+  const stems = archives.map((it) => archStem(it.file.name));
+  // meerdere archieven: elk in een eigen hoofdmap (met extensie als de namen botsen)
+  const prefixFor = (it) => {
+    if (archives.length < 2) return "";
+    const st = archStem(it.file.name);
+    return (stems.filter((x) => x === st).length > 1 ? it.file.name : st) + "/";
+  };
+  // weg wat niet meer in de lijst staat (toegevoegde bestanden blijven)
+  arEntries = arEntries.filter((e) => e.added || items.includes(e.item));
+  for (const it of items) {
+    if (it.state === "reading" || arEntries.some((e) => e.item === it)) continue;
+    if (it.cat === "archive") {
+      let st = archState.get(it);
+      try {
+        st ??= await openArchive(it);
+      } catch (err) {
+        console.warn(err);
+        it.msg = "Dit archief kan niet gelezen worden (beschadigd of onbekend formaat).";
+        renderQueue();
+        continue;
+      }
+      for (const { file, path } of st.list) {
+        const inner = path + file.name;
+        arEntries.push({ key: arKey++, path: inner.replace(/^(\.\/)+/, ""), inner,
+          size: file.size || 0, item: it, cf: file, file: null, on: true, added: false });
+      }
+      if (st.locked || st.needPw) showArchPw(it, st.locked);
+    } else {
+      // losse bestanden uit de lijst gaan mee in de hoofdmap
+      arEntries.push({ key: arKey++, path: it.file.name, inner: null, size: it.file.size, item: it,
+        cf: null, file: it.file, on: true, added: false });
+    }
+  }
+  // hoofdmappen per archief opnieuw bepalen (er kan net een archief bij of af zijn)
+  for (const e of arEntries) {
+    if (e.inner != null && e.item) e.path = prefixFor(e.item) + e.inner.replace(/^(\.\/)+/, "");
+  }
+  if (arEntries.length < 300 && !arOpen.size) {
+    for (const e of arEntries) {
+      const parts = e.path.split("/");
+      for (let i = 1; i < parts.length; i++) arOpen.add(parts.slice(0, i).join("/"));
+    }
+  }
+  const first = archives[0];
+  if (!$("arName").value) $("arName").placeholder = first ? archStem(first.file.name) : "nieuw-archief";
+  renderArch();
+}
+
+function showArchPw(it, locked) {
+  $("archPw").hidden = false;
+  $("arStats").textContent = locked
+    ? "// dit archief is versleuteld. vul het wachtwoord in om de inhoud te zien."
+    : "// dit archief heeft een wachtwoord. vul het in om bestanden uit te pakken.";
+  $("archPw").dataset.item = items.indexOf(it);
+  $("archPwInput").focus();
+}
+$("archPwBtn").addEventListener("click", async () => {
+  const it = items[+$("archPw").dataset.item];
+  const pw = $("archPwInput").value;
+  if (!it || !pw) return;
+  arEntries = arEntries.filter((e) => e.item !== it);
+  archState.delete(it);
+  const st = await openArchive(it, pw).catch(() => null);
+  const ok = st && !st.locked && st.list.length && await st.list[0].file.extract().then(() => true, () => false);
+  if (!ok) { archState.delete(it); $("arStats").textContent = "// wachtwoord klopt niet, probeer het opnieuw."; return; }
+  archState.set(it, await openArchive(it, pw));
+  $("archPw").hidden = true;
+  syncArch();
+});
+$("archPwInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("archPwBtn").click(); });
+
+// ---------- boom tekenen (ASCII)
+function buildTree(list) {
+  const root = { dirs: new Map(), files: [] };
+  for (const e of list) {
+    const parts = e.path.split("/").filter(Boolean);
+    let node = root, acc = [];
+    for (const p of parts.slice(0, -1)) {
+      acc.push(p);
+      if (!node.dirs.has(p)) node.dirs.set(p, { dirs: new Map(), files: [], path: acc.join("/") });
+      node = node.dirs.get(p);
+    }
+    node.files.push(e);
+  }
+  return root;
+}
+function dirFiles(node, out = []) {
+  out.push(...node.files);
+  for (const d of node.dirs.values()) dirFiles(d, out);
+  return out;
+}
+function renderArch() {
+  const tree = $("arTree");
+  tree.innerHTML = "";
+  const q = $("arFind").value.trim().toLowerCase();
+  const shown = q ? arEntries.filter((e) => e.path.toLowerCase().includes(q)) : arEntries;
+  const on = arEntries.filter((e) => e.on);
+  const sum = (l) => l.reduce((a, e) => a + (e.size || 0), 0);
+  $("archTitle").textContent = `INHOUD (${arEntries.length})`;
+  $("arStats").textContent = arEntries.length
+    ? `${on.length} van ${arEntries.length} bestanden aangevinkt · ${human(sum(on))}` + (q ? ` · ${shown.length} gevonden` : "")
+    : "// leeg archief. voeg bestanden toe met [ + BESTANDEN TOEVOEGEN ] hieronder, of sleep ze op de pagina.";
+  const lines = [];
+  const LIMIT = 2500;
+  const walk = (node, depth, guides) => {
+    const dirs = [...node.dirs.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    const files = node.files.slice().sort((a, b) => a.path.localeCompare(b.path));
+    const kids = [...dirs.map(([n, d]) => ({ dir: d, name: n })), ...files.map((f) => ({ file: f }))];
+    kids.forEach((k, i) => {
+      if (lines.length > LIMIT) return;
+      const last = i === kids.length - 1;
+      const pre = guides.map((g) => (g ? "   " : "│  ")).join("") + (depth ? (last ? "└─ " : "├─ ") : "");
+      if (k.dir) {
+        const open = q || arOpen.has(k.dir.path);
+        lines.push({ pre, dir: k.dir, name: k.name, open });
+        if (open) walk(k.dir, depth + 1, depth ? [...guides, last] : []);
+      } else {
+        lines.push({ pre, file: k.file });
+      }
+    });
+  };
+  walk(buildTree(shown), 0, []);
+  const frag = document.createDocumentFragment();
+  for (const l of lines.slice(0, LIMIT)) {
+    const row = document.createElement("div");
+    row.className = "ar-row";
+    row.setAttribute("role", "treeitem");
+    if (l.dir) {
+      const all = dirFiles(l.dir);
+      const n = all.filter((e) => e.on).length;
+      const box = n === all.length ? "[x]" : n ? "[~]" : "[ ]";
+      row.innerHTML = `<span class="ar-pre"></span><button type="button" class="ar-box" data-dir></button>` +
+        `<button type="button" class="ar-name ar-dir" data-toggle></button><span class="ar-size"></span><span class="ar-act"></span>`;
+      row.querySelector(".ar-box").textContent = box;
+      row.querySelector(".ar-box").setAttribute("aria-label", `Map ${l.name} aan- of uitvinken`);
+      row.querySelector(".ar-name").textContent = (l.open ? "▾ " : "▸ ") + l.name + "/";
+      row.querySelector(".ar-name").setAttribute("aria-expanded", String(l.open));
+      row.querySelector(".ar-size").textContent = `${all.length} · ${human(sum(all))}`;
+      row.dataset.path = l.dir.path;
+      row.setAttribute("aria-expanded", String(l.open));
+    } else {
+      const e = l.file;
+      row.innerHTML = `<span class="ar-pre"></span><button type="button" class="ar-box"></button>` +
+        `<span class="ar-name"></span><span class="ar-size"></span><span class="ar-act"><button type="button" class="btn small" data-save>[↓]</button></span>`;
+      row.querySelector(".ar-box").textContent = e.on ? "[x]" : "[ ]";
+      row.querySelector(".ar-box").setAttribute("aria-label", `${e.path} aan- of uitvinken`);
+      row.querySelector(".ar-name").textContent = (e.added ? "+ " : "") + e.path.split("/").pop();
+      row.querySelector(".ar-name").title = e.path;
+      row.querySelector(".ar-size").textContent = human(e.size || 0);
+      row.querySelector("[data-save]").setAttribute("aria-label", "Sla " + e.path + " los op");
+      row.dataset.key = e.key;
+      row.classList.toggle("off", !e.on);
+    }
+    row.querySelector(".ar-pre").textContent = l.pre;
+    frag.append(row);
+  }
+  if (lines.length > LIMIT) {
+    const more = document.createElement("p");
+    more.className = "dim small";
+    more.textContent = `// alleen de eerste ${LIMIT} regels getoond. gebruik ZOEK om te filteren.`;
+    frag.append(more);
+  }
+  tree.append(frag);
+  const fmt = $("arFormat").value;
+  $("arPwRow").hidden = fmt !== "zip";
+  $("arPwNewRow").hidden = fmt !== "zip" || !$("arPwOn").checked;
+  $("arOutHint").textContent = inViewer() && !SAVE_OK.has(fmt)
+    ? `// .${fmt} wordt binnen claude.ai in een .zip verpakt opgeslagen; op de website los.` : "";
+}
+
+$("arTree").addEventListener("click", async (ev) => {
+  const row = ev.target.closest(".ar-row");
+  if (!row || busy) return;
+  if (row.dataset.path != null) {
+    const node = (() => {
+      const sub = arEntries.filter((e) => e.path.startsWith(row.dataset.path + "/"));
+      return sub;
+    })();
+    if (ev.target.closest("[data-toggle]")) {
+      const p = row.dataset.path;
+      arOpen.has(p) ? arOpen.delete(p) : arOpen.add(p);
+    } else if (ev.target.closest(".ar-box")) {
+      const allOn = node.every((e) => e.on);
+      node.forEach((e) => (e.on = !allOn));
+    }
+    renderArch();
+    const again = $("arTree").querySelector(`[data-path="${CSS.escape(row.dataset.path)}"] ${ev.target.closest("[data-toggle]") ? "[data-toggle]" : ".ar-box"}`);
+    if (again) again.focus();
+    return;
+  }
+  const e = arEntries.find((x) => x.key === +row.dataset.key);
+  if (!e) return;
+  if (ev.target.closest(".ar-box")) {
+    e.on = !e.on;
+    renderArch();
+    $("arTree").querySelector(`[data-key="${e.key}"] .ar-box`)?.focus();
+  } else if (ev.target.closest("[data-save]")) {
+    try {
+      status("uitpakken: " + e.path);
+      const f = await entryFile(e);
+      await saveAny(f, e.path.split("/").pop());
+    } catch (err) {
+      showError(err instanceof UserError ? err.message : "Uitpakken mislukt: " + (err?.message || err));
+    }
+  }
+});
+$("arFind").addEventListener("input", renderArch);
+$("arAll").addEventListener("click", () => { arEntries.forEach((e) => (e.on = true)); renderArch(); });
+$("arNone").addEventListener("click", () => { arEntries.forEach((e) => (e.on = false)); renderArch(); });
+$("arInvert").addEventListener("click", () => { arEntries.forEach((e) => (e.on = !e.on)); renderArch(); });
+$("arExpand").addEventListener("click", () => {
+  for (const e of arEntries) { const p = e.path.split("/"); for (let i = 1; i < p.length; i++) arOpen.add(p.slice(0, i).join("/")); }
+  renderArch();
+});
+$("arCollapse").addEventListener("click", () => { arOpen.clear(); renderArch(); });
+$("arFormat").addEventListener("change", renderArch);
+$("arPwOn").addEventListener("change", renderArch);
+$("arAddBtn").addEventListener("click", () => $("arAddInput").click());
+$("arAddInput").addEventListener("change", () => {
+  const dir = $("arAddDir").value.trim().replace(/^\/+|\/+$/g, "");
+  const taken = new Set(arEntries.map((e) => e.path.toLowerCase()));
+  for (const f of $("arAddInput").files) {
+    const path = uniquePath((dir ? dir + "/" : "") + f.name, taken);
+    arEntries.push({ key: arKey++, path, inner: null, size: f.size, item: null, cf: null, file: f, on: true, added: true });
+    if (dir) dir.split("/").forEach((_, i, a) => arOpen.add(a.slice(0, i + 1).join("/")));
+  }
+  $("arAddInput").value = "";
+  renderArch();
+});
+
+// Bestanden inpakken in het gekozen formaat
+async function packFiles(files, fmt, name, pw) {
+  const taken = new Set();
+  files = files.map((f) => ({ ...f, pathname: uniquePath(f.pathname, taken) }));
+  if (fmt === "zip") {
+    const z = await zipjs();
+    const w = new z.ZipWriter(new z.BlobWriter("application/zip"), pw ? { password: pw, encryptionStrength: 3 } : {});
+    for (let i = 0; i < files.length; i++) {
+      setProgress(0.7 + 0.3 * i / files.length, `Inpakken ${i + 1}/${files.length}`);
+      await w.add(files[i].pathname, new z.BlobReader(files[i].file), { level: 6 });
+    }
+    return await w.close();
+  }
+  const m = await libarchive();
+  const [format, compression, unwrap] = archSpec(m, fmt);
+  setProgress(0.75, `Inpakken als .${fmt}`);
+  const out = await m.Archive.write({ files, outputFileName: name, compression, format, passphrase: null });
+  if (!out || !out.size) fail(`Inpakken als .${fmt} is mislukt. Kies .zip.`);
+  if (!unwrap) return new Blob([out], { type: "application/octet-stream" });
+  if (typeof DecompressionStream === "undefined") fail(`Je browser is te oud voor .${fmt}. Kies .zip of .tar.gz.`);
+  setProgress(0.95, `Afronden .${fmt}`);
+  const raw = await new Response(out.stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+  return new Blob([raw], { type: "application/octet-stream" });
+}
+
+async function runArchiveWorkbench() {
+  const sel = arEntries.filter((e) => e.on);
+  if (!sel.length) fail("Er is niets aangevinkt. Vink de bestanden aan die in het nieuwe archief moeten.");
+  const fmt = $("arFormat").value;
+  const pw = fmt === "zip" && $("arPwOn").checked ? $("arPwNew").value : null;
+  if (fmt === "zip" && $("arPwOn").checked && !pw) fail("Vul een wachtwoord in, of zet het vinkje uit.");
+  const many = sel.length > 20;
+  const files = [];
+  for (let i = 0; i < sel.length; i++) {
+    setProgress(i / sel.length * 0.7, `Uitpakken ${i + 1}/${sel.length}`);
+    files.push({ file: await entryFile(sel[i], many), pathname: sel[i].path });
+  }
+  const base = ($("arName").value.trim() || $("arName").placeholder || "archief").replace(/[\\/:*?"<>|]+/g, "-");
+  const name = `${archStem(base) || base}.${fmt}`;
+  const blob = await packFiles(files, fmt, name, pw);
+  const srcSize = [...new Set(arEntries.map((e) => e.item).filter(Boolean))].reduce((a, it) => a + it.file.size, 0)
+    + arEntries.filter((e) => e.added).reduce((a, e) => a + e.size, 0);
+  return { blob, name, srcSize, count: sel.length };
+}
+
+// Converteer-modus: een heel archief omzetten naar een ander formaat
+async function convertArchive(opts) {
+  let st = archState.get(current.it) || await openArchive(current.it);
+  if (st.locked) fail("Dit archief heeft een wachtwoord. Open het in de ARCHIEF-WERKBANK om het wachtwoord in te vullen.");
+  setProgress(0.05, "Uitpakken");
+  st.all ??= await extractAll(st);
+  const files = [...st.all].map(([pathname, file]) => ({ pathname, file }));
+  if (!files.length) fail("Dit archief is leeg.");
+  const name = `${archStem(file.name)}.${opts.fmt}`;
+  return { blob: await packFiles(files, opts.fmt, name, null), name, kind: "file" };
+}
+
+function showArchResult(out) {
+  $("progress").hidden = true;
+  const res = $("result");
+  res.className = "result";
+  const before = out.srcSize, after = out.blob.size;
+  const w = barWidth() - 8, max = Math.max(before, after, 1);
+  const bar = (n) => { const k = Math.max(1, Math.round(n / max * w)); return "█".repeat(k) + "░".repeat(w - k); };
+  const diff = before ? (after - before) / before * 100 : 0;
+  res.innerHTML = `<span class="head">STATUS: OK</span>
+<div class="cmp"><span class="lbl">BESTAND   </span><span class="fn"></span>
+<span class="lbl">INHOUD    </span>${out.count} bestanden
+<span class="lbl">BRONNEN   </span>${bar(before)} ${human(before)}
+<span class="lbl">NIEUW     </span>${bar(after)} ${human(after)}
+<span class="lbl">VERSCHIL  </span><span class="down">${diff <= 0 ? "▼" : "▲"} ${Math.abs(diff).toFixed(1)}% ${diff <= 0 ? "kleiner" : "groter"}</span></div>`;
+  res.querySelector(".fn").textContent = out.name;
+  const btn = document.createElement("button");
+  btn.className = "save"; btn.type = "button";
+  btn.textContent = savesDirect(extOf(out.name)) ? "[ ↓ OPSLAAN ]" : "[ ↓ OPSLAAN ALS .ZIP ]";
+  btn.addEventListener("click", () => saveAny(out.blob, out.name));
+  const note = document.createElement("p");
+  note.className = "note dim small"; note.id = "saveNote";
+  res.append(btn, note);
+  res.hidden = false;
+  status(`klaar: ${out.name} (${human(after)})`);
+}
+
+// Elk bestand opslaan; binnen claude.ai worden niet-toegestane typen in een zip verpakt.
+async function saveAny(blob, name) {
+  if ((await downloadsCap()) && !SAVE_OK.has(extOf(name))) {
+    blob = await zipBlob([{ name, blob }]);
+    name += ".zip";
+  }
+  await saveBlob(blob, name);
+}
+
+// ---------------------------------------------------------------- downloads: keuzemenu per systeem
+const DL = {
+  win: { file: "AnythingConverter-Windows.msi", steps: [
+    "1. download en dubbelklik het .msi-bestand",
+    "2. 'windows heeft uw pc beschermd'? → meer informatie → toch uitvoeren",
+    "3. start 'Anything Converter' uit het startmenu; hij opent in je browser"] },
+  "mac-arm": { file: "AnythingConverter-macOS-AppleSilicon.dmg", steps: [
+    "1. open de .dmg en sleep de app naar Programma's",
+    "2. open de app; krijg je een melding, sluit die dan",
+    "3. systeeminstellingen → privacy en beveiliging → onderaan 'toch openen'",
+    "// welke mac? appelmenu → over deze mac: 'chip apple m…' = deze"] },
+  "mac-intel": { file: "AnythingConverter-macOS-Intel.dmg", steps: [
+    "1. open de .dmg en sleep de app naar Programma's",
+    "2. open de app; krijg je een melding, sluit die dan",
+    "3. systeeminstellingen → privacy en beveiliging → onderaan 'toch openen'",
+    "// welke mac? appelmenu → over deze mac: 'processor intel' = deze"] },
+  deb: { file: "AnythingConverter-Linux.deb", steps: [
+    "1. download en open het .deb-bestand (software-installatie)",
+    "   of in een terminal: sudo apt install ./AnythingConverter-Linux.deb",
+    "2. start 'Anything Converter' uit het menu"] },
+  appimage: { file: "AnythingConverter-Linux.AppImage", steps: [
+    "1. download het .AppImage-bestand",
+    "2. rechtsklik → eigenschappen → 'uitvoeren als programma' aan",
+    "3. dubbelklik om te starten"] },
+  android: { file: "AnythingConverter-Android.apk", steps: [
+    "1. download het .apk-bestand op je telefoon",
+    "2. open het; sta 'installeren van onbekende apps' toe voor je browser",
+    "3. open 'Converter'; opgeslagen bestanden staan in Downloads/Anything Converter",
+    "// youtube-links ophalen kan alleen op de computer"] },
+  ios: { file: null, steps: [
+    "apple laat apps buiten de app store niet toe; gebruik de web-app:",
+    "1. open deze pagina in safari",
+    "2. tik op deel (vierkant met pijl) → zet op beginscherm → voeg toe",
+    "3. open 'Converter' vanaf je beginscherm",
+    "// youtube-links ophalen kan alleen op de computer"] },
+};
+function renderDownload() {
+  const k = $("dlSelect").value, d = DL[k];
+  const go = $("dlGo");
+  if (d.file) {
+    go.href = "https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/" + d.file;
+    go.textContent = "[ ↓ DOWNLOAD ]";
+    go.target = "_blank";
+  } else {
+    go.href = "#dlSteps";
+    go.textContent = "[ ? HOE DAN ]";
+    go.removeAttribute("target");
+  }
+  $("dlSteps").textContent = d.steps.join("\n");
+}
 (() => {
   const ua = navigator.userAgent;
-  const mobile = /iPhone|iPad|iPod|Android/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-  const os = mobile ? null : /Windows/i.test(ua) ? "win" : /Mac OS X|Macintosh/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) ? "linux" : null;
-  document.querySelectorAll(".dl-btn").forEach((a) => a.classList.toggle("mine", a.dataset.os === os));
-  $("dlHint").textContent = mobile
-    ? "// de desktop-app is voor windows, mac en linux. op je telefoon gebruik je deze web-app."
-    : os === "mac" ? "// weet je niet welke mac? appelmenu → over deze mac: staat er 'chip apple m…', kies m1–m4."
-    : "";
-  $("dlHint").hidden = !$("dlHint").textContent;
+  // In de Android-app zelf is dit kader niet nodig
+  if (/AnythingConverterApp/.test(ua)) { $("dlFrame").hidden = true; return; }
+  const ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  let pick = ios ? "ios" : /Android/i.test(ua) ? "android" : /Windows/i.test(ua) ? "win"
+    : /Mac OS X|Macintosh/i.test(ua) ? "mac-arm" : /Linux|X11/i.test(ua) ? "deb" : "win";
+  // Intel-Mac herkennen waar de browser dat vertelt (Chrome/Edge)
+  if (pick === "mac-arm" && navigator.userAgentData?.getHighEntropyValues) {
+    navigator.userAgentData.getHighEntropyValues(["architecture"]).then((h) => {
+      if (h.architecture === "x86") { $("dlSelect").value = "mac-intel"; renderDownload(); }
+    }).catch(() => {});
+  }
+  $("dlSelect").value = pick;
+  renderDownload();
+  $("dlSelect").addEventListener("change", renderDownload);
+  $("dlGo").addEventListener("click", (e) => {
+    if (!DL[$("dlSelect").value].file) { e.preventDefault(); $("dlSteps").scrollIntoView({ block: "nearest" }); }
+  });
 })();
 
 // ---------------------------------------------------------------- thema

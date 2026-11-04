@@ -20,6 +20,24 @@ bestanden worden na 1 uur automatisch opgeruimd. De interface heeft een retro te
 > Let op: "groter maken" werkt voor video's, audio en afbeeldingen (meer bitrate/kwaliteit/resolutie).
 > Al gecomprimeerde bestanden (zip, jpg in een zip, …) kunnen verliesvrij nauwelijks kleiner.
 
+## Archief-werkbank (zip, rar, 7z, tar …)
+
+In de web-app (en in de desktop-app via **[ PDF & ARCHIEF ]**) staat de **ARCHIEF-WERKBANK**:
+
+- **Openen**: zip, rar, 7z, tar, tar.gz/.tgz, tar.bz2, tar.xz, gz, bz2, xz, zst, iso, cab, jar, lzh en meer,
+  ook versleutelde archieven (wachtwoord invullen). Meerdere archieven tegelijk komen elk in een eigen map.
+- **Bekijken**: de inhoud als ASCII-boom met mappen, aantallen en groottes, en een zoekveld.
+- **Weglaten**: vink bestanden of hele mappen uit.
+- **Toevoegen**: bestanden in een gekozen map, en losse bestanden uit de lijst gaan ook mee.
+- **Los opslaan**: elk bestand met [↓].
+- **Nieuw leeg archief**: met **[ + NIEUW LEEG ARCHIEF ]** op het startscherm begin je zonder archief en voeg je zelf bestanden en mappen toe.
+- **Opslaan als**: .zip (optioneel met AES-256-wachtwoord), .7z, .tar, .tar.gz, .tar.xz, .tar.bz2 of .iso.
+  Dubbele namen (bijv. iPhone-foto's die allemaal `image.jpg` heten) worden automatisch `image_2.jpg` enz.
+  RAR maken kan niet: alleen WinRAR mag dat formaat maken. Openen en uitpakken van rar kan wel.
+
+Werkt met [libarchive.js](https://github.com/nika-begiashvili/libarchivejs) (meegeleverd in `vendor/`) en
+[zip.js](https://github.com/gildas-lormeau/zip.js).
+
 ## Desktop-app (installer, alles inbegrepen)
 
 Download de installer voor jouw systeem van de
@@ -32,6 +50,8 @@ Download de installer voor jouw systeem van de
 | Mac met Intel | `AnythingConverter-macOS-Intel.dmg` |
 | Ubuntu / Debian / Mint | `AnythingConverter-Linux.deb` |
 | Andere Linux | `AnythingConverter-Linux.AppImage` |
+| Android 10+ | `AnythingConverter-Android.apk` |
+| iPhone / iPad | geen bestand: open de web-app in Safari → Deel → Zet op beginscherm |
 
 ffmpeg, yt-dlp (video-links) en Deno zitten erin; je hoeft niets anders te installeren. Na het
 starten opent de converter in je browser. Afsluiten met **[ AFSLUITEN ]** bovenaan de pagina.
@@ -41,6 +61,25 @@ de app vindt het vanzelf.
 De app is niet betaald ondertekend, dus de eerste keer:
 - **Windows**: "Windows heeft uw pc beschermd" → **Meer informatie** → **Toch uitvoeren**.
 - **macOS**: open de app, sluit de melding, ga naar **Systeeminstellingen → Privacy en beveiliging** → **Toch openen**.
+
+**Android**: de app (`android/`) toont de web-app en voegt bestanden kiezen via Android en opslaan in
+**Downloads/Anything Converter** toe. Installeren: open de .apk en sta "installeren van onbekende apps" toe.
+YouTube-links ophalen kan alleen in de desktop-app.
+
+Zodat een nieuwe versie als update over de oude heen installeert, kun je een vaste sleutel als GitHub-geheim
+instellen (eenmalig; zonder geheim wordt met een tijdelijke debug-sleutel ondertekend):
+
+```bash
+keytool -genkeypair -keystore release.jks -alias anything -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 release.jks   # macOS: base64 -i release.jks
+```
+
+Zet in **Settings → Secrets and variables → Actions**: `ANDROID_KEYSTORE_B64` (de base64-tekst),
+`ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (`anything`) en `ANDROID_KEY_PASSWORD`.
+Bewaar `release.jks` zelf veilig en zet hem nooit in de repository.
+
+**iPhone/iPad**: Apple staat apps buiten de App Store niet toe zonder betaald ontwikkelaarsaccount.
+Gebruik de web-app via Safari → Deel → Zet op beginscherm.
 
 De installers worden gebouwd door `.github/workflows/desktop.yml` (cx_Freeze). Een nieuwe release
 maak je via **Actions → Desktop-installers → Run workflow**.

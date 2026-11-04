@@ -1,0 +1,42 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'nl.anythingconverter.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'nl.anythingconverter.app'
+        minSdk 29          // Android 10+: opslaan in Downloads zonder extra rechten
+        targetSdk 35
+        versionCode Integer.parseInt((project.findProperty('versionCode') ?: '20100').toString())
+        versionName((project.findProperty('versionName') ?: '2.1.0').toString())
+    }
+
+    // Ondertekenen met de sleutel uit GitHub-geheimen (zie README). Zonder sleutel: debug-ondertekening,
+    // dan werkt de app ook, maar moet je bij een nieuwe versie de oude eerst verwijderen.
+    def ks = System.getenv('ANDROID_KEYSTORE')
+    signingConfigs {
+        release {
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig ks ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

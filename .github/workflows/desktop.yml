@@ -14,6 +14,7 @@ on:
       - "static/**"
       - "app.py"
       - "requirements.txt"
+      - "android/**"
       - ".github/workflows/desktop.yml"
   workflow_dispatch:
     inputs:
@@ -115,9 +116,50 @@ jobs:
           path: out/*
           if-no-files-found: error
 
+  android:
+    name: Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+      - name: Ondertekeningssleutel (optioneel, uit GitHub-geheimen)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "ANDROID_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "vaste sleutel gebruikt"
+          else
+            echo "::notice::Geen ANDROID_KEYSTORE_B64-geheim: APK wordt met een debug-sleutel ondertekend."
+          fi
+      - name: APK bouwen
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          VERSION="${{ inputs.version || '2.1.0' }}"
+          CODE=$(echo "$VERSION" | awk -F. '{ printf "%d", $1*10000 + $2*100 + $3 }')
+          gradle -p android assembleRelease -PversionName="$VERSION" -PversionCode="$CODE" --no-daemon
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk out/AnythingConverter-Android.apk
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-android
+          path: out/*
+          if-no-files-found: error
+
   release:
     name: Publiceren
-    needs: build
+    needs: [build, android]
     if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -139,6 +181,8 @@ jobs:
           | Mac met Intel | `AnythingConverter-macOS-Intel.dmg` |
           | Ubuntu / Debian / Mint | `AnythingConverter-Linux.deb` |
           | Andere Linux | `AnythingConverter-Linux.AppImage` |
+          | Android 10+ | `AnythingConverter-Android.apk` |
+          | iPhone / iPad | geen bestand: open de web-app in Safari → Deel → Zet op beginscherm |
 
           ffmpeg, yt-dlp en Deno zitten erin. Na het starten opent de converter in je browser;
           afsluiten met **[ AFSLUITEN ]** bovenaan de pagina.
@@ -147,6 +191,7 @@ jobs:
           - **Windows**: "Windows heeft uw pc beschermd" → **Meer informatie** → **Toch uitvoeren**.
           - **macOS**: dubbelklik, sluit de melding, ga naar **Systeeminstellingen → Privacy en beveiliging** en klik onderaan **Toch openen**.
           - **Linux AppImage**: rechtsklik → Eigenschappen → "Uitvoeren als programma" aanzetten.
+          - **Android**: open het .apk-bestand en sta "Installeren van onbekende apps" toe voor je browser.
           EOF
       - uses: softprops/action-gh-release@v2
         with:
