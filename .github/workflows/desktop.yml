@@ -223,7 +223,7 @@ jobs:
           | Andere Linux | `AnythingConverter-Linux.AppImage` |
           | Android 10+ | `AnythingConverter-Android.apk` |
           | iPhone / iPad | geen bestand: open de web-app in Safari → Deel → Zet op beginscherm |
-          | Terminal (macOS/Linux) | `brew tap wikidave/anything-converter https://github.com/WikiDave/The-Anything-Converter` en `brew install anything-converter` |
+          | Terminal (macOS/Linux) | `brew tap wikidave/anything-converter https://github.com/WikiDave/The-Anything-Converter` `brew trust wikidave/anything-converter` en `brew install anything-converter` |
 
           ffmpeg, yt-dlp en Deno zitten erin. De converter opent in een eigen programmavenster;
           venster dicht = programma af. Met **[ TERMINAL ]** bovenin open je de terminalversie.
@@ -242,21 +242,30 @@ jobs:
           files: out/*
           make_latest: true
 
-      # Homebrew-formule in deze repo bijwerken met de nieuwe versie en sha256-waarden.
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-          path: repo
+      # Homebrew-formule bijwerken met de nieuwe versie en sha256-waarden. brew tap leest de
+      # standaardbranch van de repo; die kan anders zijn dan main, dus beide bijwerken.
       - name: Homebrew-formule bijwerken
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          REPO_URL: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
         run: |
           V="${{ inputs.version }}"
           [ -n "$V" ] || V="${GITHUB_REF_NAME#v}"
-          cd repo
-          python3 desktop/update_formula.py "$V" ../out
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Formula/anything-converter.rb
-          git diff --cached --quiet || { git commit -m "Homebrew: anything-converter $V"; git push origin HEAD:main; }
+          OUT="$PWD/out"
+          for B in main $DEFAULT_BRANCH; do
+            [ -d "repo-$B" ] && continue
+            git clone -q --depth 1 --branch "$B" "$REPO_URL" "repo-$B"
+            cd "repo-$B"
+            if [ -f desktop/update_formula.py ] && [ -f Formula/anything-converter.rb ]; then
+              python3 desktop/update_formula.py "$V" "$OUT" > /dev/null
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add Formula/anything-converter.rb
+              git diff --cached --quiet || { git commit -q -m "Homebrew: anything-converter $V"; git push -q origin "HEAD:$B"; }
+              echo "formule bijgewerkt op $B"
+            fi
+            cd ..
+          done
 
   homebrew:
     name: Homebrew-test (${{ matrix.os }})
@@ -274,6 +283,8 @@ jobs:
         run: |
           if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; fi
           brew tap wikidave/anything-converter https://github.com/WikiDave/The-Anything-Converter
+          # Nieuwere Homebrew laadt formules uit taps van buiten pas na 'brew trust'
+          if brew commands | grep -qx trust; then brew trust wikidave/anything-converter; fi
           brew install wikidave/anything-converter/anything-converter
           anything-converter-tui --version
           brew test anything-converter

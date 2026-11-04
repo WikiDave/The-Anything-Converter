@@ -1,6 +1,7 @@
 # Homebrew-formule voor de terminalversie van Anything Converter.
 # Installeren:
 #   brew tap wikidave/anything-converter https://github.com/WikiDave/The-Anything-Converter
+#   brew trust wikidave/anything-converter   (nieuwere Homebrew: taps van buiten moet je vertrouwen)
 #   brew install anything-converter
 # De release-workflow werkt versie en sha256 hieronder automatisch bij (desktop/update_formula.py).
 class AnythingConverter < Formula

@@ -48,6 +48,7 @@ programmamenu. Of typ zelf:
 
 ```
 brew tap wikidave/anything-converter https://github.com/WikiDave/The-Anything-Converter
+brew trust wikidave/anything-converter
 brew install anything-converter
 anything-converter-tui
 ```
