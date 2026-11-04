@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Anything Converter</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>The Anything Converter</h1>
+    <p class="sub">Converteer, verklein, vergroot en knip elk bestand — alles blijft op je eigen computer.</p>
+  </header>
+
+  <!-- Stap 1: bestand kiezen -->
+  <section id="drop" class="drop" tabindex="0">
+    <input id="fileInput" type="file" hidden>
+    <div class="drop-inner">
+      <div class="drop-icon" aria-hidden="true">⇪</div>
+      <p><strong>Sleep een bestand hierheen</strong> of klik om te kiezen</p>
+      <p class="muted">Video · audio · afbeeldingen · PDF · Word/Excel/PowerPoint · tekst · archieven</p>
+    </div>
+    <div id="uploadBar" class="bar hidden"><span></span></div>
+  </section>
+
+  <!-- Stap 2: opties -->
+  <section id="panel" class="panel hidden">
+    <div class="file-card">
+      <div>
+        <div id="fName" class="fname"></div>
+        <div id="fMeta" class="muted"></div>
+      </div>
+      <button id="resetBtn" class="ghost" type="button">Ander bestand</button>
+    </div>
+
+    <div class="grid">
+      <label class="field">
+        <span>Uitvoerformaat</span>
+        <select id="format"></select>
+      </label>
+
+      <div class="field" id="sizeField">
+        <span>Bestandsgrootte</span>
+        <div class="seg" role="radiogroup">
+          <label><input type="radio" name="sizeMode" value="quality" checked><span>Kwaliteit</span></label>
+          <label><input type="radio" name="sizeMode" value="target"><span>Doelgrootte</span></label>
+        </div>
+      </div>
+    </div>
+
+    <div id="qualityBox" class="box">
+      <div class="seg wide" role="radiogroup">
+        <label><input type="radio" name="quality" value="high"><span>Hoog<small>groter bestand</small></span></label>
+        <label><input type="radio" name="quality" value="medium" checked><span>Normaal</span></label>
+        <label><input type="radio" name="quality" value="low"><span>Laag<small>kleinst bestand</small></span></label>
+      </div>
+    </div>
+
+    <div id="targetBox" class="box hidden">
+      <div class="row">
+        <input id="targetSize" type="number" min="0" step="any" placeholder="bijv. 8" inputmode="decimal">
+        <select id="targetUnit">
+          <option value="kb">KB</option>
+          <option value="mb" selected>MB</option>
+          <option value="gb">GB</option>
+        </select>
+      </div>
+      <div class="chips" id="sizeChips">
+        <button type="button" data-f="0.1">10%</button>
+        <button type="button" data-f="0.25">25%</button>
+        <button type="button" data-f="0.5">50%</button>
+        <button type="button" data-f="2">2× groter</button>
+        <button type="button" data-abs="8">8 MB</button>
+        <button type="button" data-abs="25">25 MB</button>
+      </div>
+      <p class="muted small" id="targetHint"></p>
+    </div>
+
+    <!-- Video-specifiek -->
+    <div id="videoBox" class="box hidden">
+      <div class="grid">
+        <label class="field">
+          <span>Resolutie</span>
+          <select id="height">
+            <option value="">Origineel / automatisch</option>
+            <option value="2160">2160p (4K)</option>
+            <option value="1440">1440p</option>
+            <option value="1080">1080p</option>
+            <option value="720">720p</option>
+            <option value="480">480p</option>
+            <option value="360">360p</option>
+          </select>
+        </label>
+        <label class="check"><input id="removeAudio" type="checkbox"> Geluid verwijderen</label>
+      </div>
+    </div>
+
+    <!-- GIF-specifiek -->
+    <div id="gifBox" class="box hidden">
+      <div class="grid">
+        <label class="field"><span>Breedte (px)</span><input id="gifWidth" type="number" min="40" placeholder="480"></label>
+        <label class="field"><span>Frames per seconde</span><input id="gifFps" type="number" min="1" max="50" placeholder="12"></label>
+      </div>
+    </div>
+
+    <!-- Afbeelding-specifiek -->
+    <div id="imageBox" class="box hidden">
+      <span class="label">Afmetingen</span>
+      <div class="grid three">
+        <label class="field"><span>Schaal %</span><input id="scalePct" type="number" min="1" placeholder="100"></label>
+        <label class="field"><span>Breedte px</span><input id="imgW" type="number" min="1"></label>
+        <label class="field"><span>Hoogte px</span><input id="imgH" type="number" min="1"></label>
+      </div>
+      <p class="muted small">Gebruik een percentage, óf breedte en/of hoogte (met één waarde blijft de verhouding behouden). Leeg = origineel.</p>
+    </div>
+
+    <!-- Knippen -->
+    <div id="trimBox" class="box hidden">
+      <span class="label">Knippen</span>
+      <video id="preview" controls playsinline preload="metadata" class="hidden"></video>
+      <audio id="previewAudio" controls preload="metadata" class="hidden"></audio>
+      <div class="trim-track" id="trimTrack">
+        <div class="trim-sel" id="trimSel"></div>
+        <input type="range" id="rStart" min="0" max="1000" value="0" aria-label="Startpunt">
+        <input type="range" id="rEnd" min="0" max="1000" value="1000" aria-label="Eindpunt">
+      </div>
+      <div class="grid trim-fields">
+        <label class="field"><span>Start</span>
+          <div class="row"><input id="trimStart" placeholder="0:00"><button type="button" class="ghost" id="setStart" title="Huidige positie als start">⇤ hier</button></div>
+        </label>
+        <label class="field"><span>Einde</span>
+          <div class="row"><input id="trimEnd" placeholder="einde"><button type="button" class="ghost" id="setEnd" title="Huidige positie als einde">hier ⇥</button></div>
+        </label>
+      </div>
+      <p class="muted small">Geselecteerd: <strong id="trimLen">–</strong>. Tijden als <code>1:23.5</code> of in seconden.</p>
+      <label class="check"><input id="fastTrim" type="checkbox"> Snel knippen zonder hercoderen <small class="muted">(supersnel, knipt op het dichtstbijzijnde keyframe)</small></label>
+    </div>
+
+    <div class="actions">
+      <button id="goBtn" class="primary" type="button">Start</button>
+    </div>
+
+    <div id="progress" class="hidden">
+      <div class="bar"><span id="progBar"></span></div>
+      <p id="progMsg" class="muted"></p>
+    </div>
+
+    <div id="result" class="result hidden"></div>
+  </section>
+
+  <footer class="muted small">Bestanden worden na 1 uur automatisch verwijderd van de server.</footer>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

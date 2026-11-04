@@ -1,0 +1,92 @@
+"""Archieven en overige bestanden: inpakken, omzetten tussen archiefformaten, comprimeren."""
+from __future__ import annotations
+
+import shutil
+import tarfile
+import zipfile
+from pathlib import Path
+from typing import Optional
+
+from .detect import extension
+from .util import ConversionError, ProgressFn, human_size
+
+TAR_MODES = {"tar": "w", "tar.gz": "w:gz", "tar.bz2": "w:bz2", "tar.xz": "w:xz"}
+
+
+def _is_archive(src: Path) -> bool:
+    return zipfile.is_zipfile(src) or tarfile.is_tarfile(src)
+
+
+def _safe_extract(src: Path, dest: Path) -> None:
+    dest = dest.resolve()
+    if zipfile.is_zipfile(src):
+        with zipfile.ZipFile(src) as z:
+            for m in z.infolist():
+                target = (dest / m.filename).resolve()
+                if not target.is_relative_to(dest):
+                    raise ConversionError("Archief bevat onveilige paden.")
+            z.extractall(dest)
+    else:
+        with tarfile.open(src) as t:
+            t.extractall(dest, filter="data")
+
+
+def _pack(items: list[Path], base: Path, dst: Path, fmt: str, level: int) -> None:
+    if fmt == "zip":
+        with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED, compresslevel=level) as z:
+            for item in items:
+                if item.is_dir():
+                    for f in sorted(item.rglob("*")):
+                        z.write(f, f.relative_to(base))
+                else:
+                    z.write(item, item.relative_to(base))
+    elif fmt in TAR_MODES:
+        kw = {} if fmt == "tar" else ({"preset": level} if fmt == "tar.xz" else {"compresslevel": max(level, 1)})
+        with tarfile.open(dst, TAR_MODES[fmt], **kw) as t:
+            for item in items:
+                t.add(item, arcname=str(item.relative_to(base)))
+    else:
+        raise ConversionError(f"Archiefformaat .{fmt} wordt niet ondersteund.")
+
+
+def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn] = None) -> Path:
+    fmt = (opts.get("format") or "zip").lower()
+    level = {"high": 6, "medium": 9, "low": 9}.get(opts.get("quality") or "medium", 9)
+    src_ext = extension(src)
+    stem = src.name[: -(len(src_ext) + 1)] if src_ext else src.name
+    if progress:
+        progress(0.1, "Inpakken")
+
+    if _is_archive(src) and src_ext in ("zip", "tar", "tar.gz", "tar.bz2", "tar.xz", "tgz", "gz", "bz2", "xz"):
+        work = out_dir / "_extract"
+        work.mkdir(exist_ok=True)
+        _safe_extract(src, work)
+        items = sorted(work.iterdir())
+        base = work
+        name = stem.removesuffix(".tar")
+    else:
+        items = [src]
+        base = src.parent
+        name = src.name
+
+    dst = out_dir / f"{name}.{fmt}"
+    if dst.resolve() == src.resolve():
+        dst = out_dir / f"{name}_bewerkt.{fmt}"
+    _pack(items, base, dst, fmt, level)
+
+    # Bij een doelgrootte: probeer sterkere compressie voordat we opgeven.
+    target = opts.get("target_bytes")
+    if target and dst.stat().st_size > target:
+        for alt in ("tar.xz",):
+            if fmt != alt:
+                cand = out_dir / f"{name}.{alt}"
+                _pack(items, base, cand, alt, 9)
+                if cand.stat().st_size <= target:
+                    dst.unlink()
+                    return cand
+                cand.unlink()
+        raise ConversionError(
+            f"Verliesvrij inpakken haalt {human_size(dst.stat().st_size)}, niet {human_size(target)}. "
+            "Dit bestandstype is al gecomprimeerd; alleen media/PDF's kunnen verder verkleind worden.")
+    shutil.rmtree(out_dir / "_extract", ignore_errors=True)
+    return dst
