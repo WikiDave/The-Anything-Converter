@@ -110,6 +110,7 @@ input::placeholder, textarea::placeholder { font-family: var(--mono); }
 .drop p { margin: 6px 0; }
 .drop .big { font-size: 16px; font-weight: 700; color: var(--hi); margin-top: 14px; }
 .sample-row { margin-top: 12px; text-align: center; }
+.link-note { margin: 10px 0 0; text-align: center; }
 
 .frame {
   margin: 0 0 18px; padding: 14px 16px 16px; min-width: 0;
@@ -289,7 +290,7 @@ select option { background: var(--bg); color: var(--fg); }
 <main class="wrap">
   <div class="topline">
     <span>ANYTHING CONVERTER (TM)</span>
-    <span class="dim">VER 2.0 · BROWSER</span>
+    <span class="dim">VER 2.1 · BROWSER</span>
     <span class="dim hide-sm">GEEN UPLOAD</span>
     <span class="skins" role="group" aria-label="Kleurthema">
       <button type="button" data-skin="groen" aria-pressed="true">[GROEN]</button>
@@ -344,6 +345,7 @@ select option { background: var(--bg); color: var(--fg); }
     <div class="sample-row">
       <button id="sampleBtn" class="btn" type="button">[ PROBEER MET 3 TESTBEELDEN ]</button>
     </div>
+    <p class="dim small link-note">// youtube- en andere video-links ophalen kan alleen in de lokale versie (de python-app op je computer).<br>// een website mag geen video's van andere sites binnenhalen.</p>
   </section>
 
   <section id="panel" hidden>
