@@ -5,6 +5,7 @@ Start:  python app.py   en open http://localhost:8000
 from __future__ import annotations
 
 import os
+import sys
 import tempfile
 import uuid
 from pathlib import Path
@@ -22,7 +23,10 @@ from converter.util import ConversionError, parse_size
 BASE = Path(os.environ.get("CONVERTER_BASE") or Path(__file__).parent)
 DESKTOP = os.environ.get("CONVERTER_DESKTOP") == "1"
 def _read_version() -> str:
-    for cand in (BASE / "VERSION", Path(__file__).parent / "VERSION"):
+    exe = Path(sys.executable).resolve().parent
+    # macOS-app: bestanden kunnen in Contents/MacOS of Contents/Resources staan
+    for cand in (BASE / "VERSION", Path(__file__).parent / "VERSION", exe / "VERSION",
+                 exe.parent / "Resources" / "VERSION"):
         try:
             return cand.read_text().strip()
         except OSError:
