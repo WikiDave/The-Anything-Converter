@@ -21,11 +21,12 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(ROOT))  # zodat app.py en converter/ gevonden worden
 
-VERSION = "2.1.0"
+# Eén bron voor het versienummer; de workflow schrijft het bij een release.
+VERSION = (ROOT / "VERSION").read_text().strip()
 NAME = "Anything Converter"
 ICONS = HERE / "icons"
 
-include_files = [(str(ROOT / "static"), "static"), (str(ROOT / "vendor"), "vendor")]
+include_files = [(str(ROOT / "static"), "static"), (str(ROOT / "vendor"), "vendor"), (str(ROOT / "VERSION"), "VERSION")]
 for name in ("index.html", "favicon.svg", "favicon.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png",
              "manifest.webmanifest"):
     include_files.append((str(ROOT / name), name))
