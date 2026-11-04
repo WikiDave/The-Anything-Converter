@@ -49,6 +49,22 @@ De browser opent vanzelf op <http://localhost:8000>.
 4. Bij video/audio: knip met de schuifregelaars of de knoppen *hier* tijdens het afspelen.
 5. Klik **Start** en download het resultaat. Je ziet direct hoeveel kleiner/groter het is geworden.
 
+## Video ophalen via een link (alleen lokale versie)
+
+Onder het sleepvak staat **OF PLAK EEN LINK**: plak een link van YouTube, Vimeo of een van de
+[vele andere sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md) en klik
+**[ OPHALEN ]**. De video (of met *Alleen geluid* alleen de audio) komt direct in de converter,
+zodat je kunt knippen, verkleinen of omzetten, of met **[ ↓ OPSLAAN ]** het origineel bewaart.
+
+- Werkt met [yt-dlp](https://github.com/yt-dlp/yt-dlp) (staat in `requirements.txt`). Voor YouTube
+  heeft yt-dlp een JavaScript-runtime nodig: installeer [Deno](https://deno.com) (`brew install deno`,
+  `winget install DenoLand.Deno`). In Docker zit Deno er al in.
+- Sites veranderen vaak; werkt een link niet meer, werk yt-dlp bij: `pip install -U "yt-dlp[default]"`.
+- Alleen voor je eigen video's, video's met een vrije licentie (bijv. Creative Commons) of met
+  toestemming van de maker. Downloaden van andermans video's kan tegen de voorwaarden van de site
+  en het auteursrecht ingaan.
+- In de browser-versie (GitHub Pages) kan dit niet: een webpagina mag geen video's van andere sites ophalen.
+
 ## Instellingen (omgevingsvariabelen)
 
 | Variabele | Standaard | Betekenis |

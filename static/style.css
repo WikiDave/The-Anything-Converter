@@ -1,5 +1,8 @@
+@font-face { font-family: "AC Mono"; font-weight: 400; font-style: normal; font-display: block; src: url("/static/fonts/ac-mono-Regular.woff2") format("woff2"); }
+@font-face { font-family: "AC Mono"; font-weight: 700; font-style: normal; font-display: block; src: url("/static/fonts/ac-mono-Bold.woff2") format("woff2"); }
 /* ASCII / terminal UI */
 :root, [data-theme="groen"] {
+  --mono: "AC Mono", ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
   --bg: #000000;
   --panel: #000000;
   --fg: #a6ff5c;
@@ -37,7 +40,7 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--fg);
-  font: 14px/1.55 "JetBrains Mono", "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  font: 14px/1.55 var(--mono);
   text-shadow: 0 0 6px var(--glow);
   -webkit-font-smoothing: antialiased;
 }
@@ -47,6 +50,12 @@ body {
 .small { font-size: 12px; }
 em { font-style: normal; color: var(--dim); }
 pre { margin: 0; font: inherit; }
+/* Eén lettertype voor alles, ook formulieren en knoppen */
+html, body, button, input, select, textarea, option, optgroup, legend, label, pre, code, kbd, samp, dl, dd, dt {
+  font-family: var(--mono);
+}
+input::placeholder, textarea::placeholder { font-family: var(--mono); }
+
 
 /* achtergrond: binaire ruis + scanlines */
 .wrap { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 20px 16px 40px; }
@@ -128,7 +137,7 @@ pre { margin: 0; font: inherit; }
 
 /* invoer */
 input, select, button { font: inherit; color: inherit; text-shadow: inherit; }
-input[type=number], input:not([type]), select {
+input[type=number], input[type=text], input:not([type]), select {
   width: 100%; min-width: 0; padding: 7px 10px;
   background: var(--bg); color: var(--hi);
   border: 1px solid var(--dim); border-radius: 0; caret-color: var(--fg);
@@ -219,6 +228,13 @@ audio { background: transparent; filter: invert(1) grayscale(1) contrast(.9); }
 .result .download:hover, .result .download:focus-visible { outline: none; background: var(--fg); color: var(--bg); text-shadow: none; }
 .result.error { border-color: var(--err); color: var(--err); box-shadow: 0 0 14px color-mix(in srgb, var(--err) 35%, transparent); white-space: pre-wrap; }
 .result.error .head { background: var(--err); }
+
+.url-form { margin-top: 18px; }
+.url-form .row { margin-bottom: 4px; }
+.url-form .row input { flex: 1; }
+#urlMsg.err { color: var(--err); }
+.file-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+a.btn { text-decoration: none; display: inline-block; }
 
 .statusline {
   display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px;
