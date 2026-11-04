@@ -238,6 +238,36 @@ select option { background: var(--bg); color: var(--fg); }
   .q-act { grid-column: 3; grid-row: 1; }
 }
 
+/* tabs + pdf-werkbank */
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+.tabs button {
+  background: none; border: 1px solid var(--dim); color: var(--dim); padding: 8px 14px; cursor: pointer;
+  font-weight: 700; letter-spacing: .08em; text-shadow: none;
+}
+.tabs button:hover, .tabs button:focus-visible { outline: none; border-color: var(--fg); color: var(--fg); }
+.tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); box-shadow: 0 0 10px var(--glow); }
+.pg-toolbar { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 4px; }
+.pg-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 12px;
+  max-height: 580px; overflow-y: auto; padding: 4px 2px; margin-top: 10px;
+}
+.pg { border: 1px dashed var(--dim); padding: 6px; display: flex; flex-direction: column; gap: 4px; cursor: grab; min-width: 0; }
+.pg.sel { border: 1px solid var(--fg); box-shadow: 0 0 10px var(--glow); background: color-mix(in srgb, var(--fg) 8%, transparent); }
+.pg.dragging { opacity: .35; }
+.pg.drop-before { box-shadow: -5px 0 0 var(--fg); }
+.pg-face { background: none; border: 0; padding: 0; cursor: pointer; width: 100%; }
+.pg-face:focus-visible { outline: 1px dashed var(--fg); outline-offset: 2px; }
+.pg-img { display: flex; align-items: center; justify-content: center; height: 156px; background: #0d0d0d; color: var(--dim); overflow: hidden; }
+.pg-img canvas { display: block; box-shadow: 0 0 0 1px #333; transition: transform .15s; }
+@media (prefers-reduced-motion: reduce) { .pg-img canvas { transition: none; } }
+.pg-cap { display: flex; gap: 6px; font-size: 11px; min-width: 0; }
+.pg-no { color: var(--hi); }
+.pg-src { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-tools { display: flex; justify-content: space-between; }
+.pg-tools button { background: none; border: 0; color: var(--fg); cursor: pointer; padding: 2px 5px; font-size: 13px; }
+.pg-tools button:hover, .pg-tools button:focus-visible { outline: none; background: var(--fg); color: var(--bg); text-shadow: none; }
+#wmRow { margin: 0 0 8px; }
+
 .statusline {
   display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px;
   margin-top: 26px; padding-top: 10px; border-top: 1px solid var(--faint); font-size: 12px;
@@ -300,7 +330,7 @@ select option { background: var(--bg); color: var(--fg); }
    └───────────┘</pre>
       <p class="big">&gt; SLEEP BESTANDEN HIERHEEN<span class="cursor">_</span></p>
       <p class="dim">één of meerdere tegelijk · [ENTER] / klik om te bladeren</p>
-      <p class="dim small">video: mp4 · mov · webm · mkv &nbsp;|&nbsp; audio: mp3 · wav · m4a · ogg · flac<br>afbeelding: jpg · png · webp · gif · bmp · avif · svg &nbsp;|&nbsp; overig: inpakken als zip</p>
+      <p class="dim small">video: mp4 · mov · webm · mkv &nbsp;|&nbsp; audio: mp3 · wav · m4a · ogg · flac<br>afbeelding: jpg · png · webp · gif · bmp · avif · svg &nbsp;|&nbsp; pdf: samenvoegen · splitsen · comprimeren</p>
     </label>
     <div class="sample-row">
       <button id="sampleBtn" class="btn" type="button">[ PROBEER MET 3 TESTBEELDEN ]</button>
@@ -319,6 +349,91 @@ select option { background: var(--bg); color: var(--fg); }
       </div>
     </fieldset>
 
+    <div class="tabs" role="tablist" aria-label="Werkwijze">
+      <button type="button" role="tab" data-mode="convert" aria-selected="true">[ CONVERTEREN ]</button>
+      <button type="button" role="tab" data-mode="pdf" aria-selected="false">[ PDF-WERKBANK ]</button>
+    </div>
+
+    <div class="mode-pdf" hidden>
+      <fieldset class="frame">
+        <legend id="pagesTitle">PAGINA'S</legend>
+        <div class="pg-toolbar">
+          <button id="pgSelAll" class="btn small" type="button">[ ALLES SELECTEREN ]</button>
+          <button id="pgRotCcw" class="btn small" type="button">[ ↺ DRAAI ]</button>
+          <button id="pgRotCw" class="btn small" type="button">[ ↻ DRAAI ]</button>
+          <button id="pgDel" class="btn small" type="button">[ ✕ VERWIJDER SELECTIE ]</button>
+          <button id="pgKeep" class="btn small" type="button">[ HOUD ALLEEN SELECTIE ]</button>
+          <button id="pgReverse" class="btn small" type="button">[ ⇅ OMKEREN ]</button>
+          <button id="pgReset" class="btn small" type="button">[ HERSTEL ]</button>
+        </div>
+        <p class="dim small"><span id="selInfo"></span> // sleep pagina's om te ordenen. draaien geldt voor de selectie, of voor alles als er niets geselecteerd is.</p>
+        <div id="pageGrid" class="pg-grid"></div>
+        <p id="pdfSkip" class="dim small" hidden></p>
+      </fieldset>
+
+      <fieldset class="frame">
+        <legend>UITVOER</legend>
+        <div class="radios" role="radiogroup" aria-label="Uitvoer">
+          <label><input type="radio" name="pdfOut" id="outOne" value="one" checked><span>Eén PDF <em>samenvoegen</em></span></label>
+          <label><input type="radio" name="pdfOut" id="outEach" value="each"><span>Elke pagina apart</span></label>
+          <label><input type="radio" name="pdfOut" id="outRanges" value="ranges"><span>Splitsen per bereik</span></label>
+        </div>
+        <div class="grid sub">
+          <label class="field" id="rangeRow" hidden><span>BEREIKEN&gt;</span><input id="pdfRanges" type="text" placeholder="1-3, 4-6, 7-"></label>
+          <label class="field"><span>BESTANDSNAAM&gt;</span><input id="pdfName" type="text" placeholder="samengevoegd"></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="frame" id="photoBox" hidden>
+        <legend>FOTO'S</legend>
+        <div class="grid three">
+          <label class="field"><span>PAPIER&gt;</span><span class="sel"><select id="photoPaper">
+            <option value="a4">A4</option><option value="letter">Letter</option><option value="a5">A5</option>
+            <option value="fit">zelfde als foto</option></select></span></label>
+          <label class="field"><span>RICHTING&gt;</span><span class="sel"><select id="photoOrient">
+            <option value="auto">automatisch</option><option value="portrait">staand</option><option value="landscape">liggend</option></select></span></label>
+          <label class="field"><span>MARGE&gt;</span><span class="sel"><select id="photoMargin">
+            <option value="0">geen</option><option value="18">klein</option><option value="36" selected>normaal</option><option value="54">ruim</option></select></span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="frame">
+        <legend>EXTRA</legend>
+        <label class="check"><input id="pnOn" type="checkbox"><span>Paginanummers toevoegen</span></label>
+        <div class="grid" id="pnRow" hidden>
+          <label class="field"><span>POSITIE&gt;</span><span class="sel"><select id="pnPos">
+            <option value="bc">onder midden</option><option value="br">onder rechts</option>
+            <option value="tc">boven midden</option><option value="tr">boven rechts</option></select></span></label>
+          <label class="field"><span>VORM&gt;</span><span class="sel"><select id="pnFormat">
+            <option value="n">1</option><option value="of">1 / 10</option><option value="pagina">Pagina 1</option></select></span></label>
+        </div>
+        <label class="check"><input id="wmOn" type="checkbox"><span>Watermerk</span></label>
+        <div class="row" id="wmRow" hidden><span class="prompt">TEKST&gt;</span><input id="wmText" type="text" value="CONCEPT" aria-label="Watermerktekst"></div>
+        <div class="grid sub">
+          <label class="field"><span>TITEL&gt;</span><input id="pdfTitle" type="text" placeholder="optioneel"></label>
+          <label class="field"><span>AUTEUR&gt;</span><input id="pdfAuthor" type="text" placeholder="optioneel"></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="frame">
+        <legend>COMPRIMEREN</legend>
+        <div class="grid">
+          <label class="field"><span>NIVEAU&gt;</span><span class="sel"><select id="pdfCompress">
+            <option value="none">geen · tekst blijft selecteerbaar</option>
+            <option value="light">licht · 150 dpi</option>
+            <option value="strong">sterk · 96 dpi</option>
+            <option value="target">doelgrootte</option></select></span></label>
+          <div class="row" id="pdfTargetRow" hidden>
+            <span class="prompt">DOEL&gt;</span>
+            <input id="pdfTarget" type="number" min="0" step="any" placeholder="2" aria-label="Doelgrootte PDF">
+            <span class="sel unit"><select id="pdfTargetUnit" aria-label="Eenheid"><option value="kb">KB</option><option value="mb" selected>MB</option></select></span>
+          </div>
+        </div>
+        <p class="dim small">// comprimeren zet de pagina's om naar afbeeldingen; tekst is daarna niet meer te selecteren.</p>
+      </fieldset>
+    </div>
+
+    <div class="mode-convert">
     <fieldset class="frame">
       <legend>FORMAAT</legend>
       <div id="formatRows" class="format-rows"></div>
@@ -420,6 +535,7 @@ select option { background: var(--bg); color: var(--fg); }
       <p class="dim small">SELECTIE: <strong id="trimLen">–</strong> // tijden als 1:23.5 of in seconden</p>
     </fieldset>
     <p id="trimNote" class="dim small trim-note" hidden>// knippen kan per bestand: houd één video of audiobestand in de lijst over.</p>
+    </div>
 
     <button id="goBtn" class="go" type="button">[ ▶ START ]</button>
 
@@ -455,18 +571,21 @@ const EXT = {
   video: new Set(["mp4", "m4v", "mov", "webm", "mkv", "ts", "mts", "ogv"]),
   audio: new Set(["mp3", "wav", "m4a", "aac", "ogg", "oga", "opus", "flac"]),
   image: new Set(["jpg", "jpeg", "jfif", "png", "webp", "gif", "bmp", "avif", "svg", "ico", "heic", "heif"]),
+  pdf: new Set(["pdf"]),
   unsupportedVideo: new Set(["avi", "wmv", "flv", "mpg", "mpeg", "3gp", "vob"]),
 };
 const TARGETS = {
   video: ["mp4", "webm", "gif", "mp3", "m4a", "wav"],
   audio: ["mp3", "m4a", "ogg", "wav", "webm"],
   image: ["jpg", "png", "webp", "gif", "pdf", "bmp", "ico"],
+  pdf: ["pdf", "jpg", "png", "txt"],
   other: ["zip"],
 };
-const LABEL = { video: "Video", audio: "Audio", image: "Afbeelding", other: "Overig" };
-const CAT_ORDER = ["video", "audio", "image", "other"];
+const LABEL = { video: "Video", audio: "Audio", image: "Afbeelding", pdf: "PDF", other: "Overig" };
+const CAT_ORDER = ["video", "audio", "image", "pdf", "other"];
 const AUDIO_OUT = new Set(["mp3", "m4a", "ogg", "wav"]);
 const NO_TARGET = new Set(["wav", "bmp", "ico"]);
+const hasTarget = (c, f) => (c === "pdf" ? f === "pdf" : !NO_TARGET.has(f));
 
 // De converters hieronder werken op "het huidige bestand"; processItem() zet deze per bestand.
 let file = null, cat = null, ext = "", info = {}, duration = 0;
@@ -559,6 +678,7 @@ $("sampleBtn").addEventListener("click", async () => {
 function categorize(f) {
   const e = extOf(f.name);
   if (EXT.unsupportedVideo.has(e)) return "other";
+  if (e === "pdf" || f.type === "application/pdf") return "pdf";
   if (EXT.video.has(e) || (f.type.startsWith("video/") && !EXT.audio.has(e))) return "video";
   if (EXT.audio.has(e) || f.type.startsWith("audio/")) return "audio";
   if (EXT.image.has(e) || f.type.startsWith("image/")) return "image";
@@ -577,17 +697,20 @@ async function addFiles(list) {
   if (!fresh.length) return;
   staleResult();
   showPanel();
+  // PDF's erbij? Dan meteen naar de werkbank.
+  if (mode === "convert" && fresh.some((it) => it.cat === "pdf")) setMode("pdf");
   for (const it of fresh) {
     try {
       if (it.cat === "video" || it.cat === "audio") await probeMedia(it);
       if (it.cat === "image") await probeImage(it);
+      if (it.cat === "pdf") it.info = { pages: (await openPdfJs(it.file)).numPages };
     } catch (err) {
       console.warn(err);
-      it.msg = "Je browser kan dit bestand niet openen; het wordt ingepakt als zip.";
+      it.msg = err instanceof UserError ? err.message + " Het wordt ingepakt als zip." : "Je browser kan dit bestand niet openen; het wordt ingepakt als zip.";
       it.cat = "other"; it.info = {}; it.duration = 0;
     }
     it.state = "ready";
-    renderQueue(); refresh();
+    renderQueue(); refresh(); syncPages();
   }
   status(`${items.length} ${items.length === 1 ? "bestand" : "bestanden"} geladen`);
 }
@@ -639,6 +762,7 @@ function renderQueue() {
     const meta = [LABEL[it.cat].toUpperCase(), human(it.file.size)];
     if (it.info.width) meta.push(`${it.info.width}×${it.info.height}`);
     if (it.duration) meta.push(fmtTime(it.duration));
+    if (it.info.pages) meta.push(it.info.pages + (it.info.pages === 1 ? " pagina" : " pagina's"));
     li.innerHTML = `<span class="q-idx">${String(i + 1).padStart(2, "0")}</span><span class="q-name"></span>` +
       `<span class="q-meta"></span><span class="q-status"></span><span class="q-act"></span>`;
     li.querySelector(".q-name").textContent = it.file.name;
@@ -677,7 +801,7 @@ function updateRow(it) {
 }
 function staleResult() {
   $("result").hidden = true;
-  $("goBtn").textContent = "[ ▶ START ]";
+  $("goBtn").textContent = mode === "pdf" ? "[ ▶ MAAK PDF ]" : "[ ▶ START ]";
   for (const x of items) if (x.state === "done" || x.state === "error") { x.state = "ready"; x.out = null; x.err = ""; }
 }
 function removeItem(it) {
@@ -685,11 +809,12 @@ function removeItem(it) {
   staleResult();
   items.splice(items.indexOf(it), 1);
   if (!items.length) return resetAll();
-  renderQueue(); refresh();
+  renderQueue(); refresh(); syncPages();
 }
 function resetAll() {
   if (busy) return;
   items.length = 0;
+  pages = [];
   try { $("preview").pause(); $("previewAudio").pause(); } catch {}
   $("panel").hidden = true; $("dropWrap").hidden = false;
   $("result").hidden = true; $("progress").hidden = true;
@@ -760,7 +885,7 @@ function refresh() {
   renderFormats();
   const fmts = cats().map((c) => chosen[c]);
   const anyVideo = items.some((it) => it.cat === "video");
-  const sizeable = fmts.some((f) => !NO_TARGET.has(f));
+  const sizeable = cats().some((c) => hasTarget(c, chosen[c]));
   $("modeTarget").disabled = !sizeable;
   if (!sizeable && $("modeTarget").checked) $("modeQuality").checked = true;
   const target = radio("sizeMode") === "target";
@@ -775,7 +900,7 @@ function refresh() {
   $("trimNote").hidden = mediaSingle || !items.some((x) => x.cat === "video" || x.cat === "audio");
   setupPreview();
 
-  const skipped = fmts.filter((f) => NO_TARGET.has(f));
+  const skipped = cats().filter((c) => !hasTarget(c, chosen[c])).map((c) => chosen[c]);
   let hint = items.length > 1 ? "Geldt per bestand. Met % krijgt elk bestand een doel naar verhouding van zijn eigen grootte." :
     "Groter dan het origineel kan ook: bitrate, kwaliteit of resolutie gaan dan omhoog.";
   if (skipped.length) hint += ` Voor .${skipped.join(", .")} geldt geen doelgrootte.`;
@@ -868,7 +993,7 @@ function optsFor(it, s) {
   const start = s.trim?.start || 0;
   const end = s.trim?.end != null ? Math.min(s.trim.end, it.duration || s.trim.end) : it.duration;
   opts.start = start; opts.end = end;
-  if (!NO_TARGET.has(fmt)) {
+  if (hasTarget(it.cat, fmt)) {
     if (s.targetAbs) opts.target = s.targetAbs;
     if (s.targetPct) {
       const frac = it.duration && end ? (end - start) / it.duration : 1;
@@ -881,6 +1006,7 @@ function optsFor(it, s) {
 $("goBtn").addEventListener("click", async () => {
   if (!items.length || busy) return;
   if (items.some((it) => it.state === "reading")) return showError("Even wachten: nog niet alle bestanden zijn gelezen.");
+  if (mode === "pdf") return runWorkbenchClick();
   let s;
   try { s = readSettings(); } catch (err) { return showError(err.message); }
 
@@ -913,6 +1039,24 @@ $("goBtn").addEventListener("click", async () => {
   showSummary();
 });
 
+async function runWorkbenchClick() {
+  busy = true;
+  $("goBtn").disabled = true; $("goBtn").textContent = "[ BEZIG... ]";
+  $("addBtn").disabled = true; $("resetBtn").disabled = true;
+  $("result").hidden = true; $("progress").hidden = false;
+  step(4); setProgress(0, "PDF opbouwen");
+  try {
+    showPdfResult(await runPdfWorkbench());
+  } catch (err) {
+    console.error(err);
+    showError(err instanceof UserError ? err.message : "Er ging iets mis: " + (err?.message || err));
+  } finally {
+    busy = false;
+    $("goBtn").disabled = false; $("goBtn").textContent = "[ ▶ MAAK PDF ]";
+    $("addBtn").disabled = false; $("resetBtn").disabled = false;
+  }
+}
+
 async function processItem(it, opts) {
   // zet het "huidige bestand" voor de converters
   file = it.file; cat = it.cat; ext = it.ext; info = it.info; duration = it.duration;
@@ -920,6 +1064,7 @@ async function processItem(it, opts) {
     let out;
     if (cat === "image") out = await convertImage(opts);
     else if (cat === "other") out = await zipFile(opts);
+    else if (cat === "pdf") out = await convertPdf(opts);
     else if (opts.fmt === "gif") out = await videoToGif(opts);
     else out = await convertMedia(opts);
     out.target = opts.target;
@@ -941,6 +1086,10 @@ function setProgress(f, msg) {
     $("progBar").textContent = txtBar(total);
     $("progMsg").textContent = `> ${current.index + 1}/${n} ${current.it.file.name}: ${msg.toLowerCase()}...`;
     status(`${current.index + 1}/${n} ${msg.toLowerCase()} ${Math.round(f * 100)}%`);
+  } else {
+    $("progBar").textContent = txtBar(f);
+    $("progMsg").textContent = "> " + msg.toLowerCase() + "...";
+    status(msg.toLowerCase() + " " + Math.round(f * 100) + "%");
   }
 }
 
@@ -1408,6 +1557,495 @@ function showError(msg) {
   res.append(document.createTextNode(msg));
   res.hidden = false;
   status("fout - zie melding");
+}
+
+// ---------------------------------------------------------------- PDF: bibliotheken
+const PDF_CDN = {
+  lib: "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.esm.min.js",
+  js: "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs",
+  worker: "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs",
+};
+let pdfLibP = null, pdfJsP = null;
+const pdfLib = () => (pdfLibP ??= import(PDF_CDN.lib));
+function pdfJs() {
+  return (pdfJsP ??= (async () => {
+    // De worker draait in de hoofdthread: een worker van een andere host is niet toegestaan.
+    globalThis.pdfjsWorker ??= await import(PDF_CDN.worker);
+    const lib = await import(PDF_CDN.js);
+    lib.GlobalWorkerOptions.workerSrc = PDF_CDN.worker;
+    return lib;
+  })());
+}
+const pdfDocCache = new WeakMap(); // File -> pdf.js document
+async function openPdfJs(f) {
+  if (pdfDocCache.has(f)) return pdfDocCache.get(f);
+  const lib = await pdfJs();
+  const p = (async () => {
+    const data = new Uint8Array(await f.arrayBuffer());
+    try {
+      return await lib.getDocument({ data, isEvalSupported: false, useSystemFonts: true, verbosity: 0 }).promise;
+    } catch (err) {
+      if (err?.name === "PasswordException") fail("Deze PDF is beveiligd met een wachtwoord en kan niet geopend worden.");
+      throw err;
+    }
+  })();
+  pdfDocCache.set(f, p);
+  return p;
+}
+async function openPdfLib(bytesOrFile) {
+  const { PDFDocument } = await pdfLib();
+  const bytes = bytesOrFile instanceof Blob ? new Uint8Array(await bytesOrFile.arrayBuffer()) : bytesOrFile;
+  try {
+    return await PDFDocument.load(bytes, { updateMetadata: false });
+  } catch (err) {
+    if (/encrypt/i.test(err?.message || "")) fail("Deze PDF is versleuteld; bewerken kan alleen zonder beveiliging.");
+    throw err;
+  }
+}
+async function renderPdfPage(doc, n, scale, extraRotation = 0) {
+  const page = await doc.getPage(n);
+  const viewport = page.getViewport({ scale, rotation: (page.rotate + extraRotation) % 360 });
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.floor(viewport.width));
+  c.height = Math.max(1, Math.floor(viewport.height));
+  const g = c.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: g, viewport }).promise;
+  page.cleanup();
+  return c;
+}
+const canvasBlob = (c, type, q) => new Promise((res) => c.toBlob(res, type, q));
+
+// Rasteriseren = elke pagina als JPEG opnieuw opslaan. Maakt PDF's met veel beeld veel kleiner.
+async function rasterizePdf(blob, dpi, quality, label) {
+  const { PDFDocument } = await pdfLib();
+  const lib = await pdfJs();
+  const doc = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()), isEvalSupported: false, useSystemFonts: true, verbosity: 0 }).promise;
+  const out = await PDFDocument.create();
+  for (let n = 1; n <= doc.numPages; n++) {
+    setProgress((n - 1) / doc.numPages, label);
+    const page = await doc.getPage(n);
+    const vp = page.getViewport({ scale: 1, rotation: page.rotate });
+    const c = await renderPdfPage(doc, n, dpi / 72);
+    const jpg = await out.embedJpg(new Uint8Array(await (await canvasBlob(c, "image/jpeg", quality)).arrayBuffer()));
+    const p = out.addPage([vp.width, vp.height]);
+    p.drawImage(jpg, { x: 0, y: 0, width: vp.width, height: vp.height });
+  }
+  await doc.destroy();
+  return new Blob([await out.save()], { type: "application/pdf" });
+}
+const COMPRESS_STEPS = [[150, 0.8], [130, 0.72], [110, 0.65], [96, 0.55], [80, 0.48], [72, 0.4], [60, 0.32], [50, 0.25]];
+async function compressPdfTo(blob, target) {
+  let best = null;
+  for (let i = 0; i < COMPRESS_STEPS.length; i++) {
+    const [dpi, q] = COMPRESS_STEPS[i];
+    const b = await rasterizePdf(blob, dpi, q, `Comprimeren ${dpi} dpi (poging ${i + 1})`);
+    if (!best || b.size < best.size) best = b;
+    if (b.size <= target) return b;
+  }
+  fail(`Kleinst haalbaar: ${human(best.size)}. ${human(target)} lukt niet; verwijder pagina's of kies een groter doel.`);
+}
+
+// ---------------------------------------------------------------- PDF in de converteer-modus
+async function convertPdf(opts) {
+  const { fmt } = opts;
+  const name = stemOf(file.name);
+  if (fmt === "pdf") {
+    let blob;
+    if (opts.target) {
+      if (opts.target >= file.size) fail("Een PDF groter maken heeft geen zin; kies een doel kleiner dan het origineel.");
+      blob = await compressPdfTo(file, opts.target);
+    } else {
+      const [dpi, q] = { high: [200, 0.85], medium: [130, 0.72], low: [96, 0.55] }[opts.quality];
+      blob = await rasterizePdf(file, dpi, q, `Comprimeren (${dpi} dpi)`);
+      if (blob.size >= file.size) blob = file; // niet groter maken dan het origineel
+    }
+    return { blob, name: name + "_klein.pdf", kind: "file" };
+  }
+  const doc = await openPdfJs(file);
+  if (fmt === "txt") {
+    let text = "";
+    for (let n = 1; n <= doc.numPages; n++) {
+      setProgress(n / doc.numPages, "Tekst lezen");
+      const tc = await (await doc.getPage(n)).getTextContent();
+      text += tc.items.map((it) => (it.str || "") + (it.hasEOL ? "\n" : "")).join("") + `\n\n--- pagina ${n} ---\n\n`;
+    }
+    if (!text.replace(/--- pagina \d+ ---|\s/g, "")) fail("Deze PDF bevat geen tekst (waarschijnlijk gescand). Tekstherkenning (OCR) zit er niet in.");
+    return { blob: new Blob([text], { type: "text/plain" }), name: name + ".txt", kind: "file" };
+  }
+  // jpg / png per pagina
+  const dpi = { high: 200, medium: 150, low: 100 }[opts.quality];
+  const type = fmt === "png" ? "image/png" : "image/jpeg";
+  const pages = [];
+  for (let n = 1; n <= doc.numPages; n++) {
+    setProgress((n - 1) / doc.numPages, `Pagina ${n}/${doc.numPages} renderen`);
+    const c = await renderPdfPage(doc, n, dpi / 72);
+    pages.push({ name: `${name}-p${String(n).padStart(3, "0")}.${fmt}`, blob: await canvasBlob(c, type, 0.9) });
+  }
+  if (pages.length === 1) return { blob: pages[0].blob, name: name + "." + fmt, kind: "image" };
+  return { blob: await zipBlob(pages), name: `${name}-${pages.length}-paginas.zip`, kind: "file" };
+}
+
+// ---------------------------------------------------------------- PDF-werkbank
+let mode = "convert"; // "convert" | "pdf"
+let pages = [];       // { key, item, n (1-based of pdf), rot, canvas, sel }
+let pageKey = 1;
+let thumbJob = 0;
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.mode === m)));
+  document.querySelectorAll(".mode-convert").forEach((el) => (el.hidden = m !== "convert"));
+  document.querySelectorAll(".mode-pdf").forEach((el) => (el.hidden = m !== "pdf"));
+  $("result").hidden = true;
+  $("goBtn").textContent = m === "pdf" ? "[ ▶ MAAK PDF ]" : "[ ▶ START ]";
+  if (m === "pdf") syncPages();
+  else refresh();
+}
+document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => { if (!busy) setMode(b.dataset.mode); }));
+
+const pdfable = (it) => it.state !== "reading" && (it.cat === "pdf" || it.cat === "image");
+
+async function syncPages() {
+  if (mode !== "pdf") return;
+  pages = pages.filter((p) => items.includes(p.item) && pdfable(p.item));
+  for (const it of items) {
+    if (!pdfable(it) || pages.some((p) => p.item === it)) continue;
+    const count = it.cat === "pdf" ? it.info.pages || 0 : 1;
+    // nieuwe bestanden komen op hun plek in de lijstvolgorde
+    const after = pages.filter((p) => items.indexOf(p.item) < items.indexOf(it)).length;
+    const fresh = Array.from({ length: count }, (_, i) => ({ key: pageKey++, item: it, n: i + 1, rot: 0, canvas: null, sel: false }));
+    pages.splice(after, 0, ...fresh);
+  }
+  const skipped = items.filter((it) => !pdfable(it) && it.state !== "reading");
+  $("pdfSkip").hidden = !skipped.length;
+  $("pdfSkip").textContent = `// ${skipped.length} bestand(en) zijn geen PDF of afbeelding en tellen hier niet mee.`;
+  $("photoBox").hidden = !pages.some((p) => p.item.cat === "image");
+  renderPages();
+  renderThumbs();
+}
+
+function renderPages() {
+  const grid = $("pageGrid");
+  grid.innerHTML = "";
+  const selCount = pages.filter((p) => p.sel).length;
+  $("pagesTitle").textContent = `PAGINA'S (${pages.length})`;
+  $("selInfo").textContent = selCount ? `${selCount} geselecteerd` : "klik op pagina's om te selecteren";
+  if (!pages.length) {
+    grid.innerHTML = '<p class="dim">// geen PDF of afbeeldingen in de lijst. voeg ze toe met [ + TOEVOEGEN ].</p>';
+    return;
+  }
+  pages.forEach((p, i) => {
+    const card = document.createElement("div");
+    card.className = "pg" + (p.sel ? " sel" : "");
+    card.draggable = true;
+    card.dataset.key = p.key;
+    card.innerHTML = `<button type="button" class="pg-face" aria-pressed="${p.sel}"><span class="pg-img"></span></button>
+<div class="pg-cap"><span class="pg-no">${String(i + 1).padStart(2, "0")}</span><span class="pg-src"></span></div>
+<div class="pg-tools">
+  <button type="button" data-a="left" title="Naar voren" aria-label="Pagina ${i + 1} naar voren">◀</button>
+  <button type="button" data-a="ccw" title="Linksom draaien" aria-label="Pagina ${i + 1} linksom draaien">↺</button>
+  <button type="button" data-a="cw" title="Rechtsom draaien" aria-label="Pagina ${i + 1} rechtsom draaien">↻</button>
+  <button type="button" data-a="del" title="Verwijderen" aria-label="Pagina ${i + 1} verwijderen">✕</button>
+  <button type="button" data-a="right" title="Naar achteren" aria-label="Pagina ${i + 1} naar achteren">▶</button>
+</div>`;
+    card.querySelector(".pg-src").textContent = p.item.cat === "pdf" ? `${stemOf(p.item.file.name)} · p${p.n}` : stemOf(p.item.file.name);
+    card.querySelector(".pg-face").title = p.item.file.name;
+    placeThumb(card.querySelector(".pg-img"), p);
+    grid.append(card);
+  });
+}
+
+function placeThumb(holder, p) {
+  holder.innerHTML = "";
+  if (!p.canvas) { holder.textContent = "…"; return; }
+  const c = p.canvas;
+  const W = 116, H = 150;
+  const turned = p.rot % 180 !== 0;
+  const w = turned ? c.height : c.width, h = turned ? c.width : c.height;
+  const k = Math.min(W / w, H / h);
+  c.style.width = Math.round(c.width * k) + "px";
+  c.style.height = Math.round(c.height * k) + "px";
+  c.style.transform = `rotate(${p.rot}deg)`;
+  holder.append(c);
+}
+
+async function renderThumbs() {
+  const job = ++thumbJob;
+  for (const p of pages) {
+    if (job !== thumbJob) return;
+    if (p.canvas) continue;
+    try {
+      if (p.item.cat === "pdf") {
+        const doc = await openPdfJs(p.item.file);
+        const pg = await doc.getPage(p.n);
+        const vp = pg.getViewport({ scale: 1, rotation: pg.rotate });
+        p.canvas = await renderPdfPage(doc, p.n, 230 / Math.max(vp.width, vp.height));
+      } else {
+        const bmp = await createImageBitmap(p.item.file);
+        const k = 230 / Math.max(bmp.width, bmp.height);
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
+        c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+        bmp.close();
+        p.canvas = c;
+      }
+    } catch (err) {
+      console.warn(err);
+      p.canvas = document.createElement("canvas"); p.canvas.width = 80; p.canvas.height = 110;
+    }
+    const card = $("pageGrid").querySelector(`[data-key="${p.key}"] .pg-img`);
+    if (card) placeThumb(card, p);
+  }
+}
+
+$("pageGrid").addEventListener("click", (e) => {
+  const card = e.target.closest(".pg");
+  if (!card || busy) return;
+  const i = pages.findIndex((p) => p.key === +card.dataset.key);
+  const p = pages[i];
+  const a = e.target.closest("[data-a]")?.dataset.a;
+  if (!a) { p.sel = !p.sel; return renderPages(); }
+  if (a === "cw") p.rot = (p.rot + 90) % 360;
+  if (a === "ccw") p.rot = (p.rot + 270) % 360;
+  if (a === "del") pages.splice(i, 1);
+  if (a === "left" && i > 0) [pages[i - 1], pages[i]] = [pages[i], pages[i - 1]];
+  if (a === "right" && i < pages.length - 1) [pages[i + 1], pages[i]] = [pages[i], pages[i + 1]];
+  renderPages();
+  const again = $("pageGrid").querySelector(`[data-key="${p.key}"] [data-a="${a}"]`);
+  if (again) again.focus();
+});
+// slepen om de volgorde te veranderen
+let dragKey = null;
+$("pageGrid").addEventListener("dragstart", (e) => {
+  const card = e.target.closest(".pg");
+  if (!card) return;
+  dragKey = +card.dataset.key;
+  e.dataTransfer.effectAllowed = "move";
+  e.dataTransfer.setData("text/plain", "pagina");
+  card.classList.add("dragging");
+});
+$("pageGrid").addEventListener("dragover", (e) => {
+  if (dragKey == null) return;
+  e.preventDefault(); e.stopPropagation();
+  const card = e.target.closest(".pg");
+  document.querySelectorAll(".pg.drop-before").forEach((el) => el.classList.remove("drop-before"));
+  if (card && +card.dataset.key !== dragKey) card.classList.add("drop-before");
+});
+$("pageGrid").addEventListener("drop", (e) => {
+  if (dragKey == null) return;
+  e.preventDefault(); e.stopPropagation();
+  const card = e.target.closest(".pg");
+  const from = pages.findIndex((p) => p.key === dragKey);
+  const [moved] = pages.splice(from, 1);
+  let to = card ? pages.findIndex((p) => p.key === +card.dataset.key) : pages.length;
+  if (to < 0) to = pages.length;
+  pages.splice(to, 0, moved);
+  dragKey = null;
+  renderPages();
+});
+$("pageGrid").addEventListener("dragend", () => { dragKey = null; document.querySelectorAll(".pg.dragging, .pg.drop-before").forEach((el) => el.classList.remove("dragging", "drop-before")); });
+
+function targetsForTools() { const s = pages.filter((p) => p.sel); return s.length ? s : pages; }
+$("pgSelAll").addEventListener("click", () => { const all = pages.every((p) => p.sel); pages.forEach((p) => (p.sel = !all)); renderPages(); });
+$("pgRotCw").addEventListener("click", () => { targetsForTools().forEach((p) => (p.rot = (p.rot + 90) % 360)); renderPages(); });
+$("pgRotCcw").addEventListener("click", () => { targetsForTools().forEach((p) => (p.rot = (p.rot + 270) % 360)); renderPages(); });
+$("pgDel").addEventListener("click", () => {
+  const sel = pages.filter((p) => p.sel);
+  if (!sel.length) return setPgInfo("selecteer eerst de pagina's die weg moeten");
+  pages = pages.filter((p) => !p.sel); renderPages();
+});
+$("pgKeep").addEventListener("click", () => {
+  const sel = pages.filter((p) => p.sel);
+  if (!sel.length) return setPgInfo("selecteer eerst de pagina's die je wilt houden");
+  pages = sel; pages.forEach((p) => (p.sel = false)); renderPages();
+});
+$("pgReverse").addEventListener("click", () => { pages.reverse(); renderPages(); });
+$("pgReset").addEventListener("click", () => { pages = []; syncPages(); });
+function setPgInfo(msg) { $("selInfo").textContent = msg; }
+
+document.querySelectorAll("input[name=pdfOut]").forEach((r) => r.addEventListener("change", () => {
+  $("rangeRow").hidden = radio("pdfOut") !== "ranges";
+}));
+$("pdfCompress").addEventListener("change", () => { $("pdfTargetRow").hidden = $("pdfCompress").value !== "target"; });
+$("wmOn").addEventListener("change", () => { $("wmRow").hidden = !$("wmOn").checked; });
+$("pnOn").addEventListener("change", () => { $("pnRow").hidden = !$("pnOn").checked; });
+
+function parseRanges(text, n) {
+  const out = [];
+  for (const part of text.split(/[,;]+/).map((s) => s.trim()).filter(Boolean)) {
+    const m = /^(\d+)?\s*(-)?\s*(\d+)?$/.exec(part);
+    if (!m || (!m[1] && !m[3])) fail(`Ongeldig bereik: "${part}". Gebruik bijvoorbeeld 1-3, 5, 8-`);
+    const a = m[1] ? +m[1] : 1, b = m[2] ? (m[3] ? +m[3] : n) : a;
+    if (a < 1 || b > n || a > b) fail(`Bereik "${part}" valt buiten 1-${n}.`);
+    out.push([a, b]);
+  }
+  if (!out.length) fail("Vul minstens één bereik in, bijvoorbeeld 1-3, 4-6.");
+  return out;
+}
+
+const PAPER = { a4: [595.28, 841.89], letter: [612, 792], a5: [419.53, 595.28] };
+
+async function buildPdf() {
+  const { PDFDocument, StandardFonts, rgb, degrees } = await pdfLib();
+  const out = await PDFDocument.create();
+  const srcDocs = new Map();
+  const paper = $("photoPaper").value, orient = $("photoOrient").value, margin = +$("photoMargin").value;
+
+  for (let i = 0; i < pages.length; i++) {
+    const p = pages[i];
+    setProgress(i / pages.length * 0.6, `Pagina ${i + 1}/${pages.length} plaatsen`);
+    if (p.item.cat === "pdf") {
+      if (!srcDocs.has(p.item)) srcDocs.set(p.item, await openPdfLib(p.item.file));
+      const [cp] = await out.copyPages(srcDocs.get(p.item), [p.n - 1]);
+      cp.setRotation(degrees((cp.getRotation().angle + p.rot) % 360));
+      out.addPage(cp);
+    } else {
+      const img = await embedImage(out, p.item);
+      let [pw, ph] = paper === "fit" ? [img.width * 0.75, img.height * 0.75] : PAPER[paper];
+      const land = orient === "landscape" || (orient === "auto" && img.width > img.height);
+      if (paper !== "fit" && land !== pw > ph) [pw, ph] = [ph, pw];
+      const m = paper === "fit" ? 0 : margin;
+      const k = Math.min((pw - 2 * m) / img.width, (ph - 2 * m) / img.height);
+      const w = img.width * k, h = img.height * k;
+      const page = out.addPage([pw, ph]);
+      page.drawImage(img, { x: (pw - w) / 2, y: (ph - h) / 2, width: w, height: h });
+      if (p.rot) page.setRotation(degrees(p.rot));
+    }
+  }
+
+  // extra's: paginanummers en watermerk
+  const all = out.getPages();
+  const font = ($("pnOn").checked || $("wmOn").checked) ? await out.embedFont(StandardFonts.Helvetica) : null;
+  const wmText = $("wmOn").checked ? $("wmText").value.trim() : "";
+  all.forEach((page, i) => {
+    const box = page.getMediaBox(), rot = ((page.getRotation().angle % 360) + 360) % 360;
+    if ($("pnOn").checked) {
+      const label = $("pnFormat").value === "of" ? `${i + 1} / ${all.length}` : $("pnFormat").value === "pagina" ? `Pagina ${i + 1}` : String(i + 1);
+      drawVisual(page, box, rot, font, label, 10, $("pnPos").value, rgb(0.2, 0.2, 0.2), degrees);
+    }
+    if (wmText) drawWatermark(page, box, rot, font, wmText, rgb(0.6, 0.6, 0.6), degrees);
+  });
+  if ($("pdfTitle").value.trim()) out.setTitle($("pdfTitle").value.trim());
+  if ($("pdfAuthor").value.trim()) out.setAuthor($("pdfAuthor").value.trim());
+  out.setProducer("Anything Converter");
+  out.setCreator("Anything Converter");
+  setProgress(0.65, "PDF opslaan");
+  return out;
+}
+
+async function embedImage(out, it) {
+  const e = it.ext;
+  if (e === "png") return out.embedPng(new Uint8Array(await it.file.arrayBuffer()));
+  // Via canvas, zodat de EXIF-draaiing van telefoonfoto's meegenomen wordt.
+  const bmp = await createImageBitmap(it.file);
+  const c = new OffscreenCanvas(bmp.width, bmp.height), g = c.getContext("2d");
+  const alpha = ["webp", "gif", "avif", "svg", "ico"].includes(e);
+  if (!alpha) { g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); }
+  g.drawImage(bmp, 0, 0); bmp.close();
+  const blob = await c.convertToBlob(alpha ? { type: "image/png" } : { type: "image/jpeg", quality: 0.92 });
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  return alpha ? out.embedPng(bytes) : out.embedJpg(bytes);
+}
+
+// Tekst rechtop zetten op de zichtbare pagina, ook als die gedraaid is.
+function drawVisual(page, box, rot, font, text, size, pos, color, degrees) {
+  const tw = font.widthOfTextAtSize(text, size);
+  const pad = 22;
+  const vw = rot % 180 ? box.height : box.width, vh = rot % 180 ? box.width : box.height;
+  // gewenste plek in zichtbare coördinaten (oorsprong linksonder)
+  let vx = { "bc": (vw - tw) / 2, "br": vw - pad - tw, "tr": vw - pad - tw, "tc": (vw - tw) / 2 }[pos];
+  let vy = pos[0] === "b" ? pad : vh - pad - size;
+  const [x, y] = toPage(vx, vy, rot, box);
+  page.drawText(text, { x, y, size, font, color, rotate: degrees(rot) });
+}
+function drawWatermark(page, box, rot, font, text, color, degrees) {
+  const vw = rot % 180 ? box.height : box.width, vh = rot % 180 ? box.width : box.height;
+  const size = Math.min(110, (Math.hypot(vw, vh) * 0.7) / Math.max(1, font.widthOfTextAtSize(text, 1)));
+  const tw = font.widthOfTextAtSize(text, size);
+  const ang = Math.atan2(vh, vw);
+  const vx = vw / 2 - Math.cos(ang) * tw / 2 + Math.sin(ang) * size * 0.35;
+  const vy = vh / 2 - Math.sin(ang) * tw / 2 - Math.cos(ang) * size * 0.35;
+  const [x, y] = toPage(vx, vy, rot, box);
+  page.drawText(text, { x, y, size, font, color, opacity: 0.18, rotate: degrees(rot + ang * 180 / Math.PI) });
+}
+// zichtbare (gedraaide) coördinaten -> paginacoördinaten
+function toPage(vx, vy, rot, box) {
+  const { x: ox, y: oy, width: w, height: h } = box;
+  if (rot === 90) return [ox + w - vy, oy + vx];
+  if (rot === 180) return [ox + w - vx, oy + h - vy];
+  if (rot === 270) return [ox + vy, oy + h - vx];
+  return [ox + vx, oy + vy];
+}
+
+async function runPdfWorkbench() {
+  if (!pages.length) fail("Er zijn geen pagina's. Voeg PDF's of foto's toe.");
+  const outMode = radio("pdfOut");
+  const ranges = outMode === "ranges" ? parseRanges($("pdfRanges").value, pages.length) : null;
+  const comp = $("pdfCompress").value;
+  let target = null;
+  if (comp === "target") {
+    const v = parseFloat($("pdfTarget").value);
+    if (!(v > 0)) fail("Vul een doelgrootte in voor de PDF, bijvoorbeeld 2 MB.");
+    target = Math.round(v * { kb: 1024, mb: MB_ }[$("pdfTargetUnit").value]);
+  }
+  const base = ($("pdfName").value.trim() || "samengevoegd").replace(/\.pdf$/i, "").replace(/[\\/:*?"<>|]+/g, "-");
+
+  const doc = await buildPdf();
+  const { PDFDocument } = await pdfLib();
+  const parts = [];
+  if (outMode === "one") parts.push({ name: base + ".pdf", doc });
+  else {
+    const groups = outMode === "each" ? pages.map((_, i) => [i + 1, i + 1]) : ranges;
+    for (const [a, b] of groups) {
+      const d = await PDFDocument.create();
+      const cp = await d.copyPages(doc, Array.from({ length: b - a + 1 }, (_, k) => a - 1 + k));
+      cp.forEach((pg) => d.addPage(pg));
+      parts.push({ name: `${base}_${a === b ? "p" + a : `p${a}-${b}`}.pdf`, doc: d });
+    }
+  }
+
+  const blobs = [];
+  for (let i = 0; i < parts.length; i++) {
+    setProgress(0.7 + 0.1 * i / parts.length, "PDF opslaan");
+    let blob = new Blob([await parts[i].doc.save()], { type: "application/pdf" });
+    if (comp === "light" || comp === "strong") {
+      const [dpi, q] = comp === "light" ? [150, 0.78] : [96, 0.55];
+      const small = await rasterizePdf(blob, dpi, q, `Comprimeren (${dpi} dpi)`);
+      if (small.size < blob.size) blob = small;
+    } else if (target && blob.size > target) {
+      blob = await compressPdfTo(blob, target);
+    }
+    blobs.push({ name: parts[i].name, blob });
+  }
+  const srcSize = [...new Set(pages.map((p) => p.item))].reduce((a, it) => a + it.file.size, 0);
+  if (blobs.length === 1) return { blob: blobs[0].blob, name: blobs[0].name, kind: "file", srcSize, count: 1, pages: pages.length };
+  return { blob: await zipBlob(blobs), name: `${base}-${blobs.length}-pdfs.zip`, kind: "file", srcSize, count: blobs.length, pages: pages.length };
+}
+
+function showPdfResult(out) {
+  $("progress").hidden = true;
+  const res = $("result");
+  res.className = "result";
+  const before = out.srcSize, after = out.blob.size;
+  const diff = (after - before) / before * 100;
+  const w = barWidth() - 8, max = Math.max(before, after);
+  const bar = (n) => { const k = Math.max(1, Math.round(n / max * w)); return "█".repeat(k) + "░".repeat(w - k); };
+  res.innerHTML = `<span class="head">STATUS: OK</span>
+<div class="cmp"><span class="lbl">BESTAND   </span><span class="fn"></span>
+<span class="lbl">INHOUD    </span>${out.pages} pagina's${out.count > 1 ? ` in ${out.count} PDF's` : ""}
+<span class="lbl">BRONNEN   </span>${bar(before)} ${human(before)}
+<span class="lbl">NIEUW     </span>${bar(after)} ${human(after)}</div>`;
+  res.querySelector(".fn").textContent = out.name;
+  const btn = document.createElement("button");
+  btn.className = "save"; btn.type = "button"; btn.textContent = "[ ↓ OPSLAAN ]";
+  btn.addEventListener("click", () => saveBlob(out.blob, out.name));
+  const note = document.createElement("p");
+  note.className = "note dim small"; note.id = "saveNote";
+  if ($("pdfCompress").value !== "none") note.textContent = "// gecomprimeerde pagina's zijn afbeeldingen geworden: tekst is niet meer te selecteren.";
+  res.append(btn, note);
+  res.hidden = false;
+  status(`klaar: ${out.name} (${human(after)})`);
 }
 
 // ---------------------------------------------------------------- thema

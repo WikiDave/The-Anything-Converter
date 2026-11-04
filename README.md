@@ -74,4 +74,6 @@ Structuur: `app.py` (Flask-server), `converter/` (detectie, media, afbeelding, d
 canvas voor afbeeldingen). Niets wordt geüpload. Open het bestand via een webserver of zet het op
 GitHub Pages. Je kunt meerdere bestanden tegelijk verwerken en alles in één zip opslaan. Ondersteund: video (mp4/mov/webm/mkv) → mp4, webm, gif, mp3, m4a, wav; audio → mp3, m4a,
 ogg, wav, webm; afbeeldingen → jpg, png, webp, gif, pdf, bmp, ico; overige bestanden → zip. Knippen en
-doelgrootte werken ook. Word/Excel/PowerPoint/PDF-conversie en avi/wmv vereisen de lokale versie.
+doelgrootte werken ook. PDF: een PDF-werkbank om PDF's en foto's samen te voegen, pagina's te ordenen, draaien en verwijderen, te splitsen
+(per pagina of bereik), paginanummers en een watermerk toe te voegen, titel/auteur in te stellen en te comprimeren;
+losse PDF's kunnen ook naar jpg/png (per pagina) of tekst. Word/Excel/PowerPoint en avi/wmv vereisen de lokale versie.
