@@ -307,6 +307,19 @@ button.ar-name:hover, button.ar-name:focus-visible { outline: none; text-decorat
 .ar-act { flex: 0 0 auto; margin-left: 6px; }
 .ar-act .btn { padding: 0 4px; }
 
+/* social media */
+.so-info { margin: 12px 0 0; color: var(--hi); white-space: pre-wrap; line-height: 1.55; font-size: 13px; }
+.so-pick-row { margin-bottom: 12px; }
+.so-pick { flex: 1; }
+.so-stage { display: flex; justify-content: center; align-items: center; min-height: 120px; padding: 10px;
+  border: 1px dashed var(--faint); background: #0b0b0b; overflow-x: auto; }
+.so-stage canvas { max-width: 100%; height: auto; cursor: grab; box-shadow: 0 0 0 1px var(--dim); touch-action: none; }
+.so-stage canvas:active { cursor: grabbing; }
+.so-stage canvas:focus-visible { outline: 2px dashed var(--fg); outline-offset: 3px; }
+.so-zoom { margin-top: 12px; align-items: center; }
+.so-zoom input[type=range] { flex: 1; accent-color: var(--fg); }
+.so-pano-tip { align-self: center; }
+
 .statusline {
   display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px;
   margin-top: 26px; padding-top: 10px; border-top: 1px solid var(--faint); font-size: 12px;
@@ -416,6 +429,7 @@ button.ar-name:hover, button.ar-name:focus-visible { outline: none; text-decorat
       <button type="button" role="tab" data-mode="convert" aria-selected="true">[ CONVERTEREN ]</button>
       <button type="button" role="tab" data-mode="pdf" aria-selected="false">[ PDF-WERKBANK ]</button>
       <button type="button" role="tab" data-mode="arch" aria-selected="false">[ ARCHIEF-WERKBANK ]</button>
+      <button type="button" role="tab" data-mode="social" aria-selected="false">[ SOCIAL MEDIA ]</button>
     </div>
 
     <div class="mode-pdf" hidden>
@@ -552,6 +566,52 @@ button.ar-name:hover, button.ar-name:focus-visible { outline: none; text-decorat
         <div class="row" id="arPwNewRow" hidden><span class="prompt">WACHTWOORD&gt;</span><input id="arPwNew" type="password" autocomplete="new-password" aria-label="Wachtwoord voor het nieuwe archief"></div>
         <p class="dim small" id="arOutHint"></p>
         <p class="dim small">// openen kan ook rar en cab. rar maken mag alleen winrar (gesloten formaat); kies .7z of .zip, die opent winrar ook.</p>
+      </fieldset>
+    </div>
+
+    <div class="mode-social" hidden>
+      <fieldset class="frame">
+        <legend>PLATFORM</legend>
+        <div class="grid">
+          <label class="field"><span>FORMAAT&gt;</span><span class="sel"><select id="soPreset" aria-label="Platform en formaat"></select></span></label>
+          <label class="field"><span>PASSEN&gt;</span><span class="sel"><select id="soFit" aria-label="Hoe de foto in het formaat past">
+            <option value="cover">vullen · bijsnijden (sleep om te kiezen)</option>
+            <option value="blur">passend · vage achtergrond</option>
+            <option value="black">passend · zwarte randen</option>
+            <option value="white">passend · witte randen</option>
+          </select></span></label>
+        </div>
+        <pre id="soInfo" class="so-info"></pre>
+      </fieldset>
+
+      <fieldset class="frame" id="soPanoBox" hidden>
+        <legend>PANORAMA</legend>
+        <div class="grid">
+          <label class="field"><span>AANTAL SLIDES&gt;</span><span class="sel"><select id="soSlides">
+            <option value="auto">automatisch</option>
+            <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+            <option>7</option><option>8</option><option>9</option><option>10</option>
+          </select></span></label>
+          <p class="dim small so-pano-tip">// upload de slides in volgorde (01, 02, …) als één carrousel-post. door te swipen loopt het beeld naadloos door.</p>
+        </div>
+      </fieldset>
+
+      <fieldset class="frame">
+        <legend>VOORBEELD</legend>
+        <div class="row so-pick-row">
+          <span class="prompt">BESTAND&gt;</span>
+          <span class="sel so-pick"><select id="soPick" aria-label="Welk bestand je bekijkt"></select></span>
+        </div>
+        <div class="so-stage" id="soStage">
+          <canvas id="soCanvas" aria-label="Voorbeeld van het resultaat; sleep om het beeld te verschuiven"></canvas>
+          <p id="soEmpty" class="dim small">// voeg foto's of video's toe in de lijst bovenaan.</p>
+        </div>
+        <div class="row so-zoom" id="soZoomRow">
+          <span class="prompt">ZOOM&gt;</span>
+          <input id="soZoom" type="range" min="100" max="300" value="100" aria-label="Inzoomen">
+          <button id="soReset" class="btn small" type="button">[ MIDDEN ]</button>
+        </div>
+        <p class="dim small" id="soHint">// sleep in het voorbeeld om te kiezen welk deel zichtbaar blijft. geldt per bestand.</p>
       </fieldset>
     </div>
 
@@ -849,7 +909,7 @@ async function addFiles(list) {
       it.cat = "other"; it.info = {}; it.duration = 0;
     }
     it.state = "ready";
-    renderQueue(); refresh(); syncPages(); syncArch();
+    renderQueue(); refresh(); syncPages(); syncArch(); syncSocial();
   }
   status(`${items.length} ${items.length === 1 ? "bestand" : "bestanden"} geladen`);
 }
@@ -951,13 +1011,13 @@ function removeItem(it) {
   staleResult();
   items.splice(items.indexOf(it), 1);
   if (!items.length && !(mode === "arch" && arEntries.some((e) => e.added))) return resetAll();
-  renderQueue(); refresh(); syncPages(); syncArch();
+  renderQueue(); refresh(); syncPages(); syncArch(); syncSocial();
 }
 function resetAll() {
   if (busy) return;
   items.length = 0;
   pages = [];
-  arEntries = []; arOpen.clear();
+  arEntries = []; arOpen.clear(); soBitmaps.clear();
   $("arName").value = ""; $("arAddDir").value = "";
   if (mode !== "convert") setMode("convert");
   try { $("preview").pause(); $("previewAudio").pause(); } catch {}
@@ -1154,7 +1214,7 @@ $("goBtn").addEventListener("click", async () => {
   if (mode === "pdf") return runWorkbenchClick(runPdfWorkbench, showPdfResult, "PDF opbouwen");
   if (mode === "arch") return runWorkbenchClick(runArchiveWorkbench, showArchResult, "Archief maken");
   let s;
-  try { s = readSettings(); } catch (err) { return showError(err.message); }
+  try { s = mode === "social" ? {} : readSettings(); } catch (err) { return showError(err.message); }
 
   busy = true;
   $("goBtn").disabled = true; $("goBtn").textContent = "[ BEZIG... ]";
@@ -1185,7 +1245,7 @@ $("goBtn").addEventListener("click", async () => {
   showSummary();
 });
 
-const goLabel = () => ({ pdf: "[ ▶ MAAK PDF ]", arch: "[ ▶ MAAK ARCHIEF ]" })[mode] || "[ ▶ START ]";
+const goLabel = () => ({ pdf: "[ ▶ MAAK PDF ]", arch: "[ ▶ MAAK ARCHIEF ]", social: "[ ▶ MAAK VOOR SOCIAL MEDIA ]" })[mode] || "[ ▶ START ]";
 
 async function runWorkbenchClick(run, show, label) {
   busy = true;
@@ -1210,7 +1270,8 @@ async function processItem(it, opts) {
   file = it.file; cat = it.cat; ext = it.ext; info = it.info; duration = it.duration;
   try {
     let out;
-    if (cat === "image") out = await convertImage(opts);
+    if (mode === "social") out = await socialItem(it);
+    else if (cat === "image") out = await convertImage(opts);
     else if (cat === "other") out = await zipFile(opts);
     else if (cat === "pdf") out = await convertPdf(opts);
     else if (cat === "archive") out = await convertArchive(opts);
@@ -1867,10 +1928,12 @@ function setMode(m) {
   document.querySelectorAll(".mode-convert").forEach((el) => (el.hidden = m !== "convert"));
   document.querySelectorAll(".mode-pdf").forEach((el) => (el.hidden = m !== "pdf"));
   document.querySelectorAll(".mode-arch").forEach((el) => (el.hidden = m !== "arch"));
+  document.querySelectorAll(".mode-social").forEach((el) => (el.hidden = m !== "social"));
   $("result").hidden = true;
   $("goBtn").textContent = goLabel();
   if (m === "pdf") syncPages();
   else if (m === "arch") syncArch();
+  else if (m === "social") syncSocial();
   else refresh();
 }
 document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => { if (!busy) setMode(b.dataset.mode); }));
@@ -2655,6 +2718,348 @@ async function saveAny(blob, name) {
     name += ".zip";
   }
   await saveBlob(blob, name);
+}
+
+// ---------------------------------------------------------------- social media: exacte formaten per platform
+// w×h = wat het platform zelf toont/opslaat; dan schaalt het platform niet meer en blijft de kwaliteit hoog.
+// max = maximale bestandsgrootte voor foto's; vbr = videobitrate.
+const SOCIAL = [
+  ["Instagram", "ig-portrait", "post staand 4:5 · beste in de feed", 1080, 1350],
+  ["Instagram", "ig-square", "post vierkant 1:1", 1080, 1080],
+  ["Instagram", "ig-land", "post liggend 1.91:1", 1080, 566],
+  ["Instagram", "ig-story", "story / reels 9:16", 1080, 1920, { vbr: 6e6 }],
+  ["Instagram", "ig-pano", "panorama-carrousel 4:5 · swipen", 1080, 1350, { pano: true }],
+  ["Instagram", "ig-pano-sq", "panorama-carrousel 1:1 · swipen", 1080, 1080, { pano: true }],
+  ["Instagram", "ig-profile", "profielfoto", 320, 320, { round: true }],
+  ["Facebook", "fb-portrait", "post staand 4:5", 1080, 1350, { max: 10e6 }],
+  ["Facebook", "fb-square", "post vierkant", 1080, 1080, { max: 10e6 }],
+  ["Facebook", "fb-land", "post liggend / link", 1200, 630, { max: 10e6 }],
+  ["Facebook", "fb-story", "story / reels 9:16", 1080, 1920, { vbr: 6e6 }],
+  ["Facebook", "fb-cover", "omslagfoto", 1640, 624, { max: 10e6, tip: "op de telefoon vallen de zijkanten weg: houd het belangrijkste in het midden" }],
+  ["Facebook", "fb-event", "evenementfoto", 1920, 1005],
+  ["Facebook", "fb-pano", "panorama-carrousel 4:5 · swipen", 1080, 1350, { pano: true }],
+  ["Facebook", "fb-profile", "profielfoto", 720, 720, { round: true }],
+  ["YouTube", "yt-1080", "video 1080p 16:9", 1920, 1080, { vbr: 10e6 }],
+  ["YouTube", "yt-1440", "video 1440p 16:9 · scherper na upload", 2560, 1440, { vbr: 18e6, tip: "youtube geeft 1440p+ een betere codec: ook 1080p-materiaal oogt dan scherper" }],
+  ["YouTube", "yt-4k", "video 4K 16:9", 3840, 2160, { vbr: 40e6 }],
+  ["YouTube", "yt-shorts", "shorts 9:16", 1080, 1920, { vbr: 10e6 }],
+  ["YouTube", "yt-thumb", "thumbnail", 1280, 720, { max: 2e6 }],
+  ["YouTube", "yt-banner", "kanaalbanner", 2560, 1440, { max: 6e6, tip: "alleen het midden (1546×423) is overal zichtbaar: zet tekst en logo daar", safe: [1546, 423] }],
+  ["YouTube", "yt-profile", "profielfoto", 800, 800, { round: true }],
+  ["TikTok", "tt-video", "video 9:16", 1080, 1920, { vbr: 6e6 }],
+  ["TikTok", "tt-photo", "foto 9:16", 1080, 1920],
+  ["TikTok", "tt-profile", "profielfoto", 400, 400, { round: true }],
+  ["X / Twitter", "x-land", "post liggend 16:9", 1600, 900, { max: 5e6 }],
+  ["X / Twitter", "x-portrait", "post staand 4:5", 1080, 1350, { max: 5e6 }],
+  ["X / Twitter", "x-video", "video 16:9", 1920, 1080, { vbr: 6e6 }],
+  ["X / Twitter", "x-header", "header", 1500, 500, { max: 5e6 }],
+  ["X / Twitter", "x-profile", "profielfoto", 400, 400, { round: true, max: 2e6 }],
+  ["LinkedIn", "li-portrait", "post staand 4:5", 1080, 1350],
+  ["LinkedIn", "li-land", "post liggend", 1200, 627],
+  ["LinkedIn", "li-video", "video 16:9", 1920, 1080, { vbr: 5e6 }],
+  ["LinkedIn", "li-banner", "profielbanner", 1584, 396],
+  ["LinkedIn", "li-profile", "profielfoto", 400, 400, { round: true }],
+  ["Pinterest", "pin", "pin 2:3", 1000, 1500, { max: 20e6 }],
+  ["Pinterest", "pin-video", "video-pin 9:16", 1080, 1920, { vbr: 6e6 }],
+  ["Snapchat", "snap", "story / spotlight 9:16", 1080, 1920, { vbr: 6e6 }],
+  ["Threads", "threads", "post staand 4:5", 1080, 1350],
+  ["Threads", "threads-pano", "panorama-carrousel 4:5 · swipen", 1080, 1350, { pano: true }],
+  ["WhatsApp", "wa-status", "status 9:16", 1080, 1920, { vbr: 4e6 }],
+  ["WhatsApp", "wa-profile", "profielfoto", 640, 640, { round: true }],
+  ["Bluesky", "bsky", "post 4:5 · max 1 MB", 1600, 2000, { max: 0.95e6 }],
+  ["Twitch", "twitch-banner", "profielbanner", 1200, 480],
+  ["Twitch", "twitch-thumb", "stream-thumbnail", 1920, 1080],
+].map(([group, id, name, w, h, extra = {}]) => ({ group, id, name, w, h, max: 8e6, vbr: 6e6, ...extra }));
+const socialById = (id) => SOCIAL.find((p) => p.id === id);
+
+(() => {
+  const sel = $("soPreset");
+  let og = null;
+  for (const p of SOCIAL) {
+    if (!og || og.label !== p.group) { og = document.createElement("optgroup"); og.label = p.group; sel.append(og); }
+    const o = document.createElement("option");
+    o.value = p.id; o.textContent = `${p.group} · ${p.name} · ${p.w}×${p.h}`;
+    og.append(o);
+  }
+  try { const last = localStorage.getItem("ac-social"); if (last && socialById(last)) sel.value = last; } catch {}
+})();
+
+const soBitmaps = new Map(); // item -> ImageBitmap (voorbeeld)
+const soState = (it) => (it.social ??= { fx: 0.5, fy: 0.5, zoom: 1 });
+const soItems = () => items.filter((it) => (it.cat === "image" || it.cat === "video") && it.state !== "reading");
+
+function soRatio(w, h) {
+  const g = (a, b) => (b ? g(b, a % b) : a);
+  const d = g(w, h);
+  const r = `${w / d}:${h / d}`;
+  return r.length > 7 ? (w / h).toFixed(2) + ":1" : r;
+}
+
+function syncSocial() {
+  if (mode !== "social") return;
+  const p = socialById($("soPreset").value);
+  const list = soItems();
+  const pick = $("soPick");
+  const keep = pick.value;
+  pick.innerHTML = "";
+  list.forEach((it) => {
+    const o = document.createElement("option");
+    o.value = it.id; o.textContent = `${it.file.name} · ${LABEL[it.cat].toLowerCase()}`;
+    pick.append(o);
+  });
+  if (list.some((it) => String(it.id) === keep)) pick.value = keep;
+  $("soPanoBox").hidden = !p.pano;
+  $("soFit").disabled = !!p.pano;
+  const other = items.filter((it) => it.state !== "reading" && it.cat !== "image" && it.cat !== "video").length;
+  const lines = [
+    `${p.group.toUpperCase()} · ${p.name}`,
+    `afmeting   ${p.w} × ${p.h} px  (${soRatio(p.w, p.h)})`,
+    `foto       jpg, sRGB, max ${+(p.max / 1e6).toFixed(2)} MB`,
+    `video      mp4 · h.264 + aac · ${(p.vbr / 1e6).toFixed(0)} Mbit/s`,
+  ];
+  if (p.tip) lines.push("tip        " + p.tip);
+  if (p.pano) lines.push("panorama   wordt in naadloze slides van " + p.w + "×" + p.h + " geknipt (alleen foto's)");
+  if (other) lines.push(`let op     ${other} bestand(en) zijn geen foto of video en worden overgeslagen`);
+  $("soInfo").textContent = lines.join("\n");
+  drawSocialPreview();
+}
+
+async function soBitmap(it) {
+  if (soBitmaps.has(it)) return soBitmaps.get(it);
+  let bmp = null;
+  if (it.cat === "image") bmp = await createImageBitmap(it.file);
+  else {
+    // video: eerste beeld als voorbeeld
+    try {
+      const MB = await mediabunny();
+      const input = new MB.Input({ source: new MB.BlobSource(it.file), formats: MB.ALL_FORMATS });
+      const track = await input.getPrimaryVideoTrack();
+      const sink = new MB.CanvasSink(track, { width: Math.min(960, track.displayWidth) });
+      const first = await sink.getCanvas(await track.getFirstTimestamp());
+      if (first) bmp = await createImageBitmap(first.canvas);
+    } catch (err) { console.warn(err); }
+  }
+  soBitmaps.set(it, bmp);
+  return bmp;
+}
+
+// Teken een beeld in het doelformaat. Wordt gebruikt voor voorbeeld én resultaat.
+function soCompose(g, src, sw, sh, W, H, fit, st) {
+  g.save();
+  if (fit === "cover") {
+    const s = Math.max(W / sw, H / sh) * st.zoom;
+    const dw = sw * s, dh = sh * s;
+    g.drawImage(src, (W - dw) * st.fx, (H - dh) * st.fy, dw, dh);
+  } else {
+    if (fit === "blur") {
+      // vage achtergrond: eerst heel klein, dan groot schalen (werkt in elke browser, ook zonder canvas-filter)
+      // in stappen terug opschalen geeft een zachte vervaging in plaats van blokjes
+      const steps = [32, 12, 4];
+      let prev = null;
+      for (const div of steps) {
+        const c2 = document.createElement("canvas");
+        c2.width = Math.max(4, Math.round(W / div)); c2.height = Math.max(4, Math.round(H / div));
+        const g2 = c2.getContext("2d");
+        g2.imageSmoothingQuality = "high";
+        if (!prev) {
+          const s0 = Math.max(c2.width / sw, c2.height / sh);
+          g2.drawImage(src, (c2.width - sw * s0) / 2, (c2.height - sh * s0) / 2, sw * s0, sh * s0);
+        } else g2.drawImage(prev, 0, 0, c2.width, c2.height);
+        prev = c2;
+      }
+      g.imageSmoothingQuality = "high";
+      g.drawImage(prev, 0, 0, W, H);
+      g.fillStyle = "rgba(0,0,0,.28)";
+      g.fillRect(0, 0, W, H);
+    } else {
+      g.fillStyle = fit === "white" ? "#fff" : "#000";
+      g.fillRect(0, 0, W, H);
+    }
+    const s = Math.min(W / sw, H / sh);
+    g.imageSmoothingQuality = "high";
+    g.drawImage(src, (W - sw * s) / 2, (H - sh * s) / 2, sw * s, sh * s);
+  }
+  g.restore();
+}
+
+function soPanoCount(sw, sh, p) {
+  const v = $("soSlides").value;
+  if (v !== "auto") return +v;
+  return Math.max(2, Math.min(10, Math.round((sw * p.h / sh) / p.w)));
+}
+
+let soDrawJob = 0;
+async function drawSocialPreview() {
+  const job = ++soDrawJob;
+  const p = socialById($("soPreset").value);
+  const it = items.find((x) => String(x.id) === $("soPick").value);
+  const c = $("soCanvas");
+  $("soEmpty").hidden = !!it;
+  c.hidden = !it;
+  const fitCover = $("soFit").value === "cover" && !p.pano;
+  $("soZoomRow").hidden = !fitCover || !it;
+  $("soHint").hidden = !fitCover || !it;
+  if (!it) return;
+  const bmp = await soBitmap(it);
+  if (job !== soDrawJob || !bmp) return;
+  const st = soState(it);
+  $("soZoom").value = Math.round(st.zoom * 100);
+  const g = c.getContext("2d");
+  if (p.pano && it.cat === "image") {
+    const n = soPanoCount(bmp.width, bmp.height, p);
+    const W = n * p.w, H = p.h;
+    const k = Math.min(1, 900 / W);
+    c.width = Math.round(W * k); c.height = Math.round(H * k);
+    soCompose(g, bmp, bmp.width, bmp.height, c.width, c.height, "cover", { fx: 0.5, fy: st.fy, zoom: 1 });
+    g.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--fg");
+    g.setLineDash([6, 5]); g.lineWidth = 2;
+    for (let i = 1; i < n; i++) { const x = Math.round(c.width * i / n) + 0.5; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, c.height); g.stroke(); }
+    g.setLineDash([]); g.fillStyle = "rgba(0,0,0,.6)"; g.font = "bold 14px monospace";
+    for (let i = 0; i < n; i++) { const x = c.width * i / n + 6; g.fillRect(x - 2, 6, 34, 20); g.fillStyle = "#a6ff5c"; g.fillText(String(i + 1).padStart(2, "0"), x + 4, 21); g.fillStyle = "rgba(0,0,0,.6)"; }
+    c.dataset.pano = "1";
+    return;
+  }
+  delete c.dataset.pano;
+  const k = Math.min(1, 520 / p.w, 520 / p.h);
+  c.width = Math.round(p.w * k); c.height = Math.round(p.h * k);
+  soCompose(g, bmp, bmp.width, bmp.height, c.width, c.height, p.pano ? "cover" : $("soFit").value, st);
+  if (p.round) {
+    g.fillStyle = "rgba(0,0,0,.55)";
+    g.beginPath(); g.rect(0, 0, c.width, c.height);
+    g.arc(c.width / 2, c.height / 2, c.width / 2, 0, Math.PI * 2, true); g.fill();
+  }
+  if (p.safe) {
+    const [sw, sh] = p.safe;
+    g.strokeStyle = "#a6ff5c"; g.setLineDash([6, 5]); g.lineWidth = 1.5;
+    g.strokeRect((c.width - sw * k) / 2, (c.height - sh * k) / 2, sw * k, sh * k);
+    g.setLineDash([]);
+  }
+}
+
+// slepen = uitsnede kiezen
+(() => {
+  const c = $("soCanvas");
+  let drag = null;
+  c.addEventListener("pointerdown", (e) => {
+    const it = items.find((x) => String(x.id) === $("soPick").value);
+    if (!it || ($("soFit").value !== "cover" && !c.dataset.pano)) return;
+    drag = { x: e.clientX, y: e.clientY, st: { ...soState(it) }, it };
+    c.setPointerCapture(e.pointerId);
+  });
+  c.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const st = soState(drag.it);
+    const r = c.getBoundingClientRect();
+    st.fx = Math.min(1, Math.max(0, drag.st.fx - (e.clientX - drag.x) / r.width));
+    st.fy = Math.min(1, Math.max(0, drag.st.fy - (e.clientY - drag.y) / r.height));
+    drawSocialPreview();
+  });
+  const end = () => (drag = null);
+  c.addEventListener("pointerup", end);
+  c.addEventListener("pointercancel", end);
+  // toetsenbord: pijltjes verschuiven
+  c.tabIndex = 0;
+  c.addEventListener("keydown", (e) => {
+    const it = items.find((x) => String(x.id) === $("soPick").value);
+    if (!it) return;
+    const st = soState(it), d = 0.05;
+    const map = { ArrowLeft: ["fx", -d], ArrowRight: ["fx", d], ArrowUp: ["fy", -d], ArrowDown: ["fy", d] };
+    if (!map[e.key]) return;
+    e.preventDefault();
+    const [k, v] = map[e.key];
+    st[k] = Math.min(1, Math.max(0, st[k] + v));
+    drawSocialPreview();
+  });
+})();
+$("soZoom").addEventListener("input", () => {
+  const it = items.find((x) => String(x.id) === $("soPick").value);
+  if (!it) return;
+  soState(it).zoom = +$("soZoom").value / 100;
+  drawSocialPreview();
+});
+$("soReset").addEventListener("click", () => {
+  const it = items.find((x) => String(x.id) === $("soPick").value);
+  if (it) { it.social = { fx: 0.5, fy: 0.5, zoom: 1 }; drawSocialPreview(); }
+});
+$("soPreset").addEventListener("change", () => {
+  try { localStorage.setItem("ac-social", $("soPreset").value); } catch {}
+  staleResult(); syncSocial();
+});
+$("soFit").addEventListener("change", () => { staleResult(); drawSocialPreview(); });
+$("soSlides").addEventListener("change", drawSocialPreview);
+$("soPick").addEventListener("change", drawSocialPreview);
+
+// jpg onder de maximale grootte van het platform
+async function soJpeg(canvas, max) {
+  for (const q of [0.92, 0.88, 0.84, 0.8, 0.75, 0.7, 0.62, 0.55]) {
+    const b = await canvasBlob(canvas, "image/jpeg", q);
+    if (b.size <= max) return b;
+  }
+  return canvasBlob(canvas, "image/jpeg", 0.5);
+}
+
+async function socialItem(it) {
+  const p = socialById($("soPreset").value);
+  const fit = p.pano ? "cover" : $("soFit").value;
+  const st = soState(it);
+  const base = `${stemOf(it.file.name)}-${p.id}`;
+  if (it.cat === "image") {
+    setProgress(0.1, "Afbeelding laden");
+    const bmp = await createImageBitmap(it.file);
+    if (p.pano) {
+      const n = soPanoCount(bmp.width, bmp.height, p);
+      const big = document.createElement("canvas");
+      big.width = n * p.w; big.height = p.h;
+      soCompose(big.getContext("2d"), bmp, bmp.width, bmp.height, big.width, big.height, "cover", { fx: 0.5, fy: st.fy, zoom: 1 });
+      const slides = [];
+      for (let i = 0; i < n; i++) {
+        setProgress(0.2 + 0.7 * i / n, `Slide ${i + 1}/${n}`);
+        const s = document.createElement("canvas");
+        s.width = p.w; s.height = p.h;
+        s.getContext("2d").drawImage(big, i * p.w, 0, p.w, p.h, 0, 0, p.w, p.h);
+        slides.push({ name: `${base}-slide-${String(i + 1).padStart(2, "0")}.jpg`, blob: await soJpeg(s, p.max) });
+      }
+      bmp.close();
+      return { blob: await zipBlob(slides), name: `${base}-${n}-slides.zip`, kind: "file" };
+    }
+    const c = document.createElement("canvas");
+    c.width = p.w; c.height = p.h;
+    soCompose(c.getContext("2d"), bmp, bmp.width, bmp.height, p.w, p.h, fit, st);
+    bmp.close();
+    setProgress(0.8, "Opslaan als jpg");
+    return { blob: await soJpeg(c, p.max), name: base + ".jpg", kind: "image" };
+  }
+  if (it.cat === "video") {
+    if (p.pano) fail("Een panorama-carrousel kan alleen van een foto.");
+    return socialVideo(it, p, fit, base);
+  }
+  fail("Dit is geen foto of video; social-media-formaten gelden alleen daarvoor.");
+}
+
+async function socialVideo(it, p, fit, base) {
+  const MB = await mediabunny();
+  const input = new MB.Input({ source: new MB.BlobSource(it.file), formats: MB.ALL_FORMATS });
+  const output = new MB.Output({ format: new MB.Mp4OutputFormat({ fastStart: "in-memory" }), target: new MB.BufferTarget() });
+  const codec = await MB.getFirstEncodableVideoCodec(["avc", "hevc", "vp9", "av1"].filter((c) => new MB.Mp4OutputFormat().getSupportedVideoCodecs().includes(c)), { width: p.w, height: p.h });
+  if (!codec) fail("Je browser kan geen mp4-video maken. Gebruik Chrome of Edge.");
+  const st = soState(it);
+  const video = { codec, bitrate: p.vbr, forceTranscode: true, width: p.w, height: p.h, fit: fit === "cover" ? "cover" : "contain" };
+  // bijsnijden met de gekozen uitsnede, of randen in de gekozen kleur: zelf tekenen per beeld
+  video.process = (sample) => {
+    const c = new OffscreenCanvas(p.w, p.h), g = c.getContext("2d");
+    const src = sample.toCanvasImageSource ? sample.toCanvasImageSource() : sample;
+    soCompose(g, src, sample.displayWidth, sample.displayHeight, p.w, p.h, fit, st);
+    return c;
+  };
+  video.processedWidth = p.w; video.processedHeight = p.h;
+  delete video.width; delete video.height; delete video.fit;
+  const audioCodec = await MB.getFirstEncodableAudioCodec(["aac", "opus"]);
+  const audio = info.hasAudio && audioCodec ? { codec: audioCodec, bitrate: 192e3, forceTranscode: true } : { discard: true };
+  const conv = await MB.Conversion.init({ input, output, video, audio, showWarnings: false });
+  if (!conv.isValid) fail("Deze video kan je browser niet omzetten (" + conv.discardedTracks.map((t) => t.reason).join(", ") + ").");
+  conv.onProgress = (f) => setProgress(f, `Video ${p.w}×${p.h}`);
+  await conv.execute();
+  return { blob: new Blob([output.target.buffer], { type: "video/mp4" }), name: base + ".mp4", kind: "video" };
 }
 
 // ---------------------------------------------------------------- downloads: keuzemenu per systeem

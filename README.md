@@ -20,6 +20,22 @@ bestanden worden na 1 uur automatisch opgeruimd. De interface heeft een retro te
 > Let op: "groter maken" werkt voor video's, audio en afbeeldingen (meer bitrate/kwaliteit/resolutie).
 > Al gecomprimeerde bestanden (zip, jpg in een zip, …) kunnen verliesvrij nauwelijks kleiner.
 
+## Social media
+
+Tabblad **[ SOCIAL MEDIA ]** in de web-app: kies een platform en formaat, en foto's en video's krijgen exact de
+afmetingen die het platform zelf gebruikt. Dan schaalt Instagram/Facebook niets meer en blijft de kwaliteit zo hoog
+mogelijk.
+
+- **45 formaten** voor Instagram, Facebook, YouTube, TikTok, X/Twitter, LinkedIn, Pinterest, Snapchat, Threads,
+  WhatsApp, Bluesky en Twitch: posts (staand 4:5, vierkant, liggend), stories/reels/shorts (9:16), omslag- en
+  profielfoto's, banners, thumbnails en video (YouTube tot 4K).
+- **Passen**: vullen met bijsnijden (sleep in het voorbeeld en zoom in om te kiezen wat zichtbaar blijft), of passend
+  met een vage achtergrond van dezelfde foto, of met zwarte/witte randen.
+- **Panorama-carrousel**: een brede foto wordt in naadloze slides (4:5 of 1:1, 2–10 stuks) geknipt. Upload ze in
+  volgorde als één carrousel; door te swipen zie je het hele panorama.
+- Foto's worden jpg onder de maximale bestandsgrootte van het platform; video's mp4 (H.264 + AAC) met een passende bitrate.
+- Profielfoto's tonen een ronde uitsnede in het voorbeeld; de YouTube-banner toont de veilige zone.
+
 ## Archief-werkbank (zip, rar, 7z, tar …)
 
 In de web-app (en in de desktop-app via **[ PDF & ARCHIEF ]**) staat de **ARCHIEF-WERKBANK**:
