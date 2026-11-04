@@ -11,18 +11,18 @@ class AnythingConverter < Formula
   on_macos do
     on_arm do
       url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.6.0/anything-converter-tui-macos-arm64.tar.gz"
-      sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+      sha256 "0bacef34d4aaeba08c872426a18bba46c823ee643e5b2ebf96e5fd2a8bc7a4c2"
     end
     on_intel do
       url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.6.0/anything-converter-tui-macos-x64.tar.gz"
-      sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+      sha256 "96b40d815af47b888eb591cfc8cc8874507591f7310df0aa67babd099551deef"
     end
   end
 
   on_linux do
     on_intel do
       url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.6.0/anything-converter-tui-linux-x64.tar.gz"
-      sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+      sha256 "4df8d5fae914c902b1299bb2758bea9360bbd9e6543035a08a6bda20cff734a5"
     end
   end
 
