@@ -34,8 +34,8 @@ if (HERE / "bin").is_dir() and any((HERE / "bin").iterdir()):
     include_files.append((str(HERE / "bin"), "bin"))
 
 PACKAGES = ["converter", "flask", "werkzeug", "jinja2", "markupsafe", "itsdangerous", "click",
-            "blinker", "PIL", "pikepdf", "yt_dlp", "yt_dlp_ejs", "certifi"]
-OPTIONAL = {"pikepdf"}  # niet op elk platform beschikbaar
+            "blinker", "PIL", "pikepdf", "yt_dlp", "yt_dlp_ejs", "certifi", "libtorrent"]
+OPTIONAL = {"pikepdf", "libtorrent"}  # niet op elk platform beschikbaar
 
 build_exe = {
     "packages": [p for p in PACKAGES if p not in OPTIONAL or importlib.util.find_spec(p)],

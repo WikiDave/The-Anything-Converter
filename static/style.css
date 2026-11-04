@@ -236,6 +236,26 @@ audio { background: transparent; filter: invert(1) grayscale(1) contrast(.9); }
 .file-actions { display: flex; flex-wrap: wrap; gap: 4px; }
 a.btn { text-decoration: none; display: inline-block; }
 
+.url-extra { flex-wrap: wrap; align-items: center; gap: 4px 16px; }
+.tor-files { margin-top: 10px; border: 1px dashed var(--faint); padding: 8px; max-height: 320px; overflow: auto; }
+.tor-head { margin: 0 0 6px; color: var(--hi); font-weight: 700; }
+.tor-row { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; min-width: 0; }
+.tor-pre { color: var(--dim); }
+.tor-name { flex: 1; overflow: hidden; text-overflow: ellipsis; color: var(--hi); min-width: 0; }
+.tor-size { color: var(--dim); font-size: 12px; }
+#urlMsg.err { color: var(--err); }
+
+.scan-msg { margin: 10px 0 0; font-size: 13px; }
+.scan-msg.good { color: var(--hi); }
+.scan-msg.warn { color: var(--dim); }
+.scan-msg.bad { color: var(--err); font-weight: 700; }
+.scan-msg .btn { margin-left: 6px; font-weight: 400; }
+.vt-box { margin-top: 12px; }
+.vt-box summary { cursor: pointer; color: var(--dim); font-size: 12px; letter-spacing: .06em; }
+.vt-box summary:hover, .vt-box[open] summary { color: var(--fg); }
+.vt-box .row { margin: 8px 0; }
+.vt-box .row input { flex: 1; }
+
 .statusline {
   display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px;
   margin-top: 26px; padding-top: 10px; border-top: 1px solid var(--faint); font-size: 12px;

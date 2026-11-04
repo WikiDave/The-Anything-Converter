@@ -1,0 +1,289 @@
+01 DOSYA
+02 BİÇİM
+03 BOYUT
+04 ÇIKTI
+> DOSYALARI BURAYA BIRAK
+> dönüştür · küçült · büyüt · kes. dosyan tarayıcından hiç çıkmaz
+> hazır
+YÜKLEME YOK
+Renk teması
+Adımlar
+Çalışma şekli
+DİL
+[YEŞİL]
+[KEHRİBAR]
+[CAMGÖBEĞİ]
+bir veya birkaç tane birden · [ENTER] / göz atmak için tıkla
+video: mp4 · mov · webm · mkv | ses: mp3 · wav · m4a · ogg · flac
+görsel: jpg · png · webp · gif · bmp · avif · svg | pdf: birleştir · böl · sıkıştır
+arşiv: zip · rar · 7z · tar · gz · bz2 · xz · iso · cab: görüntüle · çıkar · düzenle · dönüştür
+[ + YENİ BOŞ ARŞİV ]
+[ 3 TEST GÖRSELİYLE DENE ]
+her şey tarayıcında yerel olarak olur · hiçbir şey yüklenmez
+İNDİRMELER
+Bilgisayar veya telefon için uygulama olarak dönüştürücü. Bilgisayarda her şey var, şunlar da dahil:
+youtube ve diğer video bağlantılarını indirme
+ve
+torrent indirme
+SİSTEM>
+Sistemini seç
+bilgisayar
+telefon / tablet
+Windows 10/11 · .msi
+M1–M4'lü Mac · .dmg
+Intel'li Mac · .dmg
+Ubuntu / Debian / Mint · .deb
+Diğer Linux · .AppImage
+Android 10+ · .apk
+iPhone / iPad · web uygulaması
+[ ↓ İNDİR ]
+[ ? NASIL ]
+tüm indirmeler ve sürümler
+1. .msi dosyasını indir ve çift tıkla
+2. 'windows bilgisayarınızı korudu' mu? → ek bilgi → yine de çalıştır
+3. başlat menüsünden 'Anything Converter'ı aç; tarayıcında açılır
+1. .dmg'yi aç ve uygulamayı Uygulamalar'a sürükle
+2. uygulamayı aç; uyarı çıkarsa kapat
+3. sistem ayarları → gizlilik ve güvenlik → altta 'yine de aç'
+// hangi mac? apple menüsü → bu mac hakkında: 'çip apple m…' = bu
+// hangi mac? apple menüsü → bu mac hakkında: 'işlemci intel' = bu
+1. .deb dosyasını indir ve aç (yazılım kurulumu)
+ya da terminalde: sudo apt install ./AnythingConverter-Linux.deb
+2. menüden 'Anything Converter'ı aç
+1. .AppImage dosyasını indir
+2. sağ tık → özellikler → 'program olarak çalıştırmaya izin ver'i aç
+3. başlatmak için çift tıkla
+1. .apk dosyasını telefonuna indir
+2. aç; tarayıcın için 'bilinmeyen uygulamaları yükle' iznini ver
+3. 'Converter'ı aç; kaydedilen dosyalar Downloads/Anything Converter içinde
+// youtube bağlantıları ve torrentler yalnızca bilgisayarda çalışır
+apple, app store dışındaki uygulamalara izin vermez; web uygulamasını kullan:
+1. bu sayfayı safari'de aç
+2. paylaş'a dokun (oklu kare) → ana ekrana ekle → ekle
+3. ana ekranından 'Converter'ı aç
+DOSYALAR
+DOSYALAR ({0})
+AD
+BİLGİ
+DURUM
+[ + EKLE ]
+[ TÜMÜNÜ TEMİZLE ]
+okunuyor…
+başlamaya hazır
+sırada
+!! HATA
+[ DÖNÜŞTÜR ]
+[ PDF ATÖLYESİ ]
+[ ARŞİV ATÖLYESİ ]
+[ SOSYAL MEDYA ]
+// liste henüz boş. arşiv dosyalarını EKLE bölümünden ekle.
+BİÇİM
+BOYUT
+Mod
+Kalite
+Dosya başına hedef boyut
+Yüksek
+büyük dosya
+Normal
+Düşük
+en küçük
+HEDEF>
+Hedef boyut
+Birim
+2× BÜYÜK
+Her dosya için geçerli. % ile her dosya kendi boyutuna göre bir hedef alır.
+Orijinalden büyük de olabilir: bit hızı, kalite veya çözünürlük artar.
+VİDEO
+ÇÖZÜNÜRLÜK>
+orijinal / otomatik
+Sesi kaldır
+GENİŞLİK PX>
+FPS>
+BOYUTLAR
+ÖLÇEK %>
+GENİŞLİK>
+YÜKSEKLİK>
+otomatik
+// tüm görsellere uygulanır. yüzde ya da genişlik ve/veya yükseklik. tek değer = oran korunur.
+KES
+GİRİŞ>
+ÇIKIŞ>
+son
+Başlangıç noktası
+Bitiş noktası
+Şu anki konum başlangıç olsun
+Şu anki konum bitiş olsun
+[|◀ BURASI]
+[BURASI ▶|]
+SEÇİM:
+// süreler 1:23.5 gibi ya da saniye olarak
+// kesme dosya başınadır: listede tek bir video veya ses dosyası bırak.
+[ ▶ BAŞLAT ]
+[ ÇALIŞIYOR... ]
+[ ▶ TEKRAR ]
+[ ▶ PDF OLUŞTUR ]
+[ ▶ ARŞİV OLUŞTUR ]
+[ ▶ SOSYAL MEDYA İÇİN OLUŞTUR ]
+DURUM: OK
+DURUM: {0} OK
+BİTTİ: {0} OK · {1} HATA
+DOSYA
+ORİJİNAL
+YENİ
+FARK
+KAYNAKLAR
+İÇERİK
+{0} daha küçük
+{0} daha büyük
+{0} adet
+[ ↓ KAYDET ]
+[ ↓ .ZIP OLARAK KAYDET ]
+[ ↓ TÜMÜNÜ .ZIP OLARAK KAYDET ({0}) ]
+// ya da listedeki [↓] ile dosyaları tek tek kaydet.
+SAYFALAR
+SAYFALAR ({0})
+[ TÜMÜNÜ SEÇ ]
+[ DÖNDÜR -90° ]
+[ DÖNDÜR +90° ]
+[ ✕ SEÇİLENİ SİL ]
+[ YALNIZCA SEÇİLENİ TUT ]
+[ ↕ TERS ÇEVİR ]
+[ SIFIRLA ]
+// sıralamak için sayfaları sürükle. döndürme seçime uygulanır; hiçbir şey seçili değilse hepsine.
+seçmek için sayfalara tıkla
+{0} seçili
+ÇIKTI
+Çıktı
+Tek PDF
+birleştir
+Her sayfa ayrı
+Aralığa göre böl
+ARALIKLAR>
+DOSYA ADI>
+birleştirildi
+FOTOĞRAFLAR
+KÂĞIT>
+fotoğrafla aynı
+YÖN>
+otomatik
+dikey
+yatay
+KENAR BOŞLUĞU>
+yok
+küçük
+normal
+geniş
+EKSTRA
+Sayfa numarası ekle
+KONUM>
+alt orta
+alt sağ
+üst orta
+üst sağ
+BİÇİM>
+Sayfa 1
+Filigran
+METİN>
+Filigran metni
+BAŞLIK>
+YAZAR>
+isteğe bağlı
+SIKIŞTIR
+SEVİYE>
+yok · metin seçilebilir kalır
+hafif · 150 dpi
+güçlü · 96 dpi
+hedef boyut
+PDF hedef boyutu
+// sıkıştırma sayfaları görsele çevirir; sonra metin seçilemez.
+İÇERİK ({0})
+ŞİFRE>
+Arşiv şifresi
+[ AÇ ]
+[ TÜMÜ ]
+[ HİÇBİRİ ]
+[ TERS ÇEVİR ]
+[ TÜM KLASÖRLERİ AÇ ]
+[ TÜM KLASÖRLERİ KAPAT ]
+ARA>
+örn. .jpg ya da foto
+Arşivde ara
+Arşiv içeriği
+{1} dosyadan {0} tanesi işaretli · {2}
+// boş arşiv. aşağıdaki [ + DOSYA EKLE ] ile dosya ekle ya da sayfaya bırak.
+// [x] = yeni arşive girer. açmak veya kapatmak için klasöre tıkla. [↓] tek bir dosyayı kaydeder.
+EKLE
+KLASÖRE>
+(kök klasör)
+[ + DOSYA EKLE ]
+// eklenen dosyalar ağaçta + ile görünür. üstteki listeden tek dosyalar da dahil edilir.
+arşiv
+.zip · her yerde çalışır
+.7z · küçük, 7-zip/winrar
+.tar.xz · en küçük
+.tar · sıkıştırmasız
+.iso · disk görüntüsü
+.rar · mümkün değil (rar'ı yalnızca WinRAR oluşturabilir)
+Şifreyle koru
+(AES-256, yalnızca .zip)
+Yeni arşivin şifresi
+// rar ve cab da açılabilir. rar'ı yalnızca winrar oluşturabilir (kapalı biçim); .7z ya da .zip seç, winrar bunları da açar.
+PLATFORM
+Platform ve biçim
+BİÇİM>
+SIĞDIR>
+Fotoğrafın biçime nasıl sığacağı
+doldur · kırp (seçmek için sürükle)
+sığdır · bulanık arka plan
+sığdır · siyah kenarlar
+sığdır · beyaz kenarlar
+PANORAMA
+SLAYT SAYISI>
+// slaytları sırayla (01, 02, …) tek bir kaydırmalı gönderi olarak yükle. kaydırınca görüntü kesintisiz devam eder.
+ÖNİZLEME
+DOSYA>
+Baktığın dosya
+Sonucun önizlemesi; görüntüyü taşımak için sürükle
+// üstteki listeye fotoğraf ya da video ekle.
+YAKINLAŞTIR>
+Yakınlaştır
+[ ORTA ]
+// görünür kalacak kısmı seçmek için önizlemede sürükle. her dosya için ayrı.
+boyut {0}
+foto {0}
+video {0}
+ipucu {0}
+dikey gönderi 4:5 · akışta en iyisi
+kare gönderi 1:1
+yatay gönderi 1.91:1
+hikâye / reels 9:16
+panorama kaydırma 4:5 · kaydır
+panorama kaydırma 1:1 · kaydır
+profil fotoğrafı
+dikey gönderi 4:5
+kare gönderi
+yatay gönderi / bağlantı
+kapak fotoğrafı
+etkinlik fotoğrafı
+video 1080p 16:9
+video 1440p 16:9 · yüklemeden sonra daha net
+video 4K 16:9
+shorts 9:16
+küçük resim
+kanal banner'ı
+video 9:16
+foto 9:16
+yatay gönderi 16:9
+video 16:9
+başlık görseli
+yatay gönderi
+profil banner'ı
+pin 2:3
+video pin 9:16
+hikâye / spotlight 9:16
+durum 9:16
+gönderi 4:5 · en fazla 1 MB
+yayın küçük resmi
+[VT]
+[ VIRUSTOTAL'I AÇ ]
+parmak izi hesaplanıyor…

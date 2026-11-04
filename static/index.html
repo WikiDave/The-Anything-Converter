@@ -70,16 +70,33 @@
   <!-- Of: video ophalen via een link -->
   <form id="urlForm" class="url-form" autocomplete="off">
     <fieldset class="frame">
-      <legend>OF PLAK EEN LINK</legend>
+      <legend>OF PLAK EEN LINK · TORRENT</legend>
       <div class="row">
         <span class="prompt">LINK&gt;</span>
-        <input id="urlInput" type="text" inputmode="url" placeholder="https://www.youtube.com/watch?v=…" aria-label="Link naar een video">
+        <input id="urlInput" type="text" inputmode="url" placeholder="https://www.youtube.com/watch?v=… of magnet:?…" aria-label="Link naar een video of magnet-link">
         <button id="urlBtn" class="btn" type="submit">[ OPHALEN ]</button>
       </div>
-      <label class="check"><input id="urlAudio" type="checkbox"><span>Alleen geluid</span></label>
+      <div class="row url-extra">
+        <label class="check"><input id="urlAudio" type="checkbox"><span>Alleen geluid</span></label>
+        <label class="check"><input id="urlScan" type="checkbox" checked><span>Controleren op virussen</span></label>
+        <button id="torrentBtn" class="btn" type="button">[ .TORRENT KIEZEN ]</button>
+        <input id="torrentInput" type="file" accept=".torrent,application/x-bittorrent" hidden>
+        <button id="urlStop" class="btn hidden" type="button">[ STOP ]</button>
+      </div>
       <pre id="urlBar" class="txtbar hidden"></pre>
       <p id="urlMsg" class="dim small hidden"></p>
-      <p class="dim small">// youtube, vimeo en honderden andere sites. alleen voor je eigen video's, video's met een vrije licentie (bijv. creative commons) of met toestemming van de maker.</p>
+      <div id="torrentFiles" class="tor-files hidden"></div>
+      <details class="vt-box">
+        <summary>VIRUSSCANNER &amp; VIRUSTOTAL</summary>
+        <p class="dim small" id="scannerInfo">// scanner zoeken…</p>
+        <div class="row">
+          <span class="prompt">VT-SLEUTEL&gt;</span>
+          <input id="vtKey" type="password" autocomplete="off" placeholder="optioneel: gratis sleutel van virustotal.com" aria-label="VirusTotal API-sleutel">
+          <button id="vtSave" class="btn" type="button">[ OPSLAAN ]</button>
+        </div>
+        <p class="dim small">// met een sleutel wordt de vingerafdruk (sha-256) automatisch bij virustotal opgezocht: 70+ scanners. het bestand zelf wordt nooit geüpload. sleutel maken: virustotal.com → account → api key.</p>
+      </details>
+      <p class="dim small">// video: youtube, vimeo en honderden andere sites. torrent: magnet-link of .torrent-bestand.<br>// alleen voor eigen bestanden, vrije licenties (bijv. creative commons, linux-iso's) of met toestemming van de maker.</p>
     </fieldset>
   </form>
 
@@ -92,8 +109,10 @@
           <dt>NAAM</dt><dd id="fName"></dd>
           <dt>INFO</dt><dd id="fMeta"></dd>
         </dl>
+        <p id="scanMsg" class="scan-msg hidden"></p>
         <span class="file-actions">
           <a id="saveSrc" class="btn hidden" href="#" download>[ ↓ OPSLAAN ]</a>
+          <button id="scanBtn" class="btn" type="button">[ VIRUSSCAN ]</button>
           <button id="resetBtn" class="btn" type="button">[ ANDER BESTAND ]</button>
         </span>
       </div>

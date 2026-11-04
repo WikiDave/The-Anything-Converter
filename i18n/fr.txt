@@ -1,0 +1,289 @@
+01 FICHIER
+02 FORMAT
+03 TAILLE
+04 SORTIE
+> DÉPOSE TES FICHIERS ICI
+> convertir · réduire · agrandir · couper. ton fichier ne quitte jamais ton navigateur
+> prêt
+SANS ENVOI
+Thème de couleur
+Étapes
+Mode
+LANGUE
+[VERT]
+[AMBRE]
+[CYAN]
+un ou plusieurs à la fois · [ENTRÉE] / clic pour parcourir
+vidéo : mp4 · mov · webm · mkv | audio : mp3 · wav · m4a · ogg · flac
+image : jpg · png · webp · gif · bmp · avif · svg | pdf : fusionner · scinder · compresser
+archive : zip · rar · 7z · tar · gz · bz2 · xz · iso · cab : voir · extraire · modifier · convertir
+[ + NOUVELLE ARCHIVE VIDE ]
+[ ESSAYER AVEC 3 IMAGES TEST ]
+tout se passe localement dans ton navigateur · rien n'est envoyé
+TÉLÉCHARGEMENTS
+Le convertisseur en appli pour ton ordinateur ou téléphone. Sur ordinateur tout est inclus, aussi
+récupérer des liens youtube et autres vidéos
+et
+télécharger des torrents
+SYSTÈME>
+Choisis ton système
+ordinateur
+téléphone / tablette
+Windows 10/11 · .msi
+Mac avec M1–M4 · .dmg
+Mac avec Intel · .dmg
+Ubuntu / Debian / Mint · .deb
+Autre Linux · .AppImage
+Android 10+ · .apk
+iPhone / iPad · appli web
+[ ↓ TÉLÉCHARGER ]
+[ ? COMMENT ]
+tous les téléchargements et versions
+1. télécharge le fichier .msi et double-clique dessus
+2. 'windows a protégé votre ordinateur' ? → informations complémentaires → exécuter quand même
+3. lance 'Anything Converter' depuis le menu démarrer ; il s'ouvre dans ton navigateur
+1. ouvre le .dmg et fais glisser l'appli dans Applications
+2. ouvre l'appli ; si un avertissement s'affiche, ferme-le
+3. réglages système → confidentialité et sécurité → 'ouvrir quand même' en bas
+// quel mac ? menu pomme → à propos de ce mac : 'puce apple m…' = celui-ci
+// quel mac ? menu pomme → à propos de ce mac : 'processeur intel' = celui-ci
+1. télécharge et ouvre le fichier .deb (installation de logiciels)
+ou dans un terminal : sudo apt install ./AnythingConverter-Linux.deb
+2. lance 'Anything Converter' depuis le menu
+1. télécharge le fichier .AppImage
+2. clic droit → propriétés → activer 'autoriser l'exécution comme programme'
+3. double-clique pour démarrer
+1. télécharge le fichier .apk sur ton téléphone
+2. ouvre-le ; autorise 'installer des applis inconnues' pour ton navigateur
+3. ouvre 'Converter' ; les fichiers enregistrés sont dans Downloads/Anything Converter
+// les liens youtube et les torrents ne fonctionnent que sur ordinateur
+apple n'autorise pas les applis hors de l'app store ; utilise l'appli web :
+1. ouvre cette page dans safari
+2. touche partager (carré avec flèche) → sur l'écran d'accueil → ajouter
+3. ouvre 'Converter' depuis ton écran d'accueil
+FICHIERS
+FICHIERS ({0})
+NOM
+INFO
+ÉTAT
+[ + AJOUTER ]
+[ TOUT EFFACER ]
+lecture…
+prêt à démarrer
+en attente
+!! ERREUR
+[ CONVERTIR ]
+[ ATELIER PDF ]
+[ ATELIER ARCHIVES ]
+[ RÉSEAUX SOCIAUX ]
+// rien dans la liste. ajoute les fichiers de l'archive sous AJOUTER.
+FORMAT
+TAILLE
+Mode
+Qualité
+Taille cible par fichier
+Haute
+gros fichier
+Normale
+Basse
+le plus petit
+CIBLE>
+Taille cible
+Unité
+2× PLUS GRAND
+S'applique par fichier. Avec %, chaque fichier reçoit une cible proportionnelle à sa propre taille.
+Plus grand que l'original est aussi possible : débit, qualité ou résolution augmentent.
+VIDÉO
+RÉSOLUTION>
+original / automatique
+Supprimer le son
+LARGEUR PX>
+IPS>
+DIMENSIONS
+ÉCHELLE %>
+LARGEUR>
+HAUTEUR>
+auto
+// s'applique à toutes les images. pourcentage ou largeur et/ou hauteur. une seule valeur = proportions gardées.
+COUPER
+DÉBUT>
+FIN>
+fin
+Point de départ
+Point de fin
+Position actuelle comme début
+Position actuelle comme fin
+[|◀ ICI]
+[ICI ▶|]
+SÉLECTION :
+// durées comme 1:23.5 ou en secondes
+// la coupe se fait par fichier : garde une seule vidéo ou un seul audio dans la liste.
+[ ▶ DÉMARRER ]
+[ EN COURS... ]
+[ ▶ RECOMMENCER ]
+[ ▶ CRÉER LE PDF ]
+[ ▶ CRÉER L'ARCHIVE ]
+[ ▶ CRÉER POUR LES RÉSEAUX SOCIAUX ]
+ÉTAT : OK
+ÉTAT : {0} OK
+TERMINÉ : {0} OK · {1} ERREUR
+FICHIER
+ORIGINAL
+NOUVEAU
+DIFFÉRENCE
+SOURCES
+CONTENU
+{0} plus petit
+{0} plus grand
+{0} éléments
+[ ↓ ENREGISTRER ]
+[ ↓ ENREGISTRER EN .ZIP ]
+[ ↓ TOUT ENREGISTRER EN .ZIP ({0}) ]
+// ou enregistre les fichiers un par un avec [↓] dans la liste.
+PAGES
+PAGES ({0})
+[ TOUT SÉLECTIONNER ]
+[ PIVOTER -90° ]
+[ PIVOTER +90° ]
+[ ✕ SUPPRIMER LA SÉLECTION ]
+[ GARDER SEULEMENT LA SÉLECTION ]
+[ ↕ INVERSER ]
+[ RÉINITIALISER ]
+// glisse les pages pour les ordonner. la rotation s'applique à la sélection, ou à tout si rien n'est sélectionné.
+clique sur les pages pour les sélectionner
+{0} sélectionnées
+SORTIE
+Sortie
+Un seul PDF
+fusionner
+Chaque page séparément
+Scinder par plage
+PLAGES>
+NOM DU FICHIER>
+fusionné
+PHOTOS
+PAPIER>
+comme la photo
+ORIENTATION>
+automatique
+portrait
+paysage
+MARGE>
+aucune
+petite
+normale
+large
+EXTRA
+Ajouter les numéros de page
+POSITION>
+bas centre
+bas droite
+haut centre
+haut droite
+FORME>
+Page 1
+Filigrane
+TEXTE>
+Texte du filigrane
+TITRE>
+AUTEUR>
+facultatif
+COMPRESSER
+NIVEAU>
+aucun · le texte reste sélectionnable
+léger · 150 dpi
+fort · 96 dpi
+taille cible
+Taille cible du PDF
+// compresser transforme les pages en images ; le texte n'est ensuite plus sélectionnable.
+CONTENU ({0})
+MOT DE PASSE>
+Mot de passe de l'archive
+[ OUVRIR ]
+[ TOUT ]
+[ RIEN ]
+[ INVERSER ]
+[ OUVRIR TOUS LES DOSSIERS ]
+[ FERMER TOUS LES DOSSIERS ]
+CHERCHER>
+ex. .jpg ou photo
+Chercher dans l'archive
+Contenu de l'archive
+{0} sur {1} fichiers cochés · {2}
+// archive vide. ajoute des fichiers avec [ + AJOUTER DES FICHIERS ] ci-dessous, ou dépose-les sur la page.
+// [x] = va dans la nouvelle archive. clique sur un dossier pour l'ouvrir ou le fermer. [↓] enregistre un seul fichier.
+AJOUTER
+DANS LE DOSSIER>
+(dossier racine)
+[ + AJOUTER DES FICHIERS ]
+// les fichiers ajoutés apparaissent dans l'arbre avec un +. les fichiers seuls de la liste du haut sont aussi inclus.
+archive
+.zip · fonctionne partout
+.7z · petit, 7-zip/winrar
+.tar.xz · le plus petit
+.tar · sans compression
+.iso · image disque
+.rar · impossible (seul WinRAR peut créer du rar)
+Protéger par mot de passe
+(AES-256, .zip seulement)
+Mot de passe de la nouvelle archive
+// on peut aussi ouvrir rar et cab. seul winrar peut créer du rar (format fermé) ; choisis .7z ou .zip, winrar les ouvre aussi.
+PLATEFORME
+Plateforme et format
+FORMAT>
+AJUSTER>
+Comment la photo s'adapte au format
+remplir · recadrer (glisse pour choisir)
+ajuster · fond flou
+ajuster · bords noirs
+ajuster · bords blancs
+PANORAMA
+NOMBRE DE DIAPOS>
+// publie les diapos dans l'ordre (01, 02, …) en un seul carrousel. en balayant, l'image continue sans coupure.
+APERÇU
+FICHIER>
+Quel fichier tu regardes
+Aperçu du résultat ; glisse pour déplacer l'image
+// ajoute des photos ou vidéos dans la liste du haut.
+ZOOM>
+Zoomer
+[ CENTRE ]
+// glisse dans l'aperçu pour choisir la partie visible. s'applique par fichier.
+taille {0}
+photo {0}
+vidéo {0}
+astuce {0}
+publication portrait 4:5 · idéal dans le fil
+publication carrée 1:1
+publication paysage 1.91:1
+story / reels 9:16
+carrousel panoramique 4:5 · balayer
+carrousel panoramique 1:1 · balayer
+photo de profil
+publication portrait 4:5
+publication carrée
+publication paysage / lien
+photo de couverture
+photo d'événement
+vidéo 1080p 16:9
+vidéo 1440p 16:9 · plus nette après envoi
+vidéo 4K 16:9
+shorts 9:16
+miniature
+bannière de chaîne
+vidéo 9:16
+photo 9:16
+publication paysage 16:9
+vidéo 16:9
+en-tête
+publication paysage
+bannière de profil
+épingle 2:3
+épingle vidéo 9:16
+story / spotlight 9:16
+statut 9:16
+publication 4:5 · max 1 Mo
+miniature du live
+[VT]
+[ OUVRIR VIRUSTOTAL ]
+calcul de l'empreinte…

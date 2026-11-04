@@ -1,0 +1,289 @@
+01 FILE
+02 FORMAT
+03 UKURAN
+04 HASIL
+> TARUH FILE DI SINI
+> ubah · perkecil · perbesar · potong. file kamu tidak pernah keluar dari browser
+> siap
+TANPA UNGGAH
+Tema warna
+Langkah
+Mode
+BAHASA
+[HIJAU]
+[KUNING]
+[SIAN]
+satu atau beberapa sekaligus · [ENTER] / klik untuk memilih
+video: mp4 · mov · webm · mkv | audio: mp3 · wav · m4a · ogg · flac
+gambar: jpg · png · webp · gif · bmp · avif · svg | pdf: gabung · pisah · kompres
+arsip: zip · rar · 7z · tar · gz · bz2 · xz · iso · cab: lihat · ekstrak · ubah · konversi
+[ + ARSIP KOSONG BARU ]
+[ COBA DENGAN 3 GAMBAR UJI ]
+semuanya terjadi di browser kamu · tidak ada yang diunggah
+UNDUHAN
+Konverter sebagai aplikasi untuk komputer atau ponsel. Versi komputer punya semuanya, termasuk
+mengambil tautan youtube dan video lain
+dan
+mengunduh torrent
+SISTEM>
+Pilih sistem kamu
+komputer
+ponsel / tablet
+Windows 10/11 · .msi
+Mac dengan M1–M4 · .dmg
+Mac dengan Intel · .dmg
+Ubuntu / Debian / Mint · .deb
+Linux lain · .AppImage
+Android 10+ · .apk
+iPhone / iPad · aplikasi web
+[ ↓ UNDUH ]
+[ ? CARANYA ]
+semua unduhan dan versi
+1. unduh lalu klik dua kali file .msi
+2. 'windows melindungi pc anda'? → info selengkapnya → tetap jalankan
+3. buka 'Anything Converter' dari menu start; akan terbuka di browser
+1. buka .dmg lalu seret aplikasi ke Applications
+2. buka aplikasi; jika muncul peringatan, tutup saja
+3. pengaturan sistem → privasi & keamanan → 'tetap buka' di bagian bawah
+// mac yang mana? menu apple → tentang mac ini: 'chip apple m…' = yang ini
+// mac yang mana? menu apple → tentang mac ini: 'prosesor intel' = yang ini
+1. unduh lalu buka file .deb (instalasi perangkat lunak)
+atau di terminal: sudo apt install ./AnythingConverter-Linux.deb
+2. buka 'Anything Converter' dari menu
+1. unduh file .AppImage
+2. klik kanan → properti → aktifkan 'izinkan dijalankan sebagai program'
+3. klik dua kali untuk memulai
+1. unduh file .apk di ponsel kamu
+2. buka; izinkan 'instal aplikasi tidak dikenal' untuk browser kamu
+3. buka 'Converter'; file yang disimpan ada di Downloads/Anything Converter
+// tautan youtube dan torrent hanya bisa di komputer
+apple tidak mengizinkan aplikasi di luar app store; pakai aplikasi web:
+1. buka halaman ini di safari
+2. ketuk bagikan (kotak dengan panah) → tambah ke layar utama → tambah
+3. buka 'Converter' dari layar utama
+FILE
+FILE ({0})
+NAMA
+INFO
+STATUS
+[ + TAMBAH ]
+[ HAPUS SEMUA ]
+membaca…
+siap dimulai
+dalam antrean
+!! GALAT
+[ KONVERSI ]
+[ BENGKEL PDF ]
+[ BENGKEL ARSIP ]
+[ MEDIA SOSIAL ]
+// daftar masih kosong. tambahkan file untuk arsip di TAMBAH.
+FORMAT
+UKURAN
+Mode
+Kualitas
+Ukuran target per file
+Tinggi
+file besar
+Normal
+Rendah
+terkecil
+TARGET>
+Ukuran target
+Satuan
+2× LEBIH BESAR
+Berlaku per file. Dengan % setiap file mendapat target sebanding ukurannya sendiri.
+Lebih besar dari aslinya juga bisa: bitrate, kualitas, atau resolusi naik.
+VIDEO
+RESOLUSI>
+asli / otomatis
+Hapus suara
+LEBAR PX>
+FPS>
+DIMENSI
+SKALA %>
+LEBAR>
+TINGGI>
+otomatis
+// berlaku untuk semua gambar. persen atau lebar dan/atau tinggi. satu nilai = rasio tetap.
+POTONG
+MASUK>
+KELUAR>
+akhir
+Titik awal
+Titik akhir
+Posisi sekarang sebagai awal
+Posisi sekarang sebagai akhir
+[|◀ DI SINI]
+[DI SINI ▶|]
+PILIHAN:
+// waktu seperti 1:23.5 atau dalam detik
+// pemotongan per file: sisakan satu file video atau audio di daftar.
+[ ▶ MULAI ]
+[ SEDANG BEKERJA... ]
+[ ▶ ULANGI ]
+[ ▶ BUAT PDF ]
+[ ▶ BUAT ARSIP ]
+[ ▶ BUAT UNTUK MEDIA SOSIAL ]
+STATUS: OK
+STATUS: {0} OK
+SELESAI: {0} OK · {1} GALAT
+FILE
+ASLI
+BARU
+SELISIH
+SUMBER
+ISI
+{0} lebih kecil
+{0} lebih besar
+{0} item
+[ ↓ SIMPAN ]
+[ ↓ SIMPAN SEBAGAI .ZIP ]
+[ ↓ SIMPAN SEMUA SEBAGAI .ZIP ({0}) ]
+// atau simpan file satu per satu dengan [↓] di daftar.
+HALAMAN
+HALAMAN ({0})
+[ PILIH SEMUA ]
+[ PUTAR -90° ]
+[ PUTAR +90° ]
+[ ✕ HAPUS PILIHAN ]
+[ SIMPAN HANYA PILIHAN ]
+[ ↕ BALIK URUTAN ]
+[ ATUR ULANG ]
+// seret halaman untuk mengurutkan. putar berlaku untuk pilihan, atau semua jika tidak ada yang dipilih.
+klik halaman untuk memilih
+{0} dipilih
+HASIL
+Hasil
+Satu PDF
+gabung
+Setiap halaman terpisah
+Pisah per rentang
+RENTANG>
+NAMA FILE>
+gabungan
+FOTO
+KERTAS>
+sama dengan foto
+ORIENTASI>
+otomatis
+tegak
+mendatar
+MARGIN>
+tidak ada
+kecil
+normal
+lebar
+EKSTRA
+Tambahkan nomor halaman
+POSISI>
+bawah tengah
+bawah kanan
+atas tengah
+atas kanan
+BENTUK>
+Halaman 1
+Tanda air
+TEKS>
+Teks tanda air
+JUDUL>
+PENULIS>
+opsional
+KOMPRES
+TINGKAT>
+tidak ada · teks tetap bisa dipilih
+ringan · 150 dpi
+kuat · 96 dpi
+ukuran target
+Ukuran target PDF
+// kompresi mengubah halaman menjadi gambar; setelah itu teks tidak bisa dipilih lagi.
+ISI ({0})
+SANDI>
+Sandi arsip
+[ BUKA ]
+[ SEMUA ]
+[ TIDAK ADA ]
+[ BALIK ]
+[ BUKA SEMUA FOLDER ]
+[ TUTUP SEMUA FOLDER ]
+CARI>
+mis. .jpg atau foto
+Cari di arsip
+Isi arsip
+{0} dari {1} file dicentang · {2}
+// arsip kosong. tambahkan file dengan [ + TAMBAH FILE ] di bawah, atau taruh di halaman.
+// [x] = masuk ke arsip baru. klik folder untuk membuka atau menutupnya. [↓] menyimpan satu file.
+TAMBAH
+KE FOLDER>
+(folder utama)
+[ + TAMBAH FILE ]
+// file yang ditambahkan tampil di pohon dengan tanda +. file tunggal dari daftar di atas juga ikut.
+arsip
+.zip · bisa di mana saja
+.7z · kecil, 7-zip/winrar
+.tar.xz · terkecil
+.tar · tanpa kompresi
+.iso · image disk
+.rar · tidak bisa (hanya WinRAR yang boleh membuat rar)
+Lindungi dengan sandi
+(AES-256, hanya .zip)
+Sandi untuk arsip baru
+// rar dan cab juga bisa dibuka. hanya winrar yang boleh membuat rar (format tertutup); pilih .7z atau .zip, winrar juga bisa membukanya.
+PLATFORM
+Platform dan format
+FORMAT>
+PENYESUAIAN>
+Bagaimana foto masuk ke format
+isi · potong (seret untuk memilih)
+pas · latar buram
+pas · tepi hitam
+pas · tepi putih
+PANORAMA
+JUMLAH SLIDE>
+// unggah slide berurutan (01, 02, …) sebagai satu postingan carousel. saat digeser, gambar menyambung tanpa putus.
+PRATINJAU
+FILE>
+File yang sedang dilihat
+Pratinjau hasil; seret untuk menggeser gambar
+// tambahkan foto atau video di daftar atas.
+ZOOM>
+Perbesar
+[ TENGAH ]
+// seret di pratinjau untuk memilih bagian yang tetap terlihat. berlaku per file.
+ukuran {0}
+foto {0}
+video {0}
+tips {0}
+postingan tegak 4:5 · terbaik di feed
+postingan persegi 1:1
+postingan mendatar 1.91:1
+story / reels 9:16
+carousel panorama 4:5 · geser
+carousel panorama 1:1 · geser
+foto profil
+postingan tegak 4:5
+postingan persegi
+postingan mendatar / tautan
+foto sampul
+foto acara
+video 1080p 16:9
+video 1440p 16:9 · lebih tajam setelah diunggah
+video 4K 16:9
+shorts 9:16
+thumbnail
+banner kanal
+video 9:16
+foto 9:16
+postingan mendatar 16:9
+video 16:9
+header
+postingan mendatar
+banner profil
+pin 2:3
+pin video 9:16
+story / spotlight 9:16
+status 9:16
+postingan 4:5 · maks 1 MB
+thumbnail siaran
+[VT]
+[ BUKA VIRUSTOTAL ]
+menghitung sidik jari…

@@ -20,6 +20,16 @@ bestanden worden na 1 uur automatisch opgeruimd. De interface heeft een retro te
 > Let op: "groter maken" werkt voor video's, audio en afbeeldingen (meer bitrate/kwaliteit/resolutie).
 > Al gecomprimeerde bestanden (zip, jpg in een zip, …) kunnen verliesvrij nauwelijks kleiner.
 
+## Talen
+
+De web-app is er in 14 talen: Nederlands, English, Deutsch, Español, Français, Português, Русский, Türkçe,
+Bahasa Indonesia, العربية (van rechts naar links), हिन्दी, বাংলা, 中文 en 日本語. De taal van je browser wordt
+automatisch gekozen; wisselen kan met het keuzemenu bovenaan.
+
+Vertalingen staan in `i18n/<taal>.txt`: één regel per tekst, in dezelfde volgorde als `i18n/keys.py`
+(de Nederlandse brontekst). Na een wijziging: `python i18n/build.py`. De lokale/desktop-startpagina is nog
+Nederlands; de werkbanken (via **[ PDF & ARCHIEF ]**) zijn vertaald.
+
 ## Social media
 
 Tabblad **[ SOCIAL MEDIA ]** in de web-app: kies een platform en formaat, en foto's en video's krijgen exact de
@@ -144,6 +154,27 @@ zodat je kunt knippen, verkleinen of omzetten, of met **[ ↓ OPSLAAN ]** het or
   toestemming van de maker. Downloaden van andermans video's kan tegen de voorwaarden van de site
   en het auteursrecht ingaan.
 - In de browser-versie (GitHub Pages) kan dit niet: een webpagina mag geen video's van andere sites ophalen.
+
+## Torrents (lokale versie en desktop-app)
+
+In hetzelfde kader als de video-links: plak een **magnet-link** of klik **[ .TORRENT KIEZEN ]** (of sleep een
+.torrent-bestand op het sleepvak). Je ziet voortgang, snelheid en het aantal peers, en kunt stoppen met **[ STOP ]**.
+Eén bestand gaat direct de converter in; bij meerdere bestanden krijg je een lijst met **[ OPENEN ]** en **[↓]** per
+bestand. Werkt met [libtorrent](https://www.libtorrent.org) (in `requirements.txt` en in de installers).
+Alleen voor legale inhoud: eigen bestanden, open-source software en Linux-ISO's, vrije licenties of met toestemming.
+Windows kan de eerste keer vragen of de app door de firewall mag; dat is nodig om met peers te verbinden.
+
+## Viruscontrole
+
+- **Desktop-app/lokale versie**: video-links en torrents worden na het downloaden automatisch gescand
+  (vinkje **Controleren op virussen**). Gebruikt de scanner die al op de computer staat: Microsoft Defender
+  (Windows, standaard aanwezig) of ClamAV (macOS: `brew install clamav`, Linux: `sudo apt install clamav`).
+  Wordt er iets gevonden, dan wordt het bestand niet geopend en kun je het met **[ VERWIJDEREN ]** wissen.
+  Elk geopend bestand kun je ook los scannen met **[ VIRUSSCAN ]**.
+- **VirusTotal**: van elk bestand wordt een SHA-256-vingerafdruk gemaakt met een link naar VirusTotal (70+ scanners).
+  Met een gratis API-sleutel (in het kader *VIRUSSCANNER & VIRUSTOTAL*) gebeurt dat automatisch. Alleen de
+  vingerafdruk wordt gedeeld, nooit het bestand. De sleutel staat alleen op je eigen computer.
+- **Web-app**: de knop **[VT]** per bestand opent de VirusTotal-controle via dezelfde vingerafdruk.
 
 ## Instellingen (omgevingsvariabelen)
 

@@ -14,6 +14,8 @@ from werkzeug.utils import secure_filename
 
 from converter.detect import LABELS, TARGETS, detect, extension, media_info
 from converter.jobs import JobManager
+from converter import settings as user_settings
+from converter import virus
 from converter.util import ConversionError, parse_size
 
 # In de desktop-app wijst CONVERTER_BASE naar de map met static/ (naast het programma).
@@ -110,9 +112,112 @@ def fetch_url():
     if not url:
         return jsonify(error="Plak eerst een link."), 400
     uid = uuid.uuid4().hex
-    job = jobs.submit(WORK / uid, "fetch", {"url": url, "audio_only": bool(data.get("audio_only"))}, kind="fetch")
+    job = jobs.submit(WORK / uid, "fetch", {"url": url, "audio_only": bool(data.get("audio_only")),
+                                            "scan": data.get("scan", True) is not False}, kind="fetch")
     job.extra["uid"] = uid
     return jsonify(job.public())
+
+
+@app.post("/api/torrent")
+def torrent_start():
+    """Torrent downloaden: een .torrent-bestand (formulier) of een magnet-link (JSON)."""
+    f = request.files.get("file")
+    scan = request.values.get("scan", "1") != "0"
+    if f and f.filename:
+        source = f.read()
+        if len(source) > 20 * 1024 * 1024:
+            return jsonify(error="Dit .torrent-bestand is te groot."), 400
+    else:
+        data = request.get_json(force=True, silent=True) or {}
+        source = str(data.get("magnet") or "").strip()
+        scan = data.get("scan", True) is not False
+        if not source.lower().startswith("magnet:?"):
+            return jsonify(error="Plak een magnet-link (begint met magnet:?) of kies een .torrent-bestand."), 400
+    uid = uuid.uuid4().hex
+    job = jobs.submit(WORK / uid, "torrent", {"source": source, "scan": scan}, kind="torrent")
+    job.extra["uid"] = uid
+    return jsonify(job.public())
+
+
+@app.post("/api/job/<job_id>/cancel")
+def job_cancel(job_id):
+    job = jobs.get(job_id)
+    if not job:
+        return jsonify(error="Taak niet gevonden."), 404
+    job.extra["cancel"] = True
+    return jsonify(ok=True)
+
+
+def _torrent_file(job_id: str, idx: int) -> Path:
+    job = jobs.get(job_id)
+    if not job or job.kind != "torrent" or job.status != "done":
+        abort(404)
+    if job.extra.get("virus", {}).get("status") == "infected":
+        abort(403)
+    files = {f["idx"]: f for f in job.extra.get("files", [])}
+    if idx not in files:
+        abort(404)
+    root = job.result.resolve()
+    path = (root / files[idx]["path"]).resolve()
+    if not path.is_relative_to(root) or not path.is_file():
+        abort(404)
+    return path
+
+
+@app.get("/api/torrent/<job_id>/file/<int:idx>")
+def torrent_file(job_id, idx):
+    path = _torrent_file(job_id, idx)
+    return send_file(path, as_attachment=True, download_name=path.name)
+
+
+@app.post("/api/torrent/<job_id>/open/<int:idx>")
+def torrent_open(job_id, idx):
+    """Eén bestand uit de torrent in de converter openen."""
+    path = _torrent_file(job_id, idx)
+    return jsonify(register_upload(uuid.uuid4().hex, path))
+
+
+@app.post("/api/job/<job_id>/delete")
+def job_delete(job_id):
+    """Download (bijv. met een virus) direct van de schijf verwijderen."""
+    import shutil
+    job = jobs.get(job_id)
+    if not job or job.kind not in ("fetch", "torrent"):
+        return jsonify(error="Taak niet gevonden."), 404
+    target = job.src if job.src.is_dir() else job.src.parent
+    if WORK.resolve() in target.resolve().parents:
+        shutil.rmtree(target, ignore_errors=True)
+    job.result = None
+    job.extra["deleted"] = True
+    return jsonify(ok=True)
+
+
+@app.post("/api/scan/<uid>")
+def scan_upload(uid):
+    """Een geopend bestand op verzoek controleren op virussen."""
+    up = uploads.get(uid)
+    if not up or not up["path"].exists():
+        return jsonify(error="Bestand niet gevonden."), 404
+    return jsonify(virus.check(up["path"], user_settings.load().get("vt_key")))
+
+
+@app.get("/api/settings")
+def get_settings():
+    s = user_settings.load()
+    return jsonify(vt_key_set=bool(s.get("vt_key")), scanner=virus.available_engine())
+
+
+@app.post("/api/settings")
+def set_settings():
+    data = request.get_json(force=True, silent=True) or {}
+    s = user_settings.load()
+    if "vt_key" in data:
+        key = str(data["vt_key"] or "").strip()
+        if key and (len(key) != 64 or not all(c in "0123456789abcdefABCDEF" for c in key)):
+            return jsonify(error="Een VirusTotal-sleutel bestaat uit 64 tekens (0-9, a-f)."), 400
+        s["vt_key"] = key
+    user_settings.save(s)
+    return jsonify(vt_key_set=bool(s.get("vt_key")))
 
 
 @app.get("/api/file/<uid>")
@@ -150,7 +255,8 @@ def job_status(job_id):
     if not job:
         return jsonify(error="Taak niet gevonden."), 404
     data = job.public()
-    if job.kind == "fetch" and job.status == "done" and job.result:
+    infected = job.extra.get("virus", {}).get("status") == "infected"
+    if job.kind == "fetch" and job.status == "done" and job.result and not infected:
         if "upload" not in job.extra:
             job.extra["upload"] = register_upload(job.extra["uid"], job.result)
         data["upload"] = job.extra["upload"]

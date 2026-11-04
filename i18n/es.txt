@@ -1,0 +1,289 @@
+01 ARCHIVO
+02 FORMATO
+03 TAMAÑO
+04 SALIDA
+> ARRASTRA LOS ARCHIVOS AQUÍ
+> convierte · reduce · amplía · recorta. tu archivo nunca sale del navegador
+> listo
+SIN SUBIDA
+Tema de color
+Pasos
+Modo
+IDIOMA
+[VERDE]
+[ÁMBAR]
+[CIAN]
+uno o varios a la vez · [ENTER] / clic para buscar
+vídeo: mp4 · mov · webm · mkv | audio: mp3 · wav · m4a · ogg · flac
+imagen: jpg · png · webp · gif · bmp · avif · svg | pdf: unir · dividir · comprimir
+archivo: zip · rar · 7z · tar · gz · bz2 · xz · iso · cab: ver · extraer · editar · convertir
+[ + NUEVO ARCHIVO VACÍO ]
+[ PROBAR CON 3 IMÁGENES DE PRUEBA ]
+todo ocurre en tu navegador · no se sube nada
+DESCARGAS
+El convertidor como app para tu ordenador o móvil. En el ordenador tiene todo, también
+descargar enlaces de youtube y otros vídeos
+y
+descargar torrents
+SISTEMA>
+Elige tu sistema
+ordenador
+móvil / tableta
+Windows 10/11 · .msi
+Mac con M1–M4 · .dmg
+Mac con Intel · .dmg
+Ubuntu / Debian / Mint · .deb
+Otro Linux · .AppImage
+Android 10+ · .apk
+iPhone / iPad · app web
+[ ↓ DESCARGAR ]
+[ ? CÓMO ]
+todas las descargas y versiones
+1. descarga y haz doble clic en el archivo .msi
+2. ¿'windows protegió su pc'? → más información → ejecutar de todas formas
+3. abre 'Anything Converter' desde el menú inicio; se abre en tu navegador
+1. abre el .dmg y arrastra la app a Aplicaciones
+2. abre la app; si aparece un aviso, ciérralo
+3. ajustes del sistema → privacidad y seguridad → 'abrir igualmente' abajo
+// ¿qué mac? menú apple → acerca de este mac: 'chip apple m…' = este
+// ¿qué mac? menú apple → acerca de este mac: 'procesador intel' = este
+1. descarga y abre el archivo .deb (instalación de software)
+o en una terminal: sudo apt install ./AnythingConverter-Linux.deb
+2. abre 'Anything Converter' desde el menú
+1. descarga el archivo .AppImage
+2. clic derecho → propiedades → activar 'permitir ejecutar como programa'
+3. doble clic para iniciar
+1. descarga el archivo .apk en tu móvil
+2. ábrelo; permite 'instalar apps desconocidas' para tu navegador
+3. abre 'Converter'; los archivos guardados están en Downloads/Anything Converter
+// los enlaces de youtube y los torrents solo funcionan en el ordenador
+apple no permite apps fuera de la app store; usa la app web:
+1. abre esta página en safari
+2. toca compartir (cuadrado con flecha) → añadir a pantalla de inicio → añadir
+3. abre 'Converter' desde tu pantalla de inicio
+ARCHIVOS
+ARCHIVOS ({0})
+NOMBRE
+INFO
+ESTADO
+[ + AÑADIR ]
+[ BORRAR TODO ]
+leyendo…
+listo para empezar
+en cola
+!! ERROR
+[ CONVERTIR ]
+[ TALLER PDF ]
+[ TALLER DE ARCHIVOS ]
+[ REDES SOCIALES ]
+// la lista está vacía. añade archivos para el archivo comprimido en AÑADIR.
+FORMATO
+TAMAÑO
+Modo
+Calidad
+Tamaño objetivo por archivo
+Alta
+archivo grande
+Normal
+Baja
+el más pequeño
+OBJETIVO>
+Tamaño objetivo
+Unidad
+2× MÁS GRANDE
+Se aplica por archivo. Con % cada archivo recibe un objetivo según su propio tamaño.
+También puede ser mayor que el original: suben la tasa de bits, la calidad o la resolución.
+VÍDEO
+RESOLUCIÓN>
+original / automático
+Quitar sonido
+ANCHO PX>
+FPS>
+DIMENSIONES
+ESCALA %>
+ANCHO>
+ALTO>
+auto
+// se aplica a todas las imágenes. porcentaje o ancho y/o alto. un solo valor = mantiene la proporción.
+RECORTAR
+ENTRADA>
+SALIDA>
+final
+Punto de inicio
+Punto final
+Posición actual como inicio
+Posición actual como final
+[|◀ AQUÍ]
+[AQUÍ ▶|]
+SELECCIÓN:
+// tiempos como 1:23.5 o en segundos
+// recortar es por archivo: deja un solo vídeo o audio en la lista.
+[ ▶ EMPEZAR ]
+[ TRABAJANDO... ]
+[ ▶ OTRA VEZ ]
+[ ▶ CREAR PDF ]
+[ ▶ CREAR ARCHIVO ]
+[ ▶ CREAR PARA REDES SOCIALES ]
+ESTADO: OK
+ESTADO: {0} OK
+LISTO: {0} OK · {1} ERROR
+ARCHIVO
+ORIGINAL
+NUEVO
+DIFERENCIA
+FUENTES
+CONTENIDO
+{0} más pequeño
+{0} más grande
+{0} elementos
+[ ↓ GUARDAR ]
+[ ↓ GUARDAR COMO .ZIP ]
+[ ↓ GUARDAR TODO COMO .ZIP ({0}) ]
+// o guarda los archivos uno a uno con [↓] en la lista.
+PÁGINAS
+PÁGINAS ({0})
+[ SELECCIONAR TODO ]
+[ GIRAR -90° ]
+[ GIRAR +90° ]
+[ ✕ BORRAR SELECCIÓN ]
+[ CONSERVAR SOLO SELECCIÓN ]
+[ ↕ INVERTIR ]
+[ RESTABLECER ]
+// arrastra las páginas para ordenarlas. girar se aplica a la selección, o a todas si no hay nada seleccionado.
+haz clic en las páginas para seleccionarlas
+{0} seleccionadas
+SALIDA
+Salida
+Un PDF
+unir
+Cada página por separado
+Dividir por rangos
+RANGOS>
+NOMBRE DEL ARCHIVO>
+unido
+FOTOS
+PAPEL>
+igual que la foto
+ORIENTACIÓN>
+automática
+vertical
+horizontal
+MARGEN>
+ninguno
+pequeño
+normal
+amplio
+EXTRA
+Añadir números de página
+POSICIÓN>
+abajo centro
+abajo derecha
+arriba centro
+arriba derecha
+FORMA>
+Página 1
+Marca de agua
+TEXTO>
+Texto de la marca de agua
+TÍTULO>
+AUTOR>
+opcional
+COMPRIMIR
+NIVEL>
+ninguno · el texto sigue seleccionable
+ligero · 150 dpi
+fuerte · 96 dpi
+tamaño objetivo
+Tamaño objetivo del PDF
+// comprimir convierte las páginas en imágenes; después el texto ya no se puede seleccionar.
+CONTENIDO ({0})
+CONTRASEÑA>
+Contraseña del archivo
+[ ABRIR ]
+[ TODO ]
+[ NADA ]
+[ INVERTIR ]
+[ ABRIR TODAS LAS CARPETAS ]
+[ CERRAR TODAS LAS CARPETAS ]
+BUSCAR>
+p. ej. .jpg o foto
+Buscar en el archivo
+Contenido del archivo
+{0} de {1} archivos marcados · {2}
+// archivo vacío. añade archivos con [ + AÑADIR ARCHIVOS ] abajo, o arrástralos a la página.
+// [x] = va al nuevo archivo. haz clic en una carpeta para abrirla o cerrarla. [↓] guarda un solo archivo.
+AÑADIR
+EN CARPETA>
+(carpeta raíz)
+[ + AÑADIR ARCHIVOS ]
+// los archivos añadidos aparecen en el árbol con un +. los archivos sueltos de la lista de arriba también se incluyen.
+archivo
+.zip · funciona en todas partes
+.7z · pequeño, 7-zip/winrar
+.tar.xz · el más pequeño
+.tar · sin compresión
+.iso · imagen de disco
+.rar · no es posible (solo WinRAR puede crear rar)
+Proteger con contraseña
+(AES-256, solo .zip)
+Contraseña para el nuevo archivo
+// también se pueden abrir rar y cab. solo winrar puede crear rar (formato cerrado); elige .7z o .zip, winrar también los abre.
+PLATAFORMA
+Plataforma y formato
+FORMATO>
+AJUSTE>
+Cómo encaja la foto en el formato
+llenar · recortar (arrastra para elegir)
+ajustar · fondo desenfocado
+ajustar · bordes negros
+ajustar · bordes blancos
+PANORAMA
+NÚMERO DE DIAPOSITIVAS>
+// sube las diapositivas en orden (01, 02, …) como una sola publicación en carrusel. al deslizar, la imagen continúa sin cortes.
+VISTA PREVIA
+ARCHIVO>
+Qué archivo estás viendo
+Vista previa del resultado; arrastra para mover la imagen
+// añade fotos o vídeos a la lista de arriba.
+ZOOM>
+Acercar
+[ CENTRO ]
+// arrastra en la vista previa para elegir qué parte queda visible. se aplica por archivo.
+tamaño {0}
+foto {0}
+vídeo {0}
+consejo {0}
+publicación vertical 4:5 · la mejor en el feed
+publicación cuadrada 1:1
+publicación horizontal 1.91:1
+historia / reels 9:16
+carrusel panorámico 4:5 · deslizar
+carrusel panorámico 1:1 · deslizar
+foto de perfil
+publicación vertical 4:5
+publicación cuadrada
+publicación horizontal / enlace
+foto de portada
+foto de evento
+vídeo 1080p 16:9
+vídeo 1440p 16:9 · más nítido tras subir
+vídeo 4K 16:9
+shorts 9:16
+miniatura
+banner del canal
+vídeo 9:16
+foto 9:16
+publicación horizontal 16:9
+vídeo 16:9
+cabecera
+publicación horizontal
+banner del perfil
+pin 2:3
+pin de vídeo 9:16
+historia / spotlight 9:16
+estado 9:16
+publicación 4:5 · máx. 1 MB
+miniatura del directo
+[VT]
+[ ABRIR VIRUSTOTAL ]
+calculando huella…
