@@ -26,6 +26,19 @@ function parseTime(v) {
   if (parts.some(isNaN)) return NaN;
   return parts.reduce((a, b) => a * 60 + b, 0);
 }
+function txtBar(f, width = 32) {
+  const n = Math.round(Math.max(0, Math.min(1, f)) * width);
+  return "[" + "█".repeat(n) + "░".repeat(width - n) + "] " + String(Math.round(f * 100)).padStart(3) + "%";
+}
+function barWidth() { return window.innerWidth < 480 ? 20 : 32; }
+function status(msg) { $("status").textContent = "> " + msg; }
+function step(n) {
+  document.querySelectorAll(".menubar span").forEach((el) => {
+    const k = +el.dataset.step;
+    el.classList.toggle("on", n === 2 ? k >= 2 && k <= 3 : k === n);
+    el.classList.toggle("done", k < (n === 2 ? 2 : n));
+  });
+}
 const radio = (name) => document.querySelector(`input[name=${name}]:checked`).value;
 const show = (el, on) => el.classList.toggle("hidden", !on);
 
@@ -45,17 +58,18 @@ function upload(file) {
   localFile = file;
   const bar = $("uploadBar");
   show(bar, true);
-  bar.firstElementChild.style.width = "0";
+  bar.textContent = txtBar(0, barWidth());
+  status("uploaden: " + file.name);
   const fd = new FormData();
   fd.append("file", file);
   const xhr = new XMLHttpRequest();
   xhr.open("POST", "/api/upload");
-  xhr.upload.onprogress = (e) => { if (e.lengthComputable) bar.firstElementChild.style.width = (100 * e.loaded / e.total) + "%"; };
+  xhr.upload.onprogress = (e) => { if (e.lengthComputable) bar.textContent = txtBar(e.loaded / e.total, barWidth()); };
   xhr.onload = () => {
     show(bar, false);
     let data;
     try { data = JSON.parse(xhr.responseText); } catch { data = { error: "Upload mislukt." }; }
-    if (xhr.status !== 200) { alert(data.error || "Upload mislukt."); return; }
+    if (xhr.status !== 200) { status("FOUT: " + (data.error || "upload mislukt")); alert(data.error || "Upload mislukt."); return; }
     setup(data);
   };
   xhr.onerror = () => { show(bar, false); alert("Upload mislukt (verbinding)."); };
@@ -69,6 +83,8 @@ function setup(data) {
   show($("panel"), true);
   show($("result"), false);
   show($("progress"), false);
+  step(2);
+  status(`geladen: ${data.name} [${data.label.toLowerCase()}]`);
 
   $("fName").textContent = data.name;
   const meta = [data.label, human(data.size)];
@@ -203,6 +219,7 @@ $("resetBtn").addEventListener("click", () => {
   current = null; fileInput.value = "";
   const p = $("preview"); p.pause && p.pause();
   show($("panel"), false); show(drop, true);
+  step(1); status("gereed");
 });
 
 $("goBtn").addEventListener("click", async () => {
@@ -236,6 +253,8 @@ $("goBtn").addEventListener("click", async () => {
   }
 
   $("goBtn").disabled = true;
+  $("goBtn").textContent = "[ BEZIG... ]";
+  step(4);
   show($("result"), false);
   show($("progress"), true);
   setProgress(0, "Versturen…");
@@ -248,12 +267,14 @@ $("goBtn").addEventListener("click", async () => {
     showError(err.message);
   } finally {
     $("goBtn").disabled = false;
+    $("goBtn").textContent = "[ ▶ START ]";
   }
 });
 
 function setProgress(f, msg) {
-  $("progBar").style.width = Math.round(f * 100) + "%";
-  $("progMsg").textContent = `${msg} — ${Math.round(f * 100)}%`;
+  $("progBar").textContent = txtBar(f, barWidth());
+  $("progMsg").textContent = "> " + msg.toLowerCase() + "...";
+  status(msg.toLowerCase() + " " + Math.round(f * 100) + "%");
 }
 
 async function poll(id) {
@@ -273,24 +294,57 @@ function showResult(j) {
   const res = $("result");
   res.className = "result";
   const diff = (j.size - j.original_size) / j.original_size * 100;
-  const cls = diff <= 0 ? "delta-down" : "delta-up";
-  res.innerHTML = "";
-  const p = document.createElement("p");
-  p.style.margin = "0";
-  p.innerHTML = `<strong></strong><br>${human(j.original_size)} → ${human(j.size)} <span class="${cls}">(${diff > 0 ? "+" : ""}${diff.toFixed(1)}%)</span>`;
-  p.querySelector("strong").textContent = j.filename;
+  const w = barWidth() - 8;
+  const max = Math.max(j.size, j.original_size);
+  const bar = (n) => { const k = Math.max(1, Math.round(n / max * w)); return "█".repeat(k) + "░".repeat(w - k); };
+  const arrow = diff <= 0 ? "▼" : "▲";
+  res.innerHTML = `<span class="head">STATUS: OK</span>
+<div class="cmp"><span class="lbl">BESTAND   </span><span class="fn"></span>
+<span class="lbl">ORIGINEEL </span>${bar(j.original_size)} ${human(j.original_size)}
+<span class="lbl">NIEUW     </span>${bar(j.size)} ${human(j.size)}
+<span class="lbl">VERSCHIL  </span><span class="down">${arrow} ${Math.abs(diff).toFixed(1)}% ${diff <= 0 ? "kleiner" : "groter"}</span></div>`;
+  res.querySelector(".fn").textContent = j.filename;
   const a = document.createElement("a");
   a.className = "download";
   a.href = "/api/download/" + j.id;
-  a.textContent = "Download";
-  res.append(p, a);
+  a.textContent = "[ ↓ DOWNLOAD ]";
+  res.append(a);
   show(res, true);
+  status(`klaar: ${j.filename} (${human(j.size)})`);
 }
 
 function showError(msg) {
   show($("progress"), false);
   const res = $("result");
   res.className = "result error";
-  res.textContent = msg;
+  res.innerHTML = '<span class="head">!! FOUT</span>\n';
+  res.append(document.createTextNode(msg));
+  status("fout - zie melding");
+  step(2);
   show(res, true);
 }
+
+// ---------- achtergrond-ruis en thema
+function drawNoise() {
+  const cols = Math.ceil(window.innerWidth / 7.3) + 2, rows = Math.ceil(window.innerHeight / 15.6) + 2;
+  let out = "";
+  for (let r = 0; r < rows; r++) {
+    let line = "";
+    for (let c = 0; c < cols; c++) line += Math.random() < 0.12 ? (Math.random() < 0.5 ? "0" : "1") : " ";
+    out += line + "\n";
+  }
+  $("bgNoise").textContent = out;
+}
+drawNoise();
+let noiseT;
+window.addEventListener("resize", () => { clearTimeout(noiseT); noiseT = setTimeout(drawNoise, 200); });
+
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  document.querySelectorAll(".themes button").forEach((b) => b.classList.toggle("on", b.dataset.theme === t));
+  try { localStorage.setItem("ac-theme", t); } catch {}
+}
+document.querySelectorAll(".themes button").forEach((b) => b.addEventListener("click", () => setTheme(b.dataset.theme)));
+let savedTheme = "groen";
+try { savedTheme = localStorage.getItem("ac-theme") || "groen"; } catch {}
+setTheme(savedTheme);

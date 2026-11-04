@@ -2,7 +2,7 @@
 
 Een lokale web-app om (bijna) elk bestand te **converteren**, **kleiner of groter te maken** tot een exacte
 bestandsgrootte in KB/MB/GB, en **video's en audio te knippen**. Alles draait op je eigen computer;
-bestanden worden na 1 uur automatisch opgeruimd.
+bestanden worden na 1 uur automatisch opgeruimd. De interface heeft een retro terminal-/ASCII-stijl met drie kleurthema's (groen, amber, cyaan).
 
 ## Wat kan het?
 
