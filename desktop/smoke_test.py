@@ -81,6 +81,10 @@ def main():
             raise SystemExit("app startte niet binnen 90 seconden")
         print("ping:", info)
         assert info["desktop"] is True
+        want = os.environ.get("EXPECT_WINDOW")
+        print("  venster:", info.get("window"))
+        if want:
+            assert info.get("window") == want, f"verwacht venster '{want}', kreeg '{info.get('window')}'"
         convert("test.png", sample_png(), "jpg")
         convert("test.wav", sample_wav(), "mp3")
         # libtorrent aanwezig? Een kapot .torrent-bestand moet "geen geldig" geven, niet "vereisen libtorrent".

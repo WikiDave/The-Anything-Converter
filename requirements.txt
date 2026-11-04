@@ -4,3 +4,4 @@ pikepdf>=8.0
 yt-dlp[default]>=2025.11.12
 libtorrent>=2.0.11
 textual>=8.2
+pywebview>=6.1

@@ -1,7 +1,8 @@
 name: Desktop-installers
 
 # Bouwt de desktop-app voor Windows (.msi), macOS (.dmg, Apple Silicon + Intel) en Linux
-# (.deb + .AppImage), met ffmpeg, ffprobe, yt-dlp en Deno erin.
+# (.deb + .AppImage), met ffmpeg, ffprobe, yt-dlp en Deno erin. De app opent in een eigen
+# programmavenster (pywebview); de rooktest controleert dat ook.
 # - Push naar een branch: alleen bouwen en testen.
 # - Handmatig starten (Actions -> Run workflow) of een tag v*: ook publiceren als GitHub-release.
 on:
@@ -22,7 +23,7 @@ on:
       version:
         description: "Versie (bijv. 2.1.0)"
         required: true
-        default: "2.3.0"
+        default: "2.6.0"
 
 permissions:
   contents: read
@@ -105,8 +106,33 @@ jobs:
           bash desktop/make_appimage.sh "$BUILD" out/AnythingConverter-Linux.AppImage
           echo "EXE=$BUILD/AnythingConverter" >> "$GITHUB_ENV"
 
-      - name: Rooktest (starten, converteren, afsluiten)
-        run: python desktop/smoke_test.py "$EXE"
+      - name: Terminalversie inpakken voor Homebrew (macOS, Linux)
+        if: matrix.platform != 'win-x64'
+        run: |
+          if [ "${{ matrix.platform }}" = linux-x64 ]; then
+            DIR="$(dirname "$EXE")"
+          else
+            DIR="$(cd "$(dirname "$EXE")/../.." && pwd)"   # de .app-map
+          fi
+          NAME=$(echo "${{ matrix.platform }}" | sed 's/^mac-/macos-/')
+          tar -czf "out/anything-converter-tui-$NAME.tar.gz" -C "$(dirname "$DIR")" "$(basename "$DIR")"
+          ls -la out
+
+      - name: GTK/WebKit voor het programmavenster (Linux)
+        if: matrix.platform == 'linux-x64'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.1 xvfb
+
+      - name: Rooktest (starten in eigen venster, converteren, afsluiten)
+        env:
+          EXPECT_WINDOW: native
+        run: |
+          if [ "${{ matrix.platform }}" = linux-x64 ]; then
+            xvfb-run -a python desktop/smoke_test.py "$EXE"
+          else
+            python desktop/smoke_test.py "$EXE"
+          fi
 
       - name: Rooktest terminalversie
         run: |
@@ -197,13 +223,14 @@ jobs:
           | Andere Linux | `AnythingConverter-Linux.AppImage` |
           | Android 10+ | `AnythingConverter-Android.apk` |
           | iPhone / iPad | geen bestand: open de web-app in Safari → Deel → Zet op beginscherm |
+          | Terminal (macOS/Linux) | `brew tap wikidave/anything-converter https://github.com/WikiDave/The-Anything-Converter` en `brew install anything-converter` |
 
-          ffmpeg, yt-dlp en Deno zitten erin. Na het starten opent de converter in je browser;
-          afsluiten met **[ AFSLUITEN ]** bovenaan de pagina.
+          ffmpeg, yt-dlp en Deno zitten erin. De converter opent in een eigen programmavenster;
+          venster dicht = programma af. Met **[ TERMINAL ]** bovenin open je de terminalversie.
 
           **Eerste keer openen** (de app is niet betaald ondertekend):
           - **Windows**: "Windows heeft uw pc beschermd" → **Meer informatie** → **Toch uitvoeren**.
-          - **macOS**: dubbelklik, sluit de melding, ga naar **Systeeminstellingen → Privacy en beveiliging** en klik onderaan **Toch openen**.
+          - **macOS** ("Apple kon niet verifiëren…"): klik **Gereed**, ga naar **Systeeminstellingen → Privacy en beveiliging** en klik onderaan **Toch openen**. Of in Terminal: `xattr -dr com.apple.quarantine "/Applications/Anything Converter.app"`
           - **Linux AppImage**: rechtsklik → Eigenschappen → "Uitvoeren als programma" aanzetten.
           - **Android**: open het .apk-bestand en sta "Installeren van onbekende apps" toe voor je browser.
           EOF
@@ -214,3 +241,39 @@ jobs:
           body_path: notes.md
           files: out/*
           make_latest: true
+
+      # Homebrew-formule in deze repo bijwerken met de nieuwe versie en sha256-waarden.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: repo
+      - name: Homebrew-formule bijwerken
+        run: |
+          V="${{ inputs.version }}"
+          [ -n "$V" ] || V="${GITHUB_REF_NAME#v}"
+          cd repo
+          python3 desktop/update_formula.py "$V" ../out
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/anything-converter.rb
+          git diff --cached --quiet || { git commit -m "Homebrew: anything-converter $V"; git push origin HEAD:main; }
+
+  homebrew:
+    name: Homebrew-test (${{ matrix.os }})
+    needs: release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-22.04]
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+    steps:
+      - name: Installeren via brew en starten
+        run: |
+          if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"; fi
+          brew tap wikidave/anything-converter https://github.com/WikiDave/The-Anything-Converter
+          brew install wikidave/anything-converter/anything-converter
+          anything-converter-tui --version
+          brew test anything-converter

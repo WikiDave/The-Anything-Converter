@@ -1813,7 +1813,36 @@ async function androidSave(blob, name) {
   setNote("opgeslagen in Downloads/Anything Converter: " + name);
 }
 
+// In het eigen venster van de desktop-app: "Bewaar als"-venster via pywebview, in stukjes.
+async function nativeSave(blob, name) {
+  const api = window.pywebview.api;
+  const r = await api.save_begin(name);
+  if (r.cancelled) { setNote("opslaan geannuleerd"); return; }
+  if (r.error) throw new Error(r.error);
+  const CH = 3 * 1024 * 1024;
+  for (let o = 0; o < blob.size; o += CH) {
+    const buf = new Uint8Array(await blob.slice(o, o + CH).arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+    if (!(await api.save_chunk(btoa(bin)))) { await api.save_abort(); throw new Error("opslaan mislukt"); }
+    setNote(`opslaan ${Math.min(100, Math.round((o + CH) / blob.size * 100))}%`);
+  }
+  const done = await api.save_end();
+  setNote("opgeslagen: " + (done.path || name));
+}
+// Links naar buiten (downloads, VirusTotal) in de gewone browser openen, niet in het app-venster.
+document.addEventListener("click", (e) => {
+  const a = e.target.closest && e.target.closest("a[href]");
+  if (!a || !(window.pywebview && window.pywebview.api)) return;
+  const u = new URL(a.href, location.href);
+  if (/^https?:$/.test(u.protocol) && u.origin !== location.origin) { e.preventDefault(); window.pywebview.api.open_external(u.href); }
+}, true);
+
 async function saveBlob(blob, name) {
+  if (window.pywebview && window.pywebview.api) {
+    try { await nativeSave(blob, name); } catch (err) { setNote("opslaan mislukt: " + err.message); }
+    return;
+  }
   if (window.AnythingAndroid) {
     try { await androidSave(blob, name); } catch (err) { setNote(err.message); }
     return;

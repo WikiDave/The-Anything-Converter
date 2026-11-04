@@ -515,8 +515,10 @@ def main() -> None:
         return
     # meegeleverde programma's (ffmpeg, deno) in de desktop-installatie
     here = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
-    if (here / "bin").is_dir():
-        os.environ["PATH"] = str(here / "bin") + os.pathsep + os.environ.get("PATH", "")
+    for bindir in (here / "bin", here.parent / "Resources" / "bin"):  # macOS .app: ook Resources
+        if bindir.is_dir():
+            os.environ["PATH"] = str(bindir) + os.pathsep + os.environ.get("PATH", "")
+            break
     Converter(args.bestand).run()
 
 

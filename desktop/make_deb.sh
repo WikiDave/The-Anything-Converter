@@ -21,6 +21,16 @@ Icon=anything-converter
 Terminal=false
 Categories=AudioVideo;Graphics;Utility;
 DESKTOP
+cat > "$PKG/usr/share/applications/anything-converter-tui.desktop" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=Anything Converter (terminal)
+Comment=Terminalversie van Anything Converter
+Exec=/opt/anything-converter/anything-converter-tui
+Icon=anything-converter
+Terminal=true
+Categories=AudioVideo;Graphics;Utility;ConsoleOnly;
+DESKTOP
 SIZE_KB=$(du -sk "$PKG/opt" | cut -f1)
 cat > "$PKG/DEBIAN/control" <<CONTROL
 Package: anything-converter
@@ -29,10 +39,11 @@ Section: utils
 Priority: optional
 Architecture: amd64
 Installed-Size: $SIZE_KB
+Depends: python3, python3-gi, gir1.2-gtk-3.0, gir1.2-webkit2-4.1 | gir1.2-webkit2-4.0
 Maintainer: Anything Converter <noreply@users.noreply.github.com>
 Description: Converteer, verklein, vergroot en knip bestanden
  Lokale converter voor video, audio, afbeeldingen, PDF en meer, met ffmpeg,
- yt-dlp en Deno meegeleverd. Opent in je browser.
+ yt-dlp en Deno meegeleverd. Opent in een eigen programmavenster.
 CONTROL
 dpkg-deb --build --root-owner-group "$PKG" "$OUT"
 echo "gemaakt: $OUT"
