@@ -20,6 +20,31 @@ bestanden worden na 1 uur automatisch opgeruimd. De interface heeft een retro te
 > Let op: "groter maken" werkt voor video's, audio en afbeeldingen (meer bitrate/kwaliteit/resolutie).
 > Al gecomprimeerde bestanden (zip, jpg in een zip, …) kunnen verliesvrij nauwelijks kleiner.
 
+## Desktop-app (installer, alles inbegrepen)
+
+Download de installer voor jouw systeem van de
+[nieuwste release](https://github.com/WikiDave/The-Anything-Converter/releases/latest):
+
+| Systeem | Bestand |
+|---|---|
+| Windows 10/11 | `AnythingConverter-Windows.msi` |
+| Mac met M1/M2/M3/M4 | `AnythingConverter-macOS-AppleSilicon.dmg` |
+| Mac met Intel | `AnythingConverter-macOS-Intel.dmg` |
+| Ubuntu / Debian / Mint | `AnythingConverter-Linux.deb` |
+| Andere Linux | `AnythingConverter-Linux.AppImage` |
+
+ffmpeg, yt-dlp (video-links) en Deno zitten erin; je hoeft niets anders te installeren. Na het
+starten opent de converter in je browser. Afsluiten met **[ AFSLUITEN ]** bovenaan de pagina.
+Voor Word/Excel/PowerPoint-conversie installeer je los [LibreOffice](https://www.libreoffice.org);
+de app vindt het vanzelf.
+
+De app is niet betaald ondertekend, dus de eerste keer:
+- **Windows**: "Windows heeft uw pc beschermd" → **Meer informatie** → **Toch uitvoeren**.
+- **macOS**: open de app, sluit de melding, ga naar **Systeeminstellingen → Privacy en beveiliging** → **Toch openen**.
+
+De installers worden gebouwd door `.github/workflows/desktop.yml` (cx_Freeze). Een nieuwe release
+maak je via **Actions → Desktop-installers → Run workflow**.
+
 ## Starten
 
 ### Optie 1 – Docker (aanbevolen, alles inbegrepen)

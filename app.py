@@ -16,7 +16,10 @@ from converter.detect import LABELS, TARGETS, detect, extension, media_info
 from converter.jobs import JobManager
 from converter.util import ConversionError, parse_size
 
-BASE = Path(__file__).parent
+# In de desktop-app wijst CONVERTER_BASE naar de map met static/ (naast het programma).
+BASE = Path(os.environ.get("CONVERTER_BASE") or Path(__file__).parent)
+DESKTOP = os.environ.get("CONVERTER_DESKTOP") == "1"
+VERSION = "2.1.0"
 WORK = Path(os.environ.get("CONVERTER_WORKDIR", Path(tempfile.gettempdir()) / "anything-converter"))
 MAX_UPLOAD_MB = int(os.environ.get("CONVERTER_MAX_MB", "4096"))
 
@@ -29,6 +32,23 @@ uploads: dict[str, dict] = {}
 @app.get("/")
 def index():
     return send_from_directory(BASE / "static", "index.html")
+
+
+@app.get("/api/ping")
+def ping():
+    """Laat de interface (en een tweede start van de desktop-app) weten dat de converter draait."""
+    return jsonify(app="anything-converter", version=VERSION, desktop=DESKTOP)
+
+
+@app.post("/api/quit")
+def quit_app():
+    """Desktop-app afsluiten vanuit de interface."""
+    stop = app.config.get("SHUTDOWN")
+    if not DESKTOP or not stop:
+        return jsonify(error="Alleen beschikbaar in de desktop-app."), 400
+    import threading
+    threading.Timer(0.3, stop).start()
+    return jsonify(ok=True)
 
 
 @app.post("/api/upload")
