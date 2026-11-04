@@ -19,7 +19,16 @@ from converter.util import ConversionError, parse_size
 # In de desktop-app wijst CONVERTER_BASE naar de map met static/ (naast het programma).
 BASE = Path(os.environ.get("CONVERTER_BASE") or Path(__file__).parent)
 DESKTOP = os.environ.get("CONVERTER_DESKTOP") == "1"
-VERSION = "2.1.0"
+def _read_version() -> str:
+    for cand in (BASE / "VERSION", Path(__file__).parent / "VERSION"):
+        try:
+            return cand.read_text().strip()
+        except OSError:
+            pass
+    return "0.0.0"
+
+
+VERSION = _read_version()
 WORK = Path(os.environ.get("CONVERTER_WORKDIR", Path(tempfile.gettempdir()) / "anything-converter"))
 MAX_UPLOAD_MB = int(os.environ.get("CONVERTER_MAX_MB", "4096"))
 
