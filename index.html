@@ -389,7 +389,7 @@ button.ar-name:hover, button.ar-name:focus-visible { outline: none; text-decorat
     </div>
     <fieldset class="frame dl-frame" id="dlFrame">
       <legend>DOWNLOADS</legend>
-      <p class="dl-intro">De converter als app voor je computer of telefoon. Op de computer zit alles erin, ook <strong>youtube- en andere video-links ophalen</strong>.</p>
+      <p class="dl-intro">De converter als app voor je computer of telefoon. Op de computer zit alles erin, ook <strong>youtube- en andere video-links ophalen</strong> en <strong>torrents downloaden</strong>.</p>
       <div class="dl-row">
         <label class="field dl-pick"><span>SYSTEEM&gt;</span>
           <span class="sel"><select id="dlSelect" aria-label="Kies je systeem">
@@ -3090,13 +3090,13 @@ const DL = {
     "1. download het .apk-bestand op je telefoon",
     "2. open het; sta 'installeren van onbekende apps' toe voor je browser",
     "3. open 'Converter'; opgeslagen bestanden staan in Downloads/Anything Converter",
-    "// youtube-links ophalen kan alleen op de computer"] },
+    "// youtube-links en torrents kan alleen op de computer"] },
   ios: { file: null, steps: [
     "apple laat apps buiten de app store niet toe; gebruik de web-app:",
     "1. open deze pagina in safari",
     "2. tik op deel (vierkant met pijl) → zet op beginscherm → voeg toe",
     "3. open 'Converter' vanaf je beginscherm",
-    "// youtube-links ophalen kan alleen op de computer"] },
+    "// youtube-links en torrents kan alleen op de computer"] },
 };
 function renderDownload() {
   const k = $("dlSelect").value, d = DL[k];

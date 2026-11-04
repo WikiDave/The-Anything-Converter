@@ -115,6 +115,61 @@ def fetch_url():
     return jsonify(job.public())
 
 
+@app.post("/api/torrent")
+def torrent_start():
+    """Torrent downloaden: een .torrent-bestand (formulier) of een magnet-link (JSON)."""
+    f = request.files.get("file")
+    if f and f.filename:
+        source = f.read()
+        if len(source) > 20 * 1024 * 1024:
+            return jsonify(error="Dit .torrent-bestand is te groot."), 400
+    else:
+        data = request.get_json(force=True, silent=True) or {}
+        source = str(data.get("magnet") or "").strip()
+        if not source.lower().startswith("magnet:?"):
+            return jsonify(error="Plak een magnet-link (begint met magnet:?) of kies een .torrent-bestand."), 400
+    uid = uuid.uuid4().hex
+    job = jobs.submit(WORK / uid, "torrent", {"source": source}, kind="torrent")
+    job.extra["uid"] = uid
+    return jsonify(job.public())
+
+
+@app.post("/api/job/<job_id>/cancel")
+def job_cancel(job_id):
+    job = jobs.get(job_id)
+    if not job:
+        return jsonify(error="Taak niet gevonden."), 404
+    job.extra["cancel"] = True
+    return jsonify(ok=True)
+
+
+def _torrent_file(job_id: str, idx: int) -> Path:
+    job = jobs.get(job_id)
+    if not job or job.kind != "torrent" or job.status != "done":
+        abort(404)
+    files = {f["idx"]: f for f in job.extra.get("files", [])}
+    if idx not in files:
+        abort(404)
+    root = job.result.resolve()
+    path = (root / files[idx]["path"]).resolve()
+    if not path.is_relative_to(root) or not path.is_file():
+        abort(404)
+    return path
+
+
+@app.get("/api/torrent/<job_id>/file/<int:idx>")
+def torrent_file(job_id, idx):
+    path = _torrent_file(job_id, idx)
+    return send_file(path, as_attachment=True, download_name=path.name)
+
+
+@app.post("/api/torrent/<job_id>/open/<int:idx>")
+def torrent_open(job_id, idx):
+    """Eén bestand uit de torrent in de converter openen."""
+    path = _torrent_file(job_id, idx)
+    return jsonify(register_upload(uuid.uuid4().hex, path))
+
+
 @app.get("/api/file/<uid>")
 def uploaded_file(uid):
     """Het geüploade/opgehaalde bestand zelf, voor de preview bij knippen."""

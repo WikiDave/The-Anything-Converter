@@ -145,6 +145,15 @@ zodat je kunt knippen, verkleinen of omzetten, of met **[ ↓ OPSLAAN ]** het or
   en het auteursrecht ingaan.
 - In de browser-versie (GitHub Pages) kan dit niet: een webpagina mag geen video's van andere sites ophalen.
 
+## Torrents (lokale versie en desktop-app)
+
+In hetzelfde kader als de video-links: plak een **magnet-link** of klik **[ .TORRENT KIEZEN ]** (of sleep een
+.torrent-bestand op het sleepvak). Je ziet voortgang, snelheid en het aantal peers, en kunt stoppen met **[ STOP ]**.
+Eén bestand gaat direct de converter in; bij meerdere bestanden krijg je een lijst met **[ OPENEN ]** en **[↓]** per
+bestand. Werkt met [libtorrent](https://www.libtorrent.org) (in `requirements.txt` en in de installers).
+Alleen voor legale inhoud: eigen bestanden, open-source software en Linux-ISO's, vrije licenties of met toestemming.
+Windows kan de eerste keer vragen of de app door de firewall mag; dat is nodig om met peers te verbinden.
+
 ## Instellingen (omgevingsvariabelen)
 
 | Variabele | Standaard | Betekenis |

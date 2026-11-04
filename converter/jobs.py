@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from . import archive, document, fetch, image, media
+from . import archive, document, fetch, image, media, torrent
 from .util import ConversionError
 
 
@@ -26,12 +26,14 @@ class Job:
     result: Optional[Path] = None
     error: Optional[str] = None
     created: float = field(default_factory=time.time)
-    kind: str = "convert"  # convert | fetch
+    kind: str = "convert"  # convert | fetch | torrent
     extra: dict = field(default_factory=dict)
 
     def public(self) -> dict:
         d = {"id": self.id, "status": self.status, "progress": round(self.progress, 3), "message": self.message}
-        if self.result:
+        if self.result and self.kind == "torrent":
+            d.update(name=self.extra.get("name"), files=self.extra.get("files", []))
+        elif self.result:
             d.update(filename=self.result.name, size=self.result.stat().st_size)
             if self.src.is_file():
                 d["original_size"] = self.src.stat().st_size
@@ -74,14 +76,19 @@ class JobManager:
         with self.sem:
             job.status, job.message = "running", "Starten"
             # fetch: src is de (lege) uploadmap waar de download in komt
-            out_dir = job.src if job.kind == "fetch" else job.src.parent / f"out_{job.id[:8]}"
+            out_dir = job.src if job.kind in ("fetch", "torrent") else job.src.parent / f"out_{job.id[:8]}"
             out_dir.mkdir(parents=True, exist_ok=True)
 
             def progress(frac: float, msg: str) -> None:
                 job.progress, job.message = max(job.progress, min(frac, 0.99)), msg
 
             try:
-                if job.kind == "fetch":
+                if job.kind == "torrent":
+                    res = torrent.download(job.opts["source"], out_dir, progress,
+                                           cancelled=lambda: job.extra.get("cancel", False))
+                    job.extra.update(name=res["name"], files=res["files"])
+                    job.result = res["root"]
+                elif job.kind == "fetch":
                     job.result = fetch.download(job.opts["url"], out_dir, bool(job.opts.get("audio_only")), progress)
                 else:
                     job.result = run_conversion(job.src, out_dir, job.category, job.opts, progress)

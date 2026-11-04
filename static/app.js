@@ -55,6 +55,8 @@ drop.addEventListener("drop", (e) => {
 fileInput.addEventListener("change", () => fileInput.files[0] && upload(fileInput.files[0]));
 
 function upload(file) {
+  // een .torrent-bestand op het sleepvak: torrent starten in plaats van converteren
+  if (/\.torrent$/i.test(file.name)) { const fd = new FormData(); fd.append("file", file); return startTorrent(fd); }
   localFile = file;
   const bar = $("uploadBar");
   show(bar, true);
@@ -77,11 +79,105 @@ function upload(file) {
 }
 
 // ---------- video ophalen via een link (yt-dlp, alleen lokale versie)
+let activeJob = null;
+// Een taak volgen tot hij klaar is; geeft de laatste status terug.
+async function followJob(id, bar) {
+  activeJob = id;
+  show($("urlStop"), true);
+  try {
+    for (;;) {
+      const rr = await fetch("/api/job/" + id);
+      const j = await rr.json();
+      if (!rr.ok) throw new Error(j.error || "Taak kwijt.");
+      bar.textContent = txtBar(j.progress, barWidth());
+      $("urlMsg").textContent = "> " + j.message.toLowerCase();
+      $("urlMsg").classList.remove("err");
+      show($("urlMsg"), true);
+      status(j.message.toLowerCase() + " " + Math.round(j.progress * 100) + "%");
+      if (j.status === "error") throw new Error(j.error);
+      if (j.status === "done") return j;
+      await new Promise((res) => setTimeout(res, 700));
+    }
+  } finally {
+    activeJob = null;
+    show($("urlStop"), false);
+  }
+}
+$("urlStop").addEventListener("click", () => { if (activeJob) fetch(`/api/job/${activeJob}/cancel`, { method: "POST" }); });
+
+// ---------- torrents (magnet-link of .torrent-bestand)
+async function startTorrent(body) {
+  const bar = $("urlBar"), msg = $("urlMsg");
+  $("urlBtn").disabled = true; $("torrentBtn").disabled = true;
+  show($("torrentFiles"), false); show(bar, true);
+  bar.textContent = txtBar(0, barWidth());
+  try {
+    const r = await fetch("/api/torrent", body instanceof FormData ? { method: "POST", body }
+      : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j0 = await r.json();
+    if (!r.ok) throw new Error(j0.error || "Torrent starten mislukt.");
+    const j = await followJob(j0.id, bar);
+    show(bar, false);
+    $("urlInput").value = "";
+    if (j.files.length === 1) return openTorrentFile(j.id, j.files[0].idx);
+    showTorrentFiles(j);
+  } catch (err) {
+    show(bar, false);
+    msg.textContent = "!! " + err.message;
+    msg.classList.add("err");
+    show(msg, true);
+    status("torrent mislukt");
+  } finally {
+    $("urlBtn").disabled = false; $("torrentBtn").disabled = false;
+  }
+}
+function showTorrentFiles(j) {
+  const box = $("torrentFiles");
+  box.innerHTML = "";
+  const head = document.createElement("p");
+  head.className = "tor-head";
+  const total = j.files.reduce((a, f) => a + f.size, 0);
+  head.textContent = `TORRENT KLAAR: ${j.name} · ${j.files.length} bestanden · ${human(total)}`;
+  box.append(head);
+  j.files.forEach((f, i) => {
+    const row = document.createElement("div");
+    row.className = "tor-row";
+    const last = i === j.files.length - 1;
+    row.innerHTML = `<span class="tor-pre">${last ? "└─" : "├─"}</span><span class="tor-name"></span><span class="tor-size"></span>` +
+      `<button type="button" class="btn small" data-open>[ OPENEN ]</button><a class="btn small" data-dl>[↓]</a>`;
+    row.querySelector(".tor-name").textContent = f.path;
+    row.querySelector(".tor-name").title = f.path;
+    row.querySelector(".tor-size").textContent = human(f.size);
+    row.querySelector("[data-dl]").href = `/api/torrent/${j.id}/file/${f.idx}`;
+    row.querySelector("[data-open]").addEventListener("click", () => openTorrentFile(j.id, f.idx));
+    box.append(row);
+  });
+  show(box, true);
+  $("urlMsg").textContent = "// [ OPENEN ] zet een bestand in de converter; [↓] slaat het op.";
+  status("torrent klaar");
+}
+async function openTorrentFile(jobId, idx) {
+  const r = await fetch(`/api/torrent/${jobId}/open/${idx}`, { method: "POST" });
+  const data = await r.json();
+  if (!r.ok) { $("urlMsg").textContent = "!! " + (data.error || "Openen mislukt."); return; }
+  localFile = null;
+  setup(data);
+}
+$("torrentBtn").addEventListener("click", () => $("torrentInput").click());
+$("torrentInput").addEventListener("change", () => {
+  const f = $("torrentInput").files[0];
+  if (!f) return;
+  const fd = new FormData(); fd.append("file", f);
+  $("torrentInput").value = "";
+  startTorrent(fd);
+});
+
 $("urlForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const url = $("urlInput").value.trim();
   const bar = $("urlBar"), msg = $("urlMsg");
   if (!url) { $("urlInput").focus(); return; }
+  if (/^magnet:\?/i.test(url)) return startTorrent({ magnet: url });
   $("urlBtn").disabled = true; $("urlBtn").textContent = "[ BEZIG... ]";
   show(msg, false); show(bar, true);
   bar.textContent = txtBar(0, barWidth());
@@ -89,18 +185,9 @@ $("urlForm").addEventListener("submit", async (e) => {
   try {
     const r = await fetch("/api/fetch", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url, audio_only: $("urlAudio").checked }) });
-    let j = await r.json();
-    if (!r.ok) throw new Error(j.error || "Ophalen mislukt.");
-    for (;;) {
-      const rr = await fetch("/api/job/" + j.id);
-      j = await rr.json();
-      if (!rr.ok) throw new Error(j.error || "Taak kwijt.");
-      bar.textContent = txtBar(j.progress, barWidth());
-      status(j.message.toLowerCase() + " " + Math.round(j.progress * 100) + "%");
-      if (j.status === "error") throw new Error(j.error);
-      if (j.status === "done" && j.upload) break;
-      await new Promise((res) => setTimeout(res, 600));
-    }
+    const j0 = await r.json();
+    if (!r.ok) throw new Error(j0.error || "Ophalen mislukt.");
+    const j = await followJob(j0.id, bar);
     localFile = null;
     $("urlInput").value = "";
     show(bar, false);
