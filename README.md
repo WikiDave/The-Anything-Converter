@@ -154,6 +154,18 @@ bestand. Werkt met [libtorrent](https://www.libtorrent.org) (in `requirements.tx
 Alleen voor legale inhoud: eigen bestanden, open-source software en Linux-ISO's, vrije licenties of met toestemming.
 Windows kan de eerste keer vragen of de app door de firewall mag; dat is nodig om met peers te verbinden.
 
+## Viruscontrole
+
+- **Desktop-app/lokale versie**: video-links en torrents worden na het downloaden automatisch gescand
+  (vinkje **Controleren op virussen**). Gebruikt de scanner die al op de computer staat: Microsoft Defender
+  (Windows, standaard aanwezig) of ClamAV (macOS: `brew install clamav`, Linux: `sudo apt install clamav`).
+  Wordt er iets gevonden, dan wordt het bestand niet geopend en kun je het met **[ VERWIJDEREN ]** wissen.
+  Elk geopend bestand kun je ook los scannen met **[ VIRUSSCAN ]**.
+- **VirusTotal**: van elk bestand wordt een SHA-256-vingerafdruk gemaakt met een link naar VirusTotal (70+ scanners).
+  Met een gratis API-sleutel (in het kader *VIRUSSCANNER & VIRUSTOTAL*) gebeurt dat automatisch. Alleen de
+  vingerafdruk wordt gedeeld, nooit het bestand. De sleutel staat alleen op je eigen computer.
+- **Web-app**: de knop **[VT]** per bestand opent de VirusTotal-controle via dezelfde vingerafdruk.
+
 ## Instellingen (omgevingsvariabelen)
 
 | Variabele | Standaard | Betekenis |

@@ -980,11 +980,28 @@ function renderQueue() {
       act.append(b);
     }
     if (!busy) {
+      // viruscontrole: alleen de vingerafdruk (sha-256) gaat naar virustotal, nooit het bestand
+      const vt = document.createElement("button");
+      vt.className = "btn small"; vt.type = "button"; vt.textContent = "[VT]";
+      vt.title = "Controleren op virussen bij VirusTotal (alleen de vingerafdruk wordt gedeeld)";
+      vt.setAttribute("aria-label", "Controleer " + it.file.name + " op virussen");
+      vt.addEventListener("click", () => virusTotal(it));
+      act.append(vt);
       const x = document.createElement("button");
       x.className = "btn small"; x.type = "button"; x.textContent = "[x]";
       x.title = "Verwijderen"; x.setAttribute("aria-label", "Verwijder " + it.file.name);
       x.addEventListener("click", () => removeItem(it));
       act.append(x);
+    }
+    if (it.vtLink) {
+      const m = document.createElement("div");
+      m.className = "q-msg";
+      m.append("└ sha-256 " + it.sha256.slice(0, 16) + "… → ");
+      const a = document.createElement("a");
+      a.href = it.vtLink; a.target = "_blank"; a.rel = "noopener"; a.className = "btn small";
+      a.textContent = "[ OPEN VIRUSTOTAL ]";
+      m.append(a, " 70+ scanners · 'nog nooit gezien' = onbekend bestand, niet per se veilig");
+      li.append(m);
     }
     if (it.msg || it.err) {
       const m = document.createElement("div");
@@ -996,6 +1013,22 @@ function renderQueue() {
   });
   $("queueTitle").textContent = `BESTANDEN (${items.length})`;
 }
+async function virusTotal(it) {
+  if (it.sha256 == null) {
+    it.msg = "vingerafdruk berekenen…"; renderQueue();
+    try {
+      const buf = await it.file.arrayBuffer();
+      const h = new Uint8Array(await crypto.subtle.digest("SHA-256", buf));
+      it.sha256 = [...h].map((b) => b.toString(16).padStart(2, "0")).join("");
+    } catch (err) {
+      it.msg = "vingerafdruk lukte niet (bestand te groot voor de browser?)"; renderQueue(); return;
+    }
+  }
+  it.msg = "";
+  it.vtLink = "https://www.virustotal.com/gui/file/" + it.sha256;
+  renderQueue();
+}
+
 function updateRow(it) {
   const i = items.indexOf(it);
   const li = $("queue").children[i];

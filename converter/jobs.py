@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from . import archive, document, fetch, image, media, torrent
+from . import archive, document, fetch, image, media, settings, torrent, virus
 from .util import ConversionError
 
 
@@ -39,6 +39,8 @@ class Job:
                 d["original_size"] = self.src.stat().st_size
         if self.error:
             d["error"] = self.error
+        if "virus" in self.extra:
+            d["virus"] = self.extra["virus"]
         return d
 
 
@@ -88,8 +90,10 @@ class JobManager:
                                            cancelled=lambda: job.extra.get("cancel", False))
                     job.extra.update(name=res["name"], files=res["files"])
                     job.result = res["root"]
+                    self._scan(job, res["root"], progress)
                 elif job.kind == "fetch":
                     job.result = fetch.download(job.opts["url"], out_dir, bool(job.opts.get("audio_only")), progress)
+                    self._scan(job, job.result, progress)
                 else:
                     job.result = run_conversion(job.src, out_dir, job.category, job.opts, progress)
                 job.status, job.progress, job.message = "done", 1.0, "Klaar"
@@ -98,6 +102,16 @@ class JobManager:
             except Exception as exc:  # onverwacht: log voor debugging
                 traceback.print_exc()
                 job.status, job.error, job.message = "error", f"Onverwachte fout: {exc}", "Mislukt"
+
+    @staticmethod
+    def _scan(job: Job, path: Path, progress) -> None:
+        """Download automatisch op virussen controleren (tenzij uitgezet)."""
+        if not job.opts.get("scan", True):
+            return
+        progress(0.995, "Controleren op virussen")
+        job.extra["virus"] = virus.check(path, settings.load().get("vt_key"))
+        if job.extra["virus"]["status"] == "infected":
+            job.message = "Virus gevonden"
 
     def _cleanup_loop(self) -> None:
         while True:

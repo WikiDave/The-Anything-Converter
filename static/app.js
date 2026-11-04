@@ -105,6 +105,70 @@ async function followJob(id, bar) {
 }
 $("urlStop").addEventListener("click", () => { if (activeJob) fetch(`/api/job/${activeJob}/cancel`, { method: "POST" }); });
 
+// ---------- viruscontrole
+function virusText(v) {
+  if (!v) return "";
+  const eng = v.local && v.local.engine ? v.local.engine : "geen lokale scanner";
+  const vt = (v.files || []).find((f) => f.vt);
+  const vtTxt = vt ? ` · virustotal: ${vt.vt.detail}` : "";
+  if (v.status === "infected") return `!! VIRUS GEVONDEN (${eng}): ${v.local.status === "infected" ? v.local.detail : vt ? vt.vt.detail : ""}`;
+  if (v.status === "clean") return `✓ geen virus gevonden (${eng})${vtTxt}`;
+  return `? niet zeker: ${v.local.detail}${vtTxt}`;
+}
+function virusNode(v, jobId) {
+  const p = document.createElement("p");
+  p.className = "scan-msg " + (v.status === "infected" ? "bad" : v.status === "clean" ? "good" : "warn");
+  p.textContent = virusText(v) + " ";
+  const one = (v.files || [])[0];
+  if (one && v.files.length === 1) {
+    const a = document.createElement("a");
+    a.href = one.virustotal; a.target = "_blank"; a.rel = "noopener"; a.textContent = "[ VIRUSTOTAL ]";
+    a.className = "btn small"; p.append(a);
+  }
+  if (v.status === "infected" && jobId) {
+    const del = document.createElement("button");
+    del.className = "btn small"; del.type = "button"; del.textContent = "[ VERWIJDEREN ]";
+    del.addEventListener("click", async () => {
+      await fetch(`/api/job/${jobId}/delete`, { method: "POST" });
+      p.textContent = "// verwijderd van de schijf.";
+      show($("torrentFiles"), false);
+    });
+    p.append(del);
+  }
+  return p;
+}
+function showScan(v) {
+  const m = $("scanMsg");
+  m.replaceWith(Object.assign(virusNode(v), { id: "scanMsg" }));
+}
+$("scanBtn").addEventListener("click", async () => {
+  if (!current) return;
+  $("scanBtn").disabled = true; $("scanBtn").textContent = "[ SCANNEN... ]";
+  try {
+    const r = await fetch("/api/scan/" + current.id, { method: "POST" });
+    const v = await r.json();
+    if (!r.ok) throw new Error(v.error || "Scan mislukt.");
+    showScan(v);
+  } catch (err) {
+    const m = $("scanMsg"); m.className = "scan-msg bad"; m.textContent = "!! " + err.message;
+  } finally {
+    $("scanBtn").disabled = false; $("scanBtn").textContent = "[ VIRUSSCAN ]";
+  }
+});
+fetch("/api/settings").then((r) => r.json()).then((s) => {
+  $("scannerInfo").textContent = s.scanner
+    ? `// gevonden scanner op deze computer: ${s.scanner}.`
+    : "// geen virusscanner gevonden. windows: microsoft defender staat er standaard op. mac/linux: installeer clamav (brew install clamav / sudo apt install clamav).";
+  if (s.vt_key_set) $("vtKey").placeholder = "sleutel opgeslagen ✓ (leeg laten = houden)";
+}).catch(() => {});
+$("vtSave").addEventListener("click", async () => {
+  const r = await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ vt_key: $("vtKey").value.trim() }) });
+  const j = await r.json();
+  $("vtKey").value = "";
+  $("vtKey").placeholder = r.ok ? (j.vt_key_set ? "sleutel opgeslagen ✓" : "sleutel verwijderd") : j.error;
+});
+
 // ---------- torrents (magnet-link of .torrent-bestand)
 async function startTorrent(body) {
   const bar = $("urlBar"), msg = $("urlMsg");
@@ -112,6 +176,8 @@ async function startTorrent(body) {
   show($("torrentFiles"), false); show(bar, true);
   bar.textContent = txtBar(0, barWidth());
   try {
+    const scan = $("urlScan").checked;
+    if (body instanceof FormData) body.append("scan", scan ? "1" : "0"); else body.scan = scan;
     const r = await fetch("/api/torrent", body instanceof FormData ? { method: "POST", body }
       : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const j0 = await r.json();
@@ -119,7 +185,8 @@ async function startTorrent(body) {
     const j = await followJob(j0.id, bar);
     show(bar, false);
     $("urlInput").value = "";
-    if (j.files.length === 1) return openTorrentFile(j.id, j.files[0].idx);
+    if (j.virus && j.virus.status === "infected") return showTorrentFiles(j);
+    if (j.files.length === 1) return openTorrentFile(j.id, j.files[0].idx, j.virus);
     showTorrentFiles(j);
   } catch (err) {
     show(bar, false);
@@ -139,6 +206,8 @@ function showTorrentFiles(j) {
   const total = j.files.reduce((a, f) => a + f.size, 0);
   head.textContent = `TORRENT KLAAR: ${j.name} · ${j.files.length} bestanden · ${human(total)}`;
   box.append(head);
+  const infected = j.virus && j.virus.status === "infected";
+  if (j.virus) box.append(virusNode(j.virus, j.id));
   j.files.forEach((f, i) => {
     const row = document.createElement("div");
     row.className = "tor-row";
@@ -149,19 +218,21 @@ function showTorrentFiles(j) {
     row.querySelector(".tor-name").title = f.path;
     row.querySelector(".tor-size").textContent = human(f.size);
     row.querySelector("[data-dl]").href = `/api/torrent/${j.id}/file/${f.idx}`;
-    row.querySelector("[data-open]").addEventListener("click", () => openTorrentFile(j.id, f.idx));
+    row.querySelector("[data-open]").addEventListener("click", () => openTorrentFile(j.id, f.idx, j.virus));
+    if (infected) { row.querySelector("[data-open]").remove(); row.querySelector("[data-dl]").remove(); }
     box.append(row);
   });
   show(box, true);
   $("urlMsg").textContent = "// [ OPENEN ] zet een bestand in de converter; [↓] slaat het op.";
   status("torrent klaar");
 }
-async function openTorrentFile(jobId, idx) {
+async function openTorrentFile(jobId, idx, v) {
   const r = await fetch(`/api/torrent/${jobId}/open/${idx}`, { method: "POST" });
-  const data = await r.json();
-  if (!r.ok) { $("urlMsg").textContent = "!! " + (data.error || "Openen mislukt."); return; }
+  const data = r.ok ? await r.json() : { error: r.status === 403 ? "Geblokkeerd: er is een virus gevonden." : "Openen mislukt." };
+  if (!r.ok) { $("urlMsg").textContent = "!! " + data.error; return; }
   localFile = null;
   setup(data);
+  if (v) showScan(v);
 }
 $("torrentBtn").addEventListener("click", () => $("torrentInput").click());
 $("torrentInput").addEventListener("change", () => {
@@ -184,14 +255,22 @@ $("urlForm").addEventListener("submit", async (e) => {
   status("link ophalen...");
   try {
     const r = await fetch("/api/fetch", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url, audio_only: $("urlAudio").checked }) });
+      body: JSON.stringify({ url, audio_only: $("urlAudio").checked, scan: $("urlScan").checked }) });
     const j0 = await r.json();
     if (!r.ok) throw new Error(j0.error || "Ophalen mislukt.");
     const j = await followJob(j0.id, bar);
+    if (j.virus && j.virus.status === "infected") {
+      show(bar, false);
+      msg.replaceChildren(virusNode(j.virus, j.id));
+      msg.classList.add("err");
+      status("virus gevonden - niet geopend");
+      return;
+    }
     localFile = null;
     $("urlInput").value = "";
     show(bar, false);
     setup(j.upload);
+    if (j.virus) showScan(j.virus);
   } catch (err) {
     show(bar, false);
     msg.textContent = "!! " + err.message;
@@ -206,6 +285,7 @@ $("urlForm").addEventListener("submit", async (e) => {
 // ---------- opties opbouwen
 function setup(data) {
   current = data;
+  $("scanMsg").className = "scan-msg hidden"; $("scanMsg").textContent = "";
   show(drop, false);
   show($("urlForm"), false);
   // opgehaald via een link: origineel ook los op te slaan
