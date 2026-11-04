@@ -6,3 +6,8 @@ build/
 dist/
 desktop/bin/
 *.egg-info/
+*.keystore
+*.jks
+android/.gradle/
+android/app/build/
+android/build/

@@ -113,12 +113,14 @@ input::placeholder, textarea::placeholder { font-family: var(--mono); }
 .q-empty { padding: 8px 0; }
 .dl-frame { margin-top: 18px; }
 .dl-intro { margin: 0 0 12px; }
-.dl-grid { display: flex; flex-wrap: wrap; gap: 8px 10px; }
-.dl-btn { color: var(--fg); text-decoration: none; border: 1px dashed var(--dim); padding: 6px 10px; white-space: nowrap; }
-.dl-btn em { color: var(--dim); }
-.dl-btn:hover, .dl-btn:focus-visible { outline: none; background: var(--fg); color: var(--bg); text-shadow: none; border-color: var(--fg); }
-.dl-btn:hover em, .dl-btn:focus-visible em { color: var(--bg); }
-.dl-btn.mine { border: 1px solid var(--fg); color: var(--hi); box-shadow: 0 0 10px var(--glow); }
+.dl-row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+.dl-pick { flex: 1 1 260px; }
+.dl-go {
+  color: var(--bg); background: var(--fg); text-decoration: none; padding: 8px 16px; font-weight: 700;
+  letter-spacing: .08em; text-shadow: none; white-space: nowrap; box-shadow: 0 0 10px var(--glow);
+}
+.dl-go:hover, .dl-go:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
+.dl-steps { margin: 14px 0 6px; color: var(--hi); white-space: pre-wrap; line-height: 1.6; }
 .dim-link { color: var(--dim); }
 .dim-link:hover { color: var(--fg); }
 
@@ -372,21 +374,29 @@ button.ar-name:hover, button.ar-name:focus-visible { outline: none; text-decorat
       <button id="newArchBtn" class="btn" type="button">[ + NIEUW LEEG ARCHIEF ]</button>
       <button id="sampleBtn" class="btn" type="button">[ PROBEER MET 3 TESTBEELDEN ]</button>
     </div>
-    <fieldset class="frame dl-frame">
-      <legend>DESKTOP-APP</legend>
-      <p class="dl-intro">Alles in één installer: ook <strong>youtube- en andere video-links ophalen</strong>, met ffmpeg ingebouwd. Geen python of andere installaties nodig.</p>
-      <div class="dl-grid" id="dlGrid">
-        <a class="dl-btn" data-os="win" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-Windows.msi" target="_blank" rel="noopener">[ ↓ WINDOWS <em>.msi</em> ]</a>
-        <a class="dl-btn" data-os="mac" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-macOS-AppleSilicon.dmg" target="_blank" rel="noopener">[ ↓ MAC M1–M4 <em>.dmg</em> ]</a>
-        <a class="dl-btn" data-os="mac" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-macOS-Intel.dmg" target="_blank" rel="noopener">[ ↓ MAC INTEL <em>.dmg</em> ]</a>
-        <a class="dl-btn" data-os="linux" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-Linux.deb" target="_blank" rel="noopener">[ ↓ UBUNTU/DEBIAN <em>.deb</em> ]</a>
-        <a class="dl-btn" data-os="linux" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-Linux.AppImage" target="_blank" rel="noopener">[ ↓ LINUX <em>.AppImage</em> ]</a>
+    <fieldset class="frame dl-frame" id="dlFrame">
+      <legend>DOWNLOADS</legend>
+      <p class="dl-intro">De converter als app voor je computer of telefoon. Op de computer zit alles erin, ook <strong>youtube- en andere video-links ophalen</strong>.</p>
+      <div class="dl-row">
+        <label class="field dl-pick"><span>SYSTEEM&gt;</span>
+          <span class="sel"><select id="dlSelect" aria-label="Kies je systeem">
+            <optgroup label="computer">
+              <option value="win">Windows 10/11 · .msi</option>
+              <option value="mac-arm">Mac met M1–M4 · .dmg</option>
+              <option value="mac-intel">Mac met Intel · .dmg</option>
+              <option value="deb">Ubuntu / Debian / Mint · .deb</option>
+              <option value="appimage">Andere Linux · .AppImage</option>
+            </optgroup>
+            <optgroup label="telefoon / tablet">
+              <option value="android">Android 10+ · .apk</option>
+              <option value="ios">iPhone / iPad · web-app</option>
+            </optgroup>
+          </select></span>
+        </label>
+        <a id="dlGo" class="dl-go" href="#" target="_blank" rel="noopener">[ ↓ DOWNLOAD ]</a>
       </div>
-      <p class="dim small" id="dlHint"></p>
-      <p class="dim small">// eerste keer openen (de app is niet betaald ondertekend):<br>
-      // windows: "windows heeft uw pc beschermd" → meer informatie → toch uitvoeren<br>
-      // mac: open, sluit de melding → systeeminstellingen → privacy en beveiliging → toch openen<br>
-      // <a class="dim-link" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest" target="_blank" rel="noopener">alle downloads en versies</a></p>
+      <pre id="dlSteps" class="dl-steps"></pre>
+      <p class="dim small">// <a class="dim-link" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest" target="_blank" rel="noopener">alle downloads en versies</a></p>
     </fieldset>
   </section>
 
@@ -1662,7 +1672,27 @@ async function saveAll() {
   await saveBlob(blob, `anything-converter-${done.length}-bestanden.zip`);
 }
 
+// In de Android-app: bestand in stukjes doorgeven aan Android, dat het in Downloads zet.
+async function androidSave(blob, name) {
+  const A = window.AnythingAndroid;
+  if (!A.begin(name, blob.type || "application/octet-stream")) throw new Error("Opslaan op de telefoon lukte niet.");
+  const CH = 3 * 1024 * 1024; // veelvoud van 3: losse base64-stukken passen precies aan elkaar
+  for (let o = 0; o < blob.size; o += CH) {
+    const buf = new Uint8Array(await blob.slice(o, o + CH).arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+    if (!A.chunk(btoa(bin))) throw new Error("Opslaan op de telefoon lukte niet.");
+    setNote(`opslaan ${Math.min(100, Math.round((o + CH) / blob.size * 100))}%`);
+  }
+  A.end();
+  setNote("opgeslagen in Downloads/Anything Converter: " + name);
+}
+
 async function saveBlob(blob, name) {
+  if (window.AnythingAndroid) {
+    try { await androidSave(blob, name); } catch (err) { setNote(err.message); }
+    return;
+  }
   const dl = await downloadsCap();
   if (dl) {
     try {
@@ -2603,17 +2633,75 @@ async function saveAny(blob, name) {
   await saveBlob(blob, name);
 }
 
-// ---------------------------------------------------------------- desktop-app: juiste download uitlichten
+// ---------------------------------------------------------------- downloads: keuzemenu per systeem
+const DL = {
+  win: { file: "AnythingConverter-Windows.msi", steps: [
+    "1. download en dubbelklik het .msi-bestand",
+    "2. 'windows heeft uw pc beschermd'? → meer informatie → toch uitvoeren",
+    "3. start 'Anything Converter' uit het startmenu; hij opent in je browser"] },
+  "mac-arm": { file: "AnythingConverter-macOS-AppleSilicon.dmg", steps: [
+    "1. open de .dmg en sleep de app naar Programma's",
+    "2. open de app; krijg je een melding, sluit die dan",
+    "3. systeeminstellingen → privacy en beveiliging → onderaan 'toch openen'",
+    "// welke mac? appelmenu → over deze mac: 'chip apple m…' = deze"] },
+  "mac-intel": { file: "AnythingConverter-macOS-Intel.dmg", steps: [
+    "1. open de .dmg en sleep de app naar Programma's",
+    "2. open de app; krijg je een melding, sluit die dan",
+    "3. systeeminstellingen → privacy en beveiliging → onderaan 'toch openen'",
+    "// welke mac? appelmenu → over deze mac: 'processor intel' = deze"] },
+  deb: { file: "AnythingConverter-Linux.deb", steps: [
+    "1. download en open het .deb-bestand (software-installatie)",
+    "   of in een terminal: sudo apt install ./AnythingConverter-Linux.deb",
+    "2. start 'Anything Converter' uit het menu"] },
+  appimage: { file: "AnythingConverter-Linux.AppImage", steps: [
+    "1. download het .AppImage-bestand",
+    "2. rechtsklik → eigenschappen → 'uitvoeren als programma' aan",
+    "3. dubbelklik om te starten"] },
+  android: { file: "AnythingConverter-Android.apk", steps: [
+    "1. download het .apk-bestand op je telefoon",
+    "2. open het; sta 'installeren van onbekende apps' toe voor je browser",
+    "3. open 'Converter'; opgeslagen bestanden staan in Downloads/Anything Converter",
+    "// youtube-links ophalen kan alleen op de computer"] },
+  ios: { file: null, steps: [
+    "apple laat apps buiten de app store niet toe; gebruik de web-app:",
+    "1. open deze pagina in safari",
+    "2. tik op deel (vierkant met pijl) → zet op beginscherm → voeg toe",
+    "3. open 'Converter' vanaf je beginscherm",
+    "// youtube-links ophalen kan alleen op de computer"] },
+};
+function renderDownload() {
+  const k = $("dlSelect").value, d = DL[k];
+  const go = $("dlGo");
+  if (d.file) {
+    go.href = "https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/" + d.file;
+    go.textContent = "[ ↓ DOWNLOAD ]";
+    go.target = "_blank";
+  } else {
+    go.href = "#dlSteps";
+    go.textContent = "[ ? HOE DAN ]";
+    go.removeAttribute("target");
+  }
+  $("dlSteps").textContent = d.steps.join("\n");
+}
 (() => {
   const ua = navigator.userAgent;
-  const mobile = /iPhone|iPad|iPod|Android/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-  const os = mobile ? null : /Windows/i.test(ua) ? "win" : /Mac OS X|Macintosh/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) ? "linux" : null;
-  document.querySelectorAll(".dl-btn").forEach((a) => a.classList.toggle("mine", a.dataset.os === os));
-  $("dlHint").textContent = mobile
-    ? "// de desktop-app is voor windows, mac en linux. op je telefoon gebruik je deze web-app."
-    : os === "mac" ? "// weet je niet welke mac? appelmenu → over deze mac: staat er 'chip apple m…', kies m1–m4."
-    : "";
-  $("dlHint").hidden = !$("dlHint").textContent;
+  // In de Android-app zelf is dit kader niet nodig
+  if (/AnythingConverterApp/.test(ua)) { $("dlFrame").hidden = true; return; }
+  const ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  let pick = ios ? "ios" : /Android/i.test(ua) ? "android" : /Windows/i.test(ua) ? "win"
+    : /Mac OS X|Macintosh/i.test(ua) ? "mac-arm" : /Linux|X11/i.test(ua) ? "deb" : "win";
+  // Intel-Mac herkennen waar de browser dat vertelt (Chrome/Edge)
+  if (pick === "mac-arm" && navigator.userAgentData?.getHighEntropyValues) {
+    navigator.userAgentData.getHighEntropyValues(["architecture"]).then((h) => {
+      if (h.architecture === "x86") { $("dlSelect").value = "mac-intel"; renderDownload(); }
+    }).catch(() => {});
+  }
+  $("dlSelect").value = pick;
+  renderDownload();
+  $("dlSelect").addEventListener("change", renderDownload);
+  $("dlGo").addEventListener("click", (e) => {
+    if (!DL[$("dlSelect").value].file) { e.preventDefault(); $("dlSteps").scrollIntoView({ block: "nearest" }); }
+  });
 })();
 
 // ---------------------------------------------------------------- thema

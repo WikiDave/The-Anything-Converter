@@ -49,6 +49,8 @@ Download de installer voor jouw systeem van de
 | Mac met Intel | `AnythingConverter-macOS-Intel.dmg` |
 | Ubuntu / Debian / Mint | `AnythingConverter-Linux.deb` |
 | Andere Linux | `AnythingConverter-Linux.AppImage` |
+| Android 10+ | `AnythingConverter-Android.apk` |
+| iPhone / iPad | geen bestand: open de web-app in Safari → Deel → Zet op beginscherm |
 
 ffmpeg, yt-dlp (video-links) en Deno zitten erin; je hoeft niets anders te installeren. Na het
 starten opent de converter in je browser. Afsluiten met **[ AFSLUITEN ]** bovenaan de pagina.
@@ -58,6 +60,25 @@ de app vindt het vanzelf.
 De app is niet betaald ondertekend, dus de eerste keer:
 - **Windows**: "Windows heeft uw pc beschermd" → **Meer informatie** → **Toch uitvoeren**.
 - **macOS**: open de app, sluit de melding, ga naar **Systeeminstellingen → Privacy en beveiliging** → **Toch openen**.
+
+**Android**: de app (`android/`) toont de web-app en voegt bestanden kiezen via Android en opslaan in
+**Downloads/Anything Converter** toe. Installeren: open de .apk en sta "installeren van onbekende apps" toe.
+YouTube-links ophalen kan alleen in de desktop-app.
+
+Zodat een nieuwe versie als update over de oude heen installeert, kun je een vaste sleutel als GitHub-geheim
+instellen (eenmalig; zonder geheim wordt met een tijdelijke debug-sleutel ondertekend):
+
+```bash
+keytool -genkeypair -keystore release.jks -alias anything -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 release.jks   # macOS: base64 -i release.jks
+```
+
+Zet in **Settings → Secrets and variables → Actions**: `ANDROID_KEYSTORE_B64` (de base64-tekst),
+`ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (`anything`) en `ANDROID_KEY_PASSWORD`.
+Bewaar `release.jks` zelf veilig en zet hem nooit in de repository.
+
+**iPhone/iPad**: Apple staat apps buiten de App Store niet toe zonder betaald ontwikkelaarsaccount.
+Gebruik de web-app via Safari → Deel → Zet op beginscherm.
 
 De installers worden gebouwd door `.github/workflows/desktop.yml` (cx_Freeze). Een nieuwe release
 maak je via **Actions → Desktop-installers → Run workflow**.
