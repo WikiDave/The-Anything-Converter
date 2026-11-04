@@ -31,7 +31,9 @@ bash/zsh op macOS en Linux, en via SSH op een server zonder scherm. Muis en toet
 - **Virusscan**: elk bestand of map scannen; VirusTotal-sleutel instellen.
 - Toetsen: `ctrl+s` start, `ctrl+t` kleur (groen/amber/cyaan), `ctrl+o` pad, `ctrl+q` afsluiten.
 
-Starten:
+Starten: in de desktop-app klik je bovenin op **[ TERMINAL ]**: er opent een terminalvenster met de
+terminalversie. Op Windows staat ook **Anything Converter (terminal)** in het Startmenu, op Linux in het
+programmamenu. Of typ zelf:
 
 | Waar | Commando |
 |---|---|
@@ -100,14 +102,20 @@ Download de installer voor jouw systeem van de
 | Android 10+ | `AnythingConverter-Android.apk` |
 | iPhone / iPad | geen bestand: open de web-app in Safari → Deel → Zet op beginscherm |
 
-ffmpeg, yt-dlp (video-links) en Deno zitten erin; je hoeft niets anders te installeren. Na het
-starten opent de converter in je browser. Afsluiten met **[ AFSLUITEN ]** bovenaan de pagina.
+ffmpeg, yt-dlp (video-links) en Deno zitten erin; je hoeft niets anders te installeren. De converter
+opent in een **eigen programmavenster**, zonder browser en zonder adresbalk (WebView2 op Windows, WebKit op
+macOS en Linux). Venster dicht = programma af. Opslaan gaat via het gewone "Bewaar als"-venster, links naar
+buiten openen in je browser, en **[ PDF & ARCHIEF ]** opent in een tweede venster.
+Lukt een eigen venster niet (Windows zonder WebView2, Linux zonder GTK/WebKit), dan valt de app terug op
+een los app-venster van Edge/Chrome, en als laatste op de gewone browser met **[ AFSLUITEN ]** bovenaan.
 Voor Word/Excel/PowerPoint-conversie installeer je los [LibreOffice](https://www.libreoffice.org);
 de app vindt het vanzelf.
 
 De app is niet betaald ondertekend, dus de eerste keer:
 - **Windows**: "Windows heeft uw pc beschermd" → **Meer informatie** → **Toch uitvoeren**.
-- **macOS**: open de app, sluit de melding, ga naar **Systeeminstellingen → Privacy en beveiliging** → **Toch openen**.
+- **macOS** ("Apple kon niet verifiëren…"): klik **Gereed** (niet "Verplaats naar prullenmand"), ga naar
+  **Systeeminstellingen → Privacy en beveiliging**, scroll naar beneden → **Toch openen**. Of in Terminal:
+  `xattr -dr com.apple.quarantine "/Applications/Anything Converter.app"`.
 
 **Android**: de app (`android/`) toont de web-app en voegt bestanden kiezen via Android en opslaan in
 **Downloads/Anything Converter** toe. Installeren: open de .apk en sta "installeren van onbekende apps" toe.

@@ -535,18 +535,47 @@ function showError(msg) {
   show(res, true);
 }
 
-// ---------- desktop-app: afsluiten
+// ---------- desktop-app: afsluiten, terminal, eigen venster
 fetch("/api/ping").then((r) => r.json()).then((p) => {
   $("verLabel").textContent = "VER " + p.version.split(".").slice(0, 2).join(".");
   if (!p.desktop) return;
   $("modeLabel").textContent = "DESKTOP-APP";
-  show($("quitBtn"), true);
+  show($("termBtn"), true);
+  // In een eigen venster sluit je het programma gewoon met het venster.
+  show($("quitBtn"), !p.window || p.window === "browser");
 }).catch(() => {});
 $("quitBtn").addEventListener("click", async () => {
   try { await fetch("/api/quit", { method: "POST" }); } catch {}
   document.querySelector("main").innerHTML =
     '<pre class="logo-off">\n  ┌──────────────────────────────────────┐\n  │  ANYTHING CONVERTER IS AFGESLOTEN.   │\n  │  je kunt dit tabblad nu sluiten.     │\n  └──────────────────────────────────────┘</pre>';
 });
+$("termBtn").addEventListener("click", async () => {
+  status("terminalversie openen…");
+  try {
+    const r = await fetch("/api/terminal", { method: "POST" });
+    const j = await r.json();
+    status(j.ok ? "terminalversie geopend in een nieuw venster" : j.error);
+  } catch { status("terminalversie openen lukte niet"); }
+});
+
+// Eigen programmavenster (pywebview): downloads via een "Bewaar als"-venster, links naar buiten
+// in de gewone browser, de PDF- en archief-werkbank in een tweede venster.
+const nativeApi = () => window.pywebview && window.pywebview.api;
+document.addEventListener("click", async (e) => {
+  const a = e.target.closest && e.target.closest("a[href]");
+  const api = nativeApi();
+  if (!a || !api || e.defaultPrevented) return;
+  const u = new URL(a.href, location.href);
+  if (u.protocol === "blob:" || u.protocol === "data:" || u.hash && u.pathname === location.pathname) return;
+  if (u.origin !== location.origin) { e.preventDefault(); api.open_external(u.href); return; }
+  if (u.pathname.startsWith("/web/")) { e.preventDefault(); api.open_window(u.pathname + u.search); return; }
+  if (a.hasAttribute("download") || /^\/api\/(download|file|torrent)\//.test(u.pathname)) {
+    e.preventDefault();
+    status("opslaan…");
+    const r = await api.save_url(u.pathname + u.search);
+    status(r.path ? "opgeslagen: " + r.path : r.cancelled ? "opslaan geannuleerd" : "opslaan mislukt: " + r.error);
+  }
+}, true);
 
 // ---------- thema
 

@@ -65,7 +65,7 @@ def web_file(name):
 @app.get("/api/ping")
 def ping():
     """Laat de interface (en een tweede start van de desktop-app) weten dat de converter draait."""
-    return jsonify(app="anything-converter", version=VERSION, desktop=DESKTOP)
+    return jsonify(app="anything-converter", version=VERSION, desktop=DESKTOP, window=app.config.get("WINDOW"))
 
 
 @app.post("/api/quit")
@@ -76,6 +76,19 @@ def quit_app():
         return jsonify(error="Alleen beschikbaar in de desktop-app."), 400
     import threading
     threading.Timer(0.3, stop).start()
+    return jsonify(ok=True)
+
+
+@app.post("/api/terminal")
+def open_terminal():
+    """Terminalversie openen in een nieuw terminalvenster (desktop-app)."""
+    if not DESKTOP:
+        return jsonify(error="Alleen beschikbaar in de desktop-app."), 400
+    from converter.terminal import open_tui
+    try:
+        open_tui()
+    except Exception as e:  # noqa: BLE001
+        return jsonify(error=str(e)), 500
     return jsonify(ok=True)
 
 
