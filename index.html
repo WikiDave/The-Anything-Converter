@@ -1,0 +1,2069 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Anything Converter</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#000000">
+</head>
+<body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: één kolom terminal-scherm, BIOS-kopregel, stappen als menubalk, kaders met titels.
+   Bewust één donkere look (fosfor-terminal); kleurvarianten via data-skin. */
+:root {
+  color-scheme: dark;
+  --bg: #000000;
+  --panel: #000000;
+  --fg: #a6ff5c;
+  --hi: #d9ffb8;
+  --dim: #5b8a3a;
+  --faint: #1a2712;
+  --err: #ff6a5f;
+  --glow: rgba(166, 255, 92, .33);
+  --mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+}
+:root[data-skin="amber"] {
+  --bg: #000000; --panel: #000000; --fg: #ffb000; --hi: #ffd98a; --dim: #9a6c17; --faint: #2b1e06;
+  --glow: rgba(255, 176, 0, .33);
+}
+:root[data-skin="cyaan"] {
+  --bg: #000000; --panel: #000000; --fg: #5ff5d0; --hi: #c4fff0; --dim: #36897a; --faint: #0f2723;
+  --err: #ff7a95; --glow: rgba(95, 245, 208, .33);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); }
+body {
+  margin: 0; color: var(--fg);
+  font: 14px/1.55 var(--mono);
+  text-shadow: 0 0 6px var(--glow);
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--fg); color: var(--bg); }
+.dim { color: var(--dim); }
+.small { font-size: 12px; }
+em { font-style: normal; color: var(--dim); }
+pre { margin: 0; font: inherit; }
+
+.wrap {
+  position: relative; z-index: 1; max-width: 860px; margin: 0 auto;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+.topline {
+  display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: center;
+  font-size: 12px; letter-spacing: .05em; text-transform: uppercase;
+}
+.skins { margin-left: auto; display: flex; gap: 4px; }
+.skins button { background: none; border: 0; padding: 2px; color: var(--dim); font: inherit; cursor: pointer; text-shadow: none; }
+.skins button:hover, .skins button[aria-pressed="true"] { color: var(--hi); text-shadow: 0 0 6px var(--glow); }
+.skins button:focus-visible { outline: 1px dashed var(--fg); }
+
+.logo-wrap { container-type: inline-size; margin: 22px 0 6px; }
+.logo { font-size: calc(100cqi / 47.5); line-height: 1.05; white-space: pre; overflow: hidden; text-shadow: 0 0 8px var(--glow); }
+.tagline { margin: 12px 0 0; color: var(--dim); }
+.cursor { animation: blink 1s steps(1) infinite; color: var(--fg); }
+@keyframes blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cursor { animation: none; } }
+
+.menubar {
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px;
+  margin: 18px 0; padding: 8px 14px; border: 1px solid var(--dim);
+  font-size: 15px; letter-spacing: .06em;
+}
+.menubar span { color: var(--dim); text-shadow: none; }
+.menubar span.on { color: var(--bg); background: var(--fg); padding: 0 6px; margin: 0 -6px; box-shadow: 0 0 10px var(--glow); }
+.menubar span.done { color: var(--fg); }
+.menubar span.done::before { content: "✓ "; }
+
+.notice { margin: 0 0 18px; padding: 10px 14px; border: 1px dashed var(--dim); color: var(--hi); }
+.notice.warn { border-color: var(--err); color: var(--err); }
+
+.drop {
+  display: block; border: 1px dashed var(--fg); padding: 26px 16px; text-align: center; cursor: pointer;
+  background: color-mix(in srgb, var(--panel) 85%, transparent);
+}
+.drop:hover, .drop:focus-visible, .drop.over {
+  outline: none; background: color-mix(in srgb, var(--fg) 8%, var(--panel));
+  box-shadow: inset 0 0 0 1px var(--fg), 0 0 18px var(--glow);
+}
+.drop-art { display: inline-block; text-align: left; line-height: 1.15; }
+.drop p { margin: 6px 0; }
+.drop .big { font-size: 16px; font-weight: 700; color: var(--hi); margin-top: 14px; }
+.sample-row { margin-top: 12px; text-align: center; }
+
+.frame {
+  margin: 0 0 18px; padding: 14px 16px 16px; min-width: 0;
+  border: 1px solid var(--dim); background: color-mix(in srgb, var(--panel) 88%, transparent);
+}
+.frame legend { padding: 0 4px; color: var(--hi); letter-spacing: .08em; font-weight: 700; }
+.frame legend::before { content: "┤ "; color: var(--dim); font-weight: 400; }
+.frame legend::after { content: " ├"; color: var(--dim); font-weight: 400; }
+.sub { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--faint); }
+
+.file-card { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; margin: 0; min-width: 0; }
+.kv dt { color: var(--dim); }
+.kv dd { margin: 0; overflow-wrap: anywhere; color: var(--hi); }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; align-items: end; }
+.grid.three { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 600px) {
+  .grid, .grid.three { grid-template-columns: 1fr; }
+  .hide-sm { display: none; }
+  .menubar { font-size: 12px; }
+  .result .cmp { font-size: 12px; }
+}
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field > span:first-child, .prompt { color: var(--dim); font-size: 12px; letter-spacing: .06em; }
+.prompt { align-self: center; }
+.row { display: flex; gap: 8px; align-items: stretch; min-width: 0; }
+
+input, select, button { font: inherit; color: inherit; text-shadow: inherit; }
+input[type=number], input[type=text], select {
+  width: 100%; min-width: 0; padding: 7px 10px; border-radius: 0;
+  background: var(--bg); color: var(--hi); border: 1px solid var(--dim); caret-color: var(--fg);
+}
+input::placeholder { color: var(--dim); opacity: .85; }
+input:focus, select:focus { outline: none; border-color: var(--fg); box-shadow: 0 0 0 1px var(--fg), 0 0 12px var(--glow); }
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.sel { position: relative; display: block; min-width: 0; }
+.sel select { appearance: none; -webkit-appearance: none; padding-right: 30px; cursor: pointer; }
+.sel::after { content: "▼"; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 10px; pointer-events: none; }
+.sel.unit { flex: 0 0 90px; }
+select option { background: var(--bg); color: var(--fg); }
+
+.radios { display: flex; flex-wrap: wrap; gap: 6px 22px; }
+.radios label, .check { cursor: pointer; display: inline-flex; align-items: center; }
+.radios input, .check input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.radios span::before { content: "( ) "; color: var(--dim); white-space: pre; }
+.radios input:checked + span { color: var(--hi); }
+.radios input:checked + span::before { content: "(●) "; color: var(--fg); }
+.radios input:disabled + span { opacity: .35; cursor: not-allowed; }
+.check { padding: 7px 0; }
+.check span::before { content: "[ ] "; color: var(--dim); white-space: pre; }
+.check input:checked + span::before { content: "[x] "; color: var(--fg); }
+.radios input:focus-visible + span, .check input:focus-visible + span { outline: 1px dashed var(--fg); outline-offset: 2px; }
+
+.btn, .chips button { background: none; border: 0; padding: 4px 6px; cursor: pointer; color: var(--fg); white-space: nowrap; }
+.btn:hover, .btn:focus-visible, .chips button:hover, .chips button:focus-visible { outline: none; background: var(--fg); color: var(--bg); text-shadow: none; }
+.btn.small { font-size: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chips button { border: 1px dashed var(--dim); padding: 3px 10px; font-size: 12px; }
+.go {
+  display: block; width: 100%; padding: 12px; cursor: pointer;
+  background: none; color: var(--hi); border: 1px solid var(--fg);
+  font-size: 16px; font-weight: 700; letter-spacing: .12em;
+  box-shadow: 0 0 12px var(--glow), inset 0 0 12px var(--glow);
+}
+.go:hover:not(:disabled), .go:focus-visible { outline: none; background: var(--fg); color: var(--bg); text-shadow: none; }
+.go:disabled { cursor: progress; border-style: dashed; color: var(--dim); box-shadow: none; }
+
+.screen { border: 1px solid var(--dim); padding: 4px; margin-bottom: 14px; }
+.screen video, .screen audio, .screen img { display: block; width: 100%; max-width: 100%; max-height: 380px; object-fit: contain; background: #000; }
+.screen audio { background: transparent; filter: invert(1) grayscale(1) contrast(.9); }
+.trim-track { position: relative; height: 26px; margin: 2px 0 14px; }
+.trim-track::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 12px; height: 2px;
+  background: repeating-linear-gradient(to right, var(--dim) 0 4px, transparent 4px 8px);
+}
+.trim-sel { position: absolute; top: 9px; height: 8px; background: var(--fg); box-shadow: 0 0 10px var(--glow); opacity: .85; }
+.trim-track input[type=range] {
+  position: absolute; left: 0; top: 0; width: 100%; height: 26px; margin: 0;
+  background: none; pointer-events: none; -webkit-appearance: none; appearance: none;
+}
+.trim-track input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; pointer-events: auto; width: 10px; height: 24px; border-radius: 0;
+  background: var(--hi); border: 0; box-shadow: 0 0 8px var(--glow); cursor: ew-resize;
+}
+.trim-track input[type=range]::-moz-range-thumb { pointer-events: auto; width: 10px; height: 24px; border-radius: 0; border: 0; background: var(--hi); cursor: ew-resize; }
+.trim-track input[type=range]::-moz-range-track { background: none; }
+.trim-track input[type=range]:focus-visible { outline: none; }
+.trim-track input[type=range]:focus-visible::-webkit-slider-thumb { outline: 1px solid var(--fg); outline-offset: 2px; }
+.trim-fields .row input { flex: 1; }
+
+.txtbar { margin-top: 14px; white-space: pre; overflow: hidden; font-size: 15px; font-variant-numeric: tabular-nums; }
+#progMsg { margin: 4px 0 0; }
+.result { margin-top: 18px; padding: 14px 16px; border: 1px solid var(--fg); box-shadow: 0 0 14px var(--glow); }
+.result .head { display: inline-block; padding: 0 6px; margin-bottom: 10px; background: var(--fg); color: var(--bg); text-shadow: none; font-weight: 700; }
+.result .cmp { white-space: pre; overflow-x: auto; line-height: 1.6; font-variant-numeric: tabular-nums; }
+.result .cmp .lbl { color: var(--dim); }
+.result .cmp .down { color: var(--hi); font-weight: 700; }
+.result .screen { margin: 12px 0 0; }
+.result .save {
+  margin-top: 12px; padding: 8px 14px; border: 1px solid var(--fg); background: none; cursor: pointer;
+  color: var(--hi); font-weight: 700; letter-spacing: .08em;
+}
+.result .save:hover, .result .save:focus-visible { outline: none; background: var(--fg); color: var(--bg); text-shadow: none; }
+.result .note { margin: 8px 0 0; }
+.result.error { border-color: var(--err); color: var(--err); white-space: pre-wrap; box-shadow: 0 0 14px color-mix(in srgb, var(--err) 35%, transparent); }
+.result.error .head { background: var(--err); }
+
+/* wachtrij */
+.q-head, .q-row {
+  display: grid; grid-template-columns: 3ch minmax(0, 1.4fr) minmax(0, 1.3fr) minmax(0, 1.2fr) auto;
+  gap: 4px 14px; align-items: baseline;
+}
+.q-head { color: var(--dim); font-size: 12px; letter-spacing: .06em; padding-bottom: 6px; border-bottom: 1px dashed var(--faint); }
+.queue { list-style: none; margin: 0; padding: 0; max-height: 340px; overflow-y: auto; }
+.q-row { padding: 7px 0; border-bottom: 1px dashed var(--faint); font-variant-numeric: tabular-nums; }
+.q-idx { color: var(--dim); }
+.q-name { color: var(--hi); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.q-meta { color: var(--dim); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.q-status { white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.q-done .q-status { color: var(--hi); }
+.q-error .q-status { color: var(--err); font-weight: 700; }
+.q-ready .q-status, .q-queued .q-status, .q-reading .q-status { color: var(--dim); }
+.q-act { display: flex; gap: 2px; justify-content: flex-end; }
+.q-msg { grid-column: 2 / -1; font-size: 12px; color: var(--dim); overflow-wrap: anywhere; }
+.q-msg.err { color: var(--err); }
+.queue-actions { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; }
+.btn:disabled { opacity: .4; cursor: not-allowed; background: none; color: var(--fg); }
+.format-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 18px; }
+.trim-note { margin: -8px 0 16px; }
+@media (max-width: 600px) {
+  .q-head { display: none; }
+  .q-row { grid-template-columns: 3ch minmax(0, 1fr) auto; }
+  .q-meta, .q-status { grid-column: 2 / 3; }
+  .q-act { grid-column: 3; grid-row: 1; }
+}
+
+/* tabs + pdf-werkbank */
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+.tabs button {
+  background: none; border: 1px solid var(--dim); color: var(--dim); padding: 8px 14px; cursor: pointer;
+  font-weight: 700; letter-spacing: .08em; text-shadow: none;
+}
+.tabs button:hover, .tabs button:focus-visible { outline: none; border-color: var(--fg); color: var(--fg); }
+.tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); box-shadow: 0 0 10px var(--glow); }
+.pg-toolbar { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 4px; }
+.pg-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 12px;
+  max-height: 580px; overflow-y: auto; padding: 4px 2px; margin-top: 10px;
+}
+.pg { border: 1px dashed var(--dim); padding: 6px; display: flex; flex-direction: column; gap: 4px; cursor: grab; min-width: 0; }
+.pg.sel { border: 1px solid var(--fg); box-shadow: 0 0 10px var(--glow); background: color-mix(in srgb, var(--fg) 8%, transparent); }
+.pg.dragging { opacity: .35; }
+.pg.drop-before { box-shadow: -5px 0 0 var(--fg); }
+.pg-face { background: none; border: 0; padding: 0; cursor: pointer; width: 100%; }
+.pg-face:focus-visible { outline: 1px dashed var(--fg); outline-offset: 2px; }
+.pg-img { display: flex; align-items: center; justify-content: center; height: 156px; background: #0d0d0d; color: var(--dim); overflow: hidden; }
+.pg-img canvas { display: block; box-shadow: 0 0 0 1px #333; transition: transform .15s; }
+@media (prefers-reduced-motion: reduce) { .pg-img canvas { transition: none; } }
+.pg-cap { display: flex; gap: 6px; font-size: 11px; min-width: 0; }
+.pg-no { color: var(--hi); }
+.pg-src { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-tools { display: flex; justify-content: space-between; }
+.pg-tools button { background: none; border: 0; color: var(--fg); cursor: pointer; padding: 2px 5px; font-size: 13px; }
+.pg-tools button:hover, .pg-tools button:focus-visible { outline: none; background: var(--fg); color: var(--bg); text-shadow: none; }
+#wmRow { margin: 0 0 8px; }
+
+.statusline {
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px;
+  margin-top: 26px; padding-top: 10px; border-top: 1px solid var(--faint); font-size: 12px;
+}
+.statusline span { min-width: 0; overflow-wrap: anywhere; }
+</style>
+
+
+<main class="wrap">
+  <div class="topline">
+    <span>ANYTHING CONVERTER (TM)</span>
+    <span class="dim">VER 2.0 · BROWSER</span>
+    <span class="dim hide-sm">GEEN UPLOAD</span>
+    <span class="skins" role="group" aria-label="Kleurthema">
+      <button type="button" data-skin="groen" aria-pressed="true">[GROEN]</button>
+      <button type="button" data-skin="amber" aria-pressed="false">[AMBER]</button>
+      <button type="button" data-skin="cyaan" aria-pressed="false">[CYAAN]</button>
+    </span>
+  </div>
+
+  <header class="logo-wrap">
+<pre class="logo" aria-label="Anything Converter">
+ █████╗ ███╗   ██╗██╗   ██╗████████╗██╗  ██╗██╗███╗   ██╗ ██████╗
+██╔══██╗████╗  ██║╚██╗ ██╔╝╚══██╔══╝██║  ██║██║████╗  ██║██╔════╝
+███████║██╔██╗ ██║ ╚████╔╝    ██║   ███████║██║██╔██╗ ██║██║  ███╗
+██╔══██║██║╚██╗██║  ╚██╔╝     ██║   ██╔══██║██║██║╚██╗██║██║   ██║
+██║  ██║██║ ╚████║   ██║      ██║   ██║  ██║██║██║ ╚████║╚██████╔╝
+╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝
+ ██████╗ ██████╗ ███╗   ██╗██╗   ██╗███████╗██████╗ ████████╗███████╗██████╗
+██╔════╝██╔═══██╗████╗  ██║██║   ██║██╔════╝██╔══██╗╚══██╔══╝██╔════╝██╔══██╗
+██║     ██║   ██║██╔██╗ ██║██║   ██║█████╗  ██████╔╝   ██║   █████╗  ██████╔╝
+██║     ██║   ██║██║╚██╗██║╚██╗ ██╔╝██╔══╝  ██╔══██╗   ██║   ██╔══╝  ██╔══██╗
+╚██████╗╚██████╔╝██║ ╚████║ ╚████╔╝ ███████╗██║  ██║   ██║   ███████╗██║  ██║
+ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝</pre>
+    <p class="tagline">&gt; converteer · verklein · vergroot · knip. je bestand verlaat je browser niet<span class="cursor">_</span></p>
+  </header>
+
+  <nav class="menubar" aria-label="Stappen">
+    <span data-step="1" class="on">01 BESTAND</span>
+    <span data-step="2">02 FORMAAT</span>
+    <span data-step="3">03 GROOTTE</span>
+    <span data-step="4">04 UITVOER</span>
+  </nav>
+
+  <p id="notice" class="notice" hidden></p>
+
+  <section id="dropWrap">
+    <label id="drop" class="drop" tabindex="0" for="fileInput">
+      <input id="fileInput" type="file" multiple hidden>
+<pre class="drop-art" aria-hidden="true">
+ ┌──────────┐
+ │ ┌──────────┐
+ │ │ ░░░░░░░  └┐
+ │ │ ░░░░░     │
+ │ │     ▲     │
+ └─│    ▲▲▲    │
+   │   ▲▲▲▲▲   │
+   │     █     │
+   └───────────┘</pre>
+      <p class="big">&gt; SLEEP BESTANDEN HIERHEEN<span class="cursor">_</span></p>
+      <p class="dim">één of meerdere tegelijk · [ENTER] / klik om te bladeren</p>
+      <p class="dim small">video: mp4 · mov · webm · mkv &nbsp;|&nbsp; audio: mp3 · wav · m4a · ogg · flac<br>afbeelding: jpg · png · webp · gif · bmp · avif · svg &nbsp;|&nbsp; pdf: samenvoegen · splitsen · comprimeren</p>
+    </label>
+    <div class="sample-row">
+      <button id="sampleBtn" class="btn" type="button">[ PROBEER MET 3 TESTBEELDEN ]</button>
+    </div>
+  </section>
+
+  <section id="panel" hidden>
+    <fieldset class="frame">
+      <legend id="queueTitle">BESTANDEN</legend>
+      <div class="q-head" aria-hidden="true"><span>#</span><span>NAAM</span><span>INFO</span><span>STATUS</span><span></span></div>
+      <ol id="queue" class="queue"></ol>
+      <div class="queue-actions">
+        <button id="addBtn" class="btn" type="button">[ + TOEVOEGEN ]</button>
+        <button id="resetBtn" class="btn" type="button">[ ALLES WISSEN ]</button>
+        <input id="addInput" type="file" multiple hidden>
+      </div>
+    </fieldset>
+
+    <div class="tabs" role="tablist" aria-label="Werkwijze">
+      <button type="button" role="tab" data-mode="convert" aria-selected="true">[ CONVERTEREN ]</button>
+      <button type="button" role="tab" data-mode="pdf" aria-selected="false">[ PDF-WERKBANK ]</button>
+    </div>
+
+    <div class="mode-pdf" hidden>
+      <fieldset class="frame">
+        <legend id="pagesTitle">PAGINA'S</legend>
+        <div class="pg-toolbar">
+          <button id="pgSelAll" class="btn small" type="button">[ ALLES SELECTEREN ]</button>
+          <button id="pgRotCcw" class="btn small" type="button">[ ↺ DRAAI ]</button>
+          <button id="pgRotCw" class="btn small" type="button">[ ↻ DRAAI ]</button>
+          <button id="pgDel" class="btn small" type="button">[ ✕ VERWIJDER SELECTIE ]</button>
+          <button id="pgKeep" class="btn small" type="button">[ HOUD ALLEEN SELECTIE ]</button>
+          <button id="pgReverse" class="btn small" type="button">[ ⇅ OMKEREN ]</button>
+          <button id="pgReset" class="btn small" type="button">[ HERSTEL ]</button>
+        </div>
+        <p class="dim small"><span id="selInfo"></span> // sleep pagina's om te ordenen. draaien geldt voor de selectie, of voor alles als er niets geselecteerd is.</p>
+        <div id="pageGrid" class="pg-grid"></div>
+        <p id="pdfSkip" class="dim small" hidden></p>
+      </fieldset>
+
+      <fieldset class="frame">
+        <legend>UITVOER</legend>
+        <div class="radios" role="radiogroup" aria-label="Uitvoer">
+          <label><input type="radio" name="pdfOut" id="outOne" value="one" checked><span>Eén PDF <em>samenvoegen</em></span></label>
+          <label><input type="radio" name="pdfOut" id="outEach" value="each"><span>Elke pagina apart</span></label>
+          <label><input type="radio" name="pdfOut" id="outRanges" value="ranges"><span>Splitsen per bereik</span></label>
+        </div>
+        <div class="grid sub">
+          <label class="field" id="rangeRow" hidden><span>BEREIKEN&gt;</span><input id="pdfRanges" type="text" placeholder="1-3, 4-6, 7-"></label>
+          <label class="field"><span>BESTANDSNAAM&gt;</span><input id="pdfName" type="text" placeholder="samengevoegd"></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="frame" id="photoBox" hidden>
+        <legend>FOTO'S</legend>
+        <div class="grid three">
+          <label class="field"><span>PAPIER&gt;</span><span class="sel"><select id="photoPaper">
+            <option value="a4">A4</option><option value="letter">Letter</option><option value="a5">A5</option>
+            <option value="fit">zelfde als foto</option></select></span></label>
+          <label class="field"><span>RICHTING&gt;</span><span class="sel"><select id="photoOrient">
+            <option value="auto">automatisch</option><option value="portrait">staand</option><option value="landscape">liggend</option></select></span></label>
+          <label class="field"><span>MARGE&gt;</span><span class="sel"><select id="photoMargin">
+            <option value="0">geen</option><option value="18">klein</option><option value="36" selected>normaal</option><option value="54">ruim</option></select></span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="frame">
+        <legend>EXTRA</legend>
+        <label class="check"><input id="pnOn" type="checkbox"><span>Paginanummers toevoegen</span></label>
+        <div class="grid" id="pnRow" hidden>
+          <label class="field"><span>POSITIE&gt;</span><span class="sel"><select id="pnPos">
+            <option value="bc">onder midden</option><option value="br">onder rechts</option>
+            <option value="tc">boven midden</option><option value="tr">boven rechts</option></select></span></label>
+          <label class="field"><span>VORM&gt;</span><span class="sel"><select id="pnFormat">
+            <option value="n">1</option><option value="of">1 / 10</option><option value="pagina">Pagina 1</option></select></span></label>
+        </div>
+        <label class="check"><input id="wmOn" type="checkbox"><span>Watermerk</span></label>
+        <div class="row" id="wmRow" hidden><span class="prompt">TEKST&gt;</span><input id="wmText" type="text" value="CONCEPT" aria-label="Watermerktekst"></div>
+        <div class="grid sub">
+          <label class="field"><span>TITEL&gt;</span><input id="pdfTitle" type="text" placeholder="optioneel"></label>
+          <label class="field"><span>AUTEUR&gt;</span><input id="pdfAuthor" type="text" placeholder="optioneel"></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="frame">
+        <legend>COMPRIMEREN</legend>
+        <div class="grid">
+          <label class="field"><span>NIVEAU&gt;</span><span class="sel"><select id="pdfCompress">
+            <option value="none">geen · tekst blijft selecteerbaar</option>
+            <option value="light">licht · 150 dpi</option>
+            <option value="strong">sterk · 96 dpi</option>
+            <option value="target">doelgrootte</option></select></span></label>
+          <div class="row" id="pdfTargetRow" hidden>
+            <span class="prompt">DOEL&gt;</span>
+            <input id="pdfTarget" type="number" min="0" step="any" placeholder="2" aria-label="Doelgrootte PDF">
+            <span class="sel unit"><select id="pdfTargetUnit" aria-label="Eenheid"><option value="kb">KB</option><option value="mb" selected>MB</option></select></span>
+          </div>
+        </div>
+        <p class="dim small">// comprimeren zet de pagina's om naar afbeeldingen; tekst is daarna niet meer te selecteren.</p>
+      </fieldset>
+    </div>
+
+    <div class="mode-convert">
+    <fieldset class="frame">
+      <legend>FORMAAT</legend>
+      <div id="formatRows" class="format-rows"></div>
+      <p id="formatHint" class="dim small" hidden></p>
+    </fieldset>
+
+    <fieldset class="frame" id="sizeField">
+      <legend>GROOTTE</legend>
+      <div class="radios" role="radiogroup" aria-label="Modus">
+        <label><input type="radio" name="sizeMode" id="modeQuality" value="quality" checked><span>Kwaliteit</span></label>
+        <label><input type="radio" name="sizeMode" id="modeTarget" value="target"><span>Doelgrootte per bestand</span></label>
+      </div>
+      <div id="qualityBox" class="sub">
+        <div class="radios" role="radiogroup" aria-label="Kwaliteit">
+          <label><input type="radio" name="quality" id="qHigh" value="high"><span>Hoog <em>groot bestand</em></span></label>
+          <label><input type="radio" name="quality" id="qMed" value="medium" checked><span>Normaal</span></label>
+          <label><input type="radio" name="quality" id="qLow" value="low"><span>Laag <em>kleinst</em></span></label>
+        </div>
+      </div>
+      <div id="targetBox" class="sub" hidden>
+        <div class="row">
+          <span class="prompt">DOEL&gt;</span>
+          <input id="targetSize" type="number" min="0" step="any" placeholder="8" inputmode="decimal" aria-label="Doelgrootte">
+          <span class="sel unit"><select id="targetUnit" aria-label="Eenheid">
+            <option value="kb">KB</option>
+            <option value="mb" selected>MB</option>
+            <option value="gb">GB</option>
+            <option value="pct">%</option>
+          </select></span>
+        </div>
+        <div class="chips" id="sizeChips">
+          <button type="button" data-pct="10">10%</button>
+          <button type="button" data-pct="25">25%</button>
+          <button type="button" data-pct="50">50%</button>
+          <button type="button" data-pct="200">2× GROTER</button>
+          <button type="button" data-abs="8">8 MB</button>
+          <button type="button" data-abs="25">25 MB</button>
+        </div>
+        <p class="dim small" id="targetHint"></p>
+      </div>
+    </fieldset>
+
+    <fieldset id="videoBox" class="frame" hidden>
+      <legend>VIDEO</legend>
+      <div class="grid">
+        <label class="field">
+          <span>RESOLUTIE&gt;</span>
+          <span class="sel"><select id="height">
+            <option value="">origineel / automatisch</option>
+            <option value="2160">2160p (4K)</option>
+            <option value="1440">1440p</option>
+            <option value="1080">1080p</option>
+            <option value="720">720p</option>
+            <option value="480">480p</option>
+            <option value="360">360p</option>
+          </select></span>
+        </label>
+        <label class="check"><input id="removeAudio" type="checkbox"><span>Geluid verwijderen</span></label>
+      </div>
+    </fieldset>
+
+    <fieldset id="gifBox" class="frame" hidden>
+      <legend>GIF</legend>
+      <div class="grid">
+        <label class="field"><span>BREEDTE PX&gt;</span><input id="gifWidth" type="number" min="40" placeholder="480"></label>
+        <label class="field"><span>FPS&gt;</span><input id="gifFps" type="number" min="1" max="30" placeholder="12"></label>
+      </div>
+    </fieldset>
+
+    <fieldset id="imageBox" class="frame" hidden>
+      <legend>AFMETINGEN</legend>
+      <div class="grid three">
+        <label class="field"><span>SCHAAL %&gt;</span><input id="scalePct" type="number" min="1" placeholder="100"></label>
+        <label class="field"><span>BREEDTE&gt;</span><input id="imgW" type="number" min="1" placeholder="auto"></label>
+        <label class="field"><span>HOOGTE&gt;</span><input id="imgH" type="number" min="1" placeholder="auto"></label>
+      </div>
+      <p class="dim small">// geldt voor alle afbeeldingen. percentage óf breedte en/of hoogte. één waarde = verhouding blijft.</p>
+    </fieldset>
+
+    <fieldset id="trimBox" class="frame" hidden>
+      <legend>KNIPPEN</legend>
+      <div class="screen" id="previewScreen">
+        <video id="preview" controls playsinline preload="metadata" hidden></video>
+        <audio id="previewAudio" controls preload="metadata" hidden></audio>
+      </div>
+      <div class="trim-track">
+        <div class="trim-sel" id="trimSel"></div>
+        <input type="range" id="rStart" min="0" max="1000" value="0" aria-label="Startpunt">
+        <input type="range" id="rEnd" min="0" max="1000" value="1000" aria-label="Eindpunt">
+      </div>
+      <div class="grid trim-fields">
+        <label class="field"><span>IN&gt;</span>
+          <span class="row"><input id="trimStart" type="text" placeholder="0:00"><button type="button" class="btn small" id="setStart" title="Huidige positie als start">[⇤ HIER]</button></span>
+        </label>
+        <label class="field"><span>UIT&gt;</span>
+          <span class="row"><input id="trimEnd" type="text" placeholder="einde"><button type="button" class="btn small" id="setEnd" title="Huidige positie als einde">[HIER ⇥]</button></span>
+        </label>
+      </div>
+      <p class="dim small">SELECTIE: <strong id="trimLen">–</strong> // tijden als 1:23.5 of in seconden</p>
+    </fieldset>
+    <p id="trimNote" class="dim small trim-note" hidden>// knippen kan per bestand: houd één video of audiobestand in de lijst over.</p>
+    </div>
+
+    <button id="goBtn" class="go" type="button">[ ▶ START ]</button>
+
+    <div id="progress" hidden>
+      <pre id="progBar" class="txtbar"></pre>
+      <p id="progMsg" class="dim"></p>
+    </div>
+
+    <div id="result" class="result" hidden></div>
+  </section>
+
+  <footer class="statusline">
+    <span id="status">&gt; gereed</span>
+    <span class="dim">alles gebeurt lokaal in je browser · niets wordt geüpload</span>
+  </footer>
+</main>
+
+<script type="importmap">
+{ "imports": { "mediabunny": "https://cdn.jsdelivr.net/npm/mediabunny@1.62.0/dist/bundles/mediabunny.min.mjs" } }
+</script>
+<script type="module">
+"use strict";
+const $ = (id) => document.getElementById(id);
+const CDN = {
+  mp3: "https://cdn.jsdelivr.net/npm/@mediabunny/mp3-encoder@1.62.0/dist/bundles/mediabunny-mp3-encoder.min.mjs",
+  gifenc: "https://cdn.jsdelivr.net/npm/gifenc@1.0.3/dist/gifenc.esm.js",
+  fflate: "https://cdn.jsdelivr.net/npm/fflate@0.8.2/esm/browser.js",
+};
+// Bestandstypen die de viewer direct mag opslaan; de rest gaat in een zip.
+const SAVE_OK = new Set("gif png jpg jpeg webp mp4 webm mov txt json md docx pptx epub csv ttf html svg pdf xlsx zip fig".split(" "));
+// Alleen binnen de claude.ai-viewer geldt die lijst; als gewone website (bijv. GitHub Pages) mag alles los.
+const inViewer = () => !!window.claude?.use;
+const savesDirect = (e) => !inViewer() || SAVE_OK.has(e);
+
+const EXT = {
+  video: new Set(["mp4", "m4v", "mov", "webm", "mkv", "ts", "mts", "ogv"]),
+  audio: new Set(["mp3", "wav", "m4a", "aac", "ogg", "oga", "opus", "flac"]),
+  image: new Set(["jpg", "jpeg", "jfif", "png", "webp", "gif", "bmp", "avif", "svg", "ico", "heic", "heif"]),
+  pdf: new Set(["pdf"]),
+  unsupportedVideo: new Set(["avi", "wmv", "flv", "mpg", "mpeg", "3gp", "vob"]),
+};
+const TARGETS = {
+  video: ["mp4", "webm", "gif", "mp3", "m4a", "wav"],
+  audio: ["mp3", "m4a", "ogg", "wav", "webm"],
+  image: ["jpg", "png", "webp", "gif", "pdf", "bmp", "ico"],
+  pdf: ["pdf", "jpg", "png", "txt"],
+  other: ["zip"],
+};
+const LABEL = { video: "Video", audio: "Audio", image: "Afbeelding", pdf: "PDF", other: "Overig" };
+const CAT_ORDER = ["video", "audio", "image", "pdf", "other"];
+const AUDIO_OUT = new Set(["mp3", "m4a", "ogg", "wav"]);
+const NO_TARGET = new Set(["wav", "bmp", "ico"]);
+const hasTarget = (c, f) => (c === "pdf" ? f === "pdf" : !NO_TARGET.has(f));
+
+// De converters hieronder werken op "het huidige bestand"; processItem() zet deze per bestand.
+let file = null, cat = null, ext = "", info = {}, duration = 0;
+let busy = false, current = null;
+const items = [];
+const chosen = {}; // gekozen uitvoerformaat per categorie
+let nextId = 1;
+
+// ---------------------------------------------------------------- hulpjes
+const MB_ = 1024 * 1024;
+function human(n) {
+  const u = ["B", "KB", "MB", "GB"]; let i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return (i === 0 ? n.toFixed(0) : n.toFixed(2)) + " " + u[i];
+}
+function fmtTime(s) {
+  if (!isFinite(s)) return "–";
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = (s % 60).toFixed(1).padStart(4, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+}
+function parseTime(v) {
+  v = String(v ?? "").trim().replace(",", ".");
+  if (!v) return null;
+  const parts = v.split(":").map(Number);
+  if (parts.some((x) => isNaN(x) || x < 0)) return NaN;
+  return parts.reduce((a, b) => a * 60 + b, 0);
+}
+function extOf(name) { const m = /\.([^.]+)$/.exec(name.toLowerCase()); return m ? m[1] : ""; }
+function stemOf(name) { return name.replace(/\.[^.]+$/, ""); }
+const radio = (name) => document.querySelector(`input[name=${name}]:checked`).value;
+function txtBar(f, w = barWidth()) {
+  const n = Math.round(Math.max(0, Math.min(1, f)) * w);
+  return "[" + "█".repeat(n) + "░".repeat(w - n) + "] " + String(Math.round(f * 100)).padStart(3) + "%";
+}
+function barWidth() { return window.innerWidth < 480 ? 18 : 32; }
+function status(msg) { $("status").textContent = "> " + msg; }
+function notice(msg, warn = false) {
+  const n = $("notice");
+  n.hidden = !msg; n.textContent = msg || ""; n.classList.toggle("warn", warn);
+}
+function step(n) {
+  document.querySelectorAll(".menubar span").forEach((el) => {
+    const k = +el.dataset.step;
+    el.classList.toggle("on", n === 2 ? k === 2 || k === 3 : k === n);
+    el.classList.toggle("done", k < n);
+  });
+}
+class UserError extends Error {}
+const fail = (msg) => { throw new UserError(msg); };
+
+// ---------------------------------------------------------------- lazy libraries
+let MBp = null, mp3p = null;
+function mediabunny() { return MBp ??= import("mediabunny"); }
+async function ensureMp3() {
+  const MB = await mediabunny();
+  if (await MB.canEncodeAudio("mp3")) return;
+  mp3p ??= import(CDN.mp3).then((m) => m.registerMp3Encoder());
+  await mp3p;
+}
+const gifenc = () => import(CDN.gifenc);
+const fflate = () => import(CDN.fflate);
+
+// ---------------------------------------------------------------- bestanden toevoegen
+const drop = $("drop"), fileInput = $("fileInput");
+drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
+// Slepen werkt overal op de pagina, ook als de lijst al open staat.
+document.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) drop.classList.remove("over"); });
+document.addEventListener("drop", (e) => {
+  e.preventDefault(); drop.classList.remove("over");
+  if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener("change", () => { addFiles(fileInput.files); fileInput.value = ""; });
+$("addBtn").addEventListener("click", () => $("addInput").click());
+$("addInput").addEventListener("change", () => { addFiles($("addInput").files); $("addInput").value = ""; });
+
+$("sampleBtn").addEventListener("click", async () => {
+  const mk = async (name, hue, label) => {
+    const c = new OffscreenCanvas(1920, 1080), g = c.getContext("2d");
+    for (let i = 0; i < 7; i++) { g.fillStyle = `hsl(${hue + i * 40},70%,${45 + (i % 2) * 10}%)`; g.fillRect(i * 1920 / 7, 0, 1920 / 7 + 1, 760); }
+    for (let x = 0; x < 1920; x += 4) { g.fillStyle = `hsl(${x / 5.33 + hue},90%,50%)`; g.fillRect(x, 760, 4, 140); }
+    g.fillStyle = "#111"; g.fillRect(0, 900, 1920, 180);
+    g.fillStyle = "#a6ff5c"; g.font = "bold 72px monospace"; g.fillText(label, 120, 1010);
+    return new File([await c.convertToBlob({ type: "image/png" })], name, { type: "image/png" });
+  };
+  addFiles([await mk("testbeeld-1.png", 0, "TESTBEELD 1"), await mk("testbeeld-2.png", 120, "TESTBEELD 2"),
+    await mk("testbeeld-3.png", 240, "TESTBEELD 3")]);
+});
+
+function categorize(f) {
+  const e = extOf(f.name);
+  if (EXT.unsupportedVideo.has(e)) return "other";
+  if (e === "pdf" || f.type === "application/pdf") return "pdf";
+  if (EXT.video.has(e) || (f.type.startsWith("video/") && !EXT.audio.has(e))) return "video";
+  if (EXT.audio.has(e) || f.type.startsWith("audio/")) return "audio";
+  if (EXT.image.has(e) || f.type.startsWith("image/")) return "image";
+  return "other";
+}
+
+async function addFiles(list) {
+  if (busy) return;
+  const fresh = [];
+  for (const f of list) {
+    const it = { id: nextId++, file: f, ext: extOf(f.name), cat: categorize(f), info: {}, duration: 0,
+      state: "reading", progress: 0, out: null, msg: "" };
+    if (EXT.unsupportedVideo.has(it.ext)) it.msg = `.${it.ext} kan je browser niet lezen; wordt ingepakt als zip.`;
+    items.push(it); fresh.push(it);
+  }
+  if (!fresh.length) return;
+  staleResult();
+  showPanel();
+  // PDF's erbij? Dan meteen naar de werkbank.
+  if (mode === "convert" && fresh.some((it) => it.cat === "pdf")) setMode("pdf");
+  for (const it of fresh) {
+    try {
+      if (it.cat === "video" || it.cat === "audio") await probeMedia(it);
+      if (it.cat === "image") await probeImage(it);
+      if (it.cat === "pdf") it.info = { pages: (await openPdfJs(it.file)).numPages };
+    } catch (err) {
+      console.warn(err);
+      it.msg = err instanceof UserError ? err.message + " Het wordt ingepakt als zip." : "Je browser kan dit bestand niet openen; het wordt ingepakt als zip.";
+      it.cat = "other"; it.info = {}; it.duration = 0;
+    }
+    it.state = "ready";
+    renderQueue(); refresh(); syncPages();
+  }
+  status(`${items.length} ${items.length === 1 ? "bestand" : "bestanden"} geladen`);
+}
+
+async function probeMedia(it) {
+  const MB = await mediabunny();
+  const input = new MB.Input({ source: new MB.BlobSource(it.file), formats: MB.ALL_FORMATS });
+  const v = await input.getPrimaryVideoTrack();
+  const a = await input.getPrimaryAudioTrack();
+  if (!v && !a) throw new Error("geen sporen");
+  it.duration = await input.computeDuration();
+  it.info = { duration: it.duration, width: v?.displayWidth, height: v?.displayHeight, hasVideo: !!v, hasAudio: !!a };
+  if (it.cat === "video" && !v) it.cat = "audio";
+}
+async function probeImage(it) {
+  const bmp = await createImageBitmap(it.file);
+  it.info = { width: bmp.width, height: bmp.height };
+  bmp.close();
+}
+
+function showPanel() {
+  $("dropWrap").hidden = true;
+  $("panel").hidden = false;
+  step(2);
+  renderQueue(); refresh();
+}
+
+// ---------------------------------------------------------------- wachtrij (ASCII-tabel)
+function rowStatus(it) {
+  switch (it.state) {
+    case "reading": return "lezen…";
+    case "ready": return "klaar voor start";
+    case "queued": return "in de wachtrij";
+    case "busy": return txtBar(it.progress, 10);
+    case "done": {
+      const d = (it.out.blob.size - it.file.size) / it.file.size * 100;
+      return `${d <= 0 ? "▼" : "▲"} ${Math.abs(d).toFixed(0)}% → ${human(it.out.blob.size)}`;
+    }
+    case "error": return "!! FOUT";
+  }
+  return "";
+}
+function renderQueue() {
+  const ol = $("queue");
+  ol.innerHTML = "";
+  items.forEach((it, i) => {
+    const li = document.createElement("li");
+    li.className = "q-row q-" + it.state;
+    const meta = [LABEL[it.cat].toUpperCase(), human(it.file.size)];
+    if (it.info.width) meta.push(`${it.info.width}×${it.info.height}`);
+    if (it.duration) meta.push(fmtTime(it.duration));
+    if (it.info.pages) meta.push(it.info.pages + (it.info.pages === 1 ? " pagina" : " pagina's"));
+    li.innerHTML = `<span class="q-idx">${String(i + 1).padStart(2, "0")}</span><span class="q-name"></span>` +
+      `<span class="q-meta"></span><span class="q-status"></span><span class="q-act"></span>`;
+    li.querySelector(".q-name").textContent = it.file.name;
+    li.querySelector(".q-name").title = it.file.name;
+    li.querySelector(".q-meta").textContent = meta.join(" · ");
+    li.querySelector(".q-status").textContent = rowStatus(it);
+    const act = li.querySelector(".q-act");
+    if (it.state === "done") {
+      const b = document.createElement("button");
+      b.className = "btn small"; b.type = "button"; b.textContent = "[↓]";
+      b.title = "Opslaan: " + it.out.name; b.setAttribute("aria-label", "Opslaan " + it.out.name);
+      b.addEventListener("click", () => saveOne(it));
+      act.append(b);
+    }
+    if (!busy) {
+      const x = document.createElement("button");
+      x.className = "btn small"; x.type = "button"; x.textContent = "[x]";
+      x.title = "Verwijderen"; x.setAttribute("aria-label", "Verwijder " + it.file.name);
+      x.addEventListener("click", () => removeItem(it));
+      act.append(x);
+    }
+    if (it.msg || it.err) {
+      const m = document.createElement("div");
+      m.className = "q-msg" + (it.err ? " err" : "");
+      m.textContent = "└ " + (it.err || it.msg);
+      li.append(m);
+    }
+    ol.append(li);
+  });
+  $("queueTitle").textContent = `BESTANDEN (${items.length})`;
+}
+function updateRow(it) {
+  const i = items.indexOf(it);
+  const li = $("queue").children[i];
+  if (li) li.querySelector(".q-status").textContent = rowStatus(it);
+}
+function staleResult() {
+  $("result").hidden = true;
+  $("goBtn").textContent = mode === "pdf" ? "[ ▶ MAAK PDF ]" : "[ ▶ START ]";
+  for (const x of items) if (x.state === "done" || x.state === "error") { x.state = "ready"; x.out = null; x.err = ""; }
+}
+function removeItem(it) {
+  if (busy) return;
+  staleResult();
+  items.splice(items.indexOf(it), 1);
+  if (!items.length) return resetAll();
+  renderQueue(); refresh(); syncPages();
+}
+function resetAll() {
+  if (busy) return;
+  items.length = 0;
+  pages = [];
+  try { $("preview").pause(); $("previewAudio").pause(); } catch {}
+  $("panel").hidden = true; $("dropWrap").hidden = false;
+  $("result").hidden = true; $("progress").hidden = true;
+  notice(""); step(1); status("gereed");
+}
+$("resetBtn").addEventListener("click", resetAll);
+
+// ---------------------------------------------------------------- opties
+const cats = () => CAT_ORDER.filter((c) => items.some((it) => it.cat === c));
+const single = () => (items.length === 1 ? items[0] : null);
+
+function renderFormats() {
+  const box = $("formatRows");
+  const present = cats();
+  const key = present.join(",") + "|" + items.map((it) => it.state === "reading" ? "r" : it.info.hasAudio ? "a" : "n").join("");
+  if (box.dataset.key === key) return;
+  box.dataset.key = key;
+  box.innerHTML = "";
+  for (const c of present) {
+    const group = items.filter((it) => it.cat === c);
+    let targets = TARGETS[c];
+    if (c === "video" && group.every((it) => !it.info.hasAudio)) targets = targets.filter((t) => !AUDIO_OUT.has(t));
+    if (!targets.includes(chosen[c])) {
+      const exts = new Set(group.map((it) => (it.ext === "jpeg" ? "jpg" : it.ext)));
+      const same = exts.size === 1 ? [...exts][0] : null;
+      chosen[c] = targets.includes(same) ? same : targets[0];
+    }
+    const lab = document.createElement("label");
+    lab.className = "field";
+    lab.innerHTML = `<span></span><span class="sel"><select></select></span>`;
+    lab.firstElementChild.textContent = `${LABEL[c].toUpperCase()} (${group.length})>`;
+    const sel = lab.querySelector("select");
+    sel.id = "fmt-" + c;
+    for (const t of targets) {
+      const o = document.createElement("option");
+      o.value = t;
+      o.textContent = "." + t + (savesDirect(t) ? "" : "  · opgeslagen in .zip");
+      sel.append(o);
+    }
+    sel.value = chosen[c];
+    sel.addEventListener("change", () => { chosen[c] = sel.value; refresh(); });
+    box.append(lab);
+  }
+}
+
+let previewFor = null;
+function setupPreview() {
+  const it = single();
+  const media = it && (it.cat === "video" || it.cat === "audio") && it.state !== "reading";
+  if (media && previewFor === it) return;
+  const v = $("preview"), a = $("previewAudio");
+  for (const el of [v, a]) { if (el.src) URL.revokeObjectURL(el.src); el.removeAttribute("src"); el.hidden = true; }
+  $("previewScreen").hidden = true;
+  $("trimStart").value = ""; $("trimEnd").value = "";
+  $("rStart").value = 0; $("rEnd").value = 1000;
+  previewFor = media ? it : null;
+  duration = media ? it.duration : 0;
+  syncSel();
+  if (!media) return;
+  const el = it.cat === "video" ? v : a;
+  el.onerror = () => { el.hidden = true; $("previewScreen").hidden = true; };
+  el.src = URL.createObjectURL(it.file);
+  el.hidden = false; $("previewScreen").hidden = false;
+}
+
+function refresh() {
+  if (!items.length) return;
+  renderFormats();
+  const fmts = cats().map((c) => chosen[c]);
+  const anyVideo = items.some((it) => it.cat === "video");
+  const sizeable = cats().some((c) => hasTarget(c, chosen[c]));
+  $("modeTarget").disabled = !sizeable;
+  if (!sizeable && $("modeTarget").checked) $("modeQuality").checked = true;
+  const target = radio("sizeMode") === "target";
+  $("targetBox").hidden = !target;
+  $("qualityBox").hidden = target;
+  $("videoBox").hidden = !(anyVideo && ["mp4", "webm"].includes(chosen.video));
+  $("gifBox").hidden = !(anyVideo && chosen.video === "gif");
+  $("imageBox").hidden = !items.some((it) => it.cat === "image");
+  const it = single();
+  const mediaSingle = it && (it.cat === "video" || it.cat === "audio");
+  $("trimBox").hidden = !mediaSingle;
+  $("trimNote").hidden = mediaSingle || !items.some((x) => x.cat === "video" || x.cat === "audio");
+  setupPreview();
+
+  const skipped = cats().filter((c) => !hasTarget(c, chosen[c])).map((c) => chosen[c]);
+  let hint = items.length > 1 ? "Geldt per bestand. Met % krijgt elk bestand een doel naar verhouding van zijn eigen grootte." :
+    "Groter dan het origineel kan ook: bitrate, kwaliteit of resolutie gaan dan omhoog.";
+  if (skipped.length) hint += ` Voor .${skipped.join(", .")} geldt geen doelgrootte.`;
+  $("targetHint").textContent = hint;
+  const zipped = [...new Set(fmts.filter((f) => !savesDirect(f)))];
+  $("formatHint").hidden = !zipped.length;
+  $("formatHint").textContent = `// .${zipped.join(", .")} wordt in een .zip opgeslagen, omdat de viewer dit bestandstype niet los laat downloaden.`;
+}
+document.querySelectorAll("input[name=sizeMode]").forEach((r) => r.addEventListener("change", refresh));
+
+$("sizeChips").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.pct) { $("targetUnit").value = "pct"; $("targetSize").value = b.dataset.pct; }
+  else { $("targetUnit").value = "mb"; $("targetSize").value = b.dataset.abs; }
+});
+$("scalePct").addEventListener("input", () => { if ($("scalePct").value) { $("imgW").value = ""; $("imgH").value = ""; } });
+for (const id of ["imgW", "imgH"]) $(id).addEventListener("input", () => { if ($(id).value) $("scalePct").value = ""; });
+
+// ---------------------------------------------------------------- knippen (alleen bij één bestand)
+function player() { return single()?.cat === "video" ? $("preview") : $("previewAudio"); }
+function selection() {
+  const s = parseTime($("trimStart").value) ?? 0;
+  const e = parseTime($("trimEnd").value) ?? duration;
+  if (isNaN(s) || isNaN(e) || e <= s) return null;
+  return { s, e: Math.min(e, duration || e), len: Math.min(e, duration || e) - s };
+}
+function syncSel() {
+  const a = +$("rStart").value, b = +$("rEnd").value;
+  $("trimSel").style.left = a / 10 + "%";
+  $("trimSel").style.width = Math.max(0, b - a) / 10 + "%";
+  const s = selection();
+  $("trimLen").textContent = s ? fmtTime(s.len) + (duration ? ` van ${fmtTime(duration)}` : "") : "ongeldig";
+}
+function syncSliders() {
+  if (!duration) return syncSel();
+  const s = parseTime($("trimStart").value) ?? 0, e = parseTime($("trimEnd").value) ?? duration;
+  if (!isNaN(s)) $("rStart").value = Math.round(1000 * s / duration);
+  if (!isNaN(e)) $("rEnd").value = Math.round(1000 * Math.min(e, duration) / duration);
+  syncSel();
+}
+function sliderInput(which) {
+  if (!duration) return;
+  let a = +$("rStart").value, b = +$("rEnd").value;
+  if (a > b - 1) { if (which === "s") a = b - 1; else b = a + 1; $("rStart").value = a; $("rEnd").value = b; }
+  $("trimStart").value = a === 0 ? "" : fmtTime(a * duration / 1000);
+  $("trimEnd").value = b === 1000 ? "" : fmtTime(b * duration / 1000);
+  const p = player();
+  if (p && p.src && !p.hidden) p.currentTime = (which === "s" ? a : b) * duration / 1000;
+  syncSel();
+}
+$("rStart").addEventListener("input", () => sliderInput("s"));
+$("rEnd").addEventListener("input", () => sliderInput("e"));
+$("trimStart").addEventListener("input", syncSliders);
+$("trimEnd").addEventListener("input", syncSliders);
+$("setStart").addEventListener("click", () => { $("trimStart").value = fmtTime(player().currentTime || 0); syncSliders(); });
+$("setEnd").addEventListener("click", () => { $("trimEnd").value = fmtTime(player().currentTime || 0); syncSliders(); });
+
+// ---------------------------------------------------------------- starten
+function readSettings() {
+  const s = { quality: radio("quality") };
+  if (radio("sizeMode") === "target") {
+    const v = parseFloat($("targetSize").value);
+    if (!(v > 0)) fail("Vul een doelgrootte in, bijvoorbeeld 8 MB of 50 %.");
+    const unit = $("targetUnit").value;
+    if (unit === "pct") s.targetPct = v / 100;
+    else s.targetAbs = Math.round(v * { kb: 1024, mb: MB_, gb: 1024 * MB_ }[unit]);
+  }
+  s.height = +$("height").value || null;
+  s.removeAudio = $("removeAudio").checked;
+  s.gifWidth = +$("gifWidth").value || null;
+  s.gifFps = +$("gifFps").value || null;
+  s.scalePct = +$("scalePct").value || null;
+  s.w = +$("imgW").value || null;
+  s.h = +$("imgH").value || null;
+  const it = single();
+  if (it && (it.cat === "video" || it.cat === "audio")) {
+    const a = parseTime($("trimStart").value), b = parseTime($("trimEnd").value);
+    if (Number.isNaN(a) || Number.isNaN(b)) fail("Controleer de knip-tijden: gebruik bijvoorbeeld 1:23.5 of 83.5.");
+    if (a != null && it.duration && a >= it.duration) fail("Het startpunt ligt na het einde van het bestand.");
+    if (a != null && b != null && b <= a) fail("Het eindpunt moet na het startpunt liggen.");
+    s.trim = { start: a || 0, end: b };
+  }
+  return s;
+}
+
+function optsFor(it, s) {
+  const fmt = chosen[it.cat];
+  const opts = { ...s, fmt };
+  const start = s.trim?.start || 0;
+  const end = s.trim?.end != null ? Math.min(s.trim.end, it.duration || s.trim.end) : it.duration;
+  opts.start = start; opts.end = end;
+  if (hasTarget(it.cat, fmt)) {
+    if (s.targetAbs) opts.target = s.targetAbs;
+    if (s.targetPct) {
+      const frac = it.duration && end ? (end - start) / it.duration : 1;
+      opts.target = Math.max(1024, Math.round(it.file.size * s.targetPct * frac));
+    }
+  }
+  return opts;
+}
+
+$("goBtn").addEventListener("click", async () => {
+  if (!items.length || busy) return;
+  if (items.some((it) => it.state === "reading")) return showError("Even wachten: nog niet alle bestanden zijn gelezen.");
+  if (mode === "pdf") return runWorkbenchClick();
+  let s;
+  try { s = readSettings(); } catch (err) { return showError(err.message); }
+
+  busy = true;
+  $("goBtn").disabled = true; $("goBtn").textContent = "[ BEZIG... ]";
+  $("addBtn").disabled = true; $("resetBtn").disabled = true;
+  $("result").hidden = true; $("progress").hidden = false;
+  step(4);
+  for (const it of items) { it.state = "queued"; it.out = null; it.err = ""; it.progress = 0; }
+  renderQueue();
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    current = { it, index: i };
+    it.state = "busy"; renderQueue();
+    try {
+      it.out = await processItem(it, optsFor(it, s));
+      it.state = "done";
+    } catch (err) {
+      console.error(err);
+      it.state = "error";
+      it.err = err instanceof UserError ? err.message : "Er ging iets mis: " + (err?.message || err);
+    }
+    renderQueue();
+  }
+  current = null;
+  busy = false;
+  $("goBtn").disabled = false; $("goBtn").textContent = "[ ▶ OPNIEUW ]";
+  $("addBtn").disabled = false; $("resetBtn").disabled = false;
+  renderQueue();
+  showSummary();
+});
+
+async function runWorkbenchClick() {
+  busy = true;
+  $("goBtn").disabled = true; $("goBtn").textContent = "[ BEZIG... ]";
+  $("addBtn").disabled = true; $("resetBtn").disabled = true;
+  $("result").hidden = true; $("progress").hidden = false;
+  step(4); setProgress(0, "PDF opbouwen");
+  try {
+    showPdfResult(await runPdfWorkbench());
+  } catch (err) {
+    console.error(err);
+    showError(err instanceof UserError ? err.message : "Er ging iets mis: " + (err?.message || err));
+  } finally {
+    busy = false;
+    $("goBtn").disabled = false; $("goBtn").textContent = "[ ▶ MAAK PDF ]";
+    $("addBtn").disabled = false; $("resetBtn").disabled = false;
+  }
+}
+
+async function processItem(it, opts) {
+  // zet het "huidige bestand" voor de converters
+  file = it.file; cat = it.cat; ext = it.ext; info = it.info; duration = it.duration;
+  try {
+    let out;
+    if (cat === "image") out = await convertImage(opts);
+    else if (cat === "other") out = await zipFile(opts);
+    else if (cat === "pdf") out = await convertPdf(opts);
+    else if (opts.fmt === "gif") out = await videoToGif(opts);
+    else out = await convertMedia(opts);
+    out.target = opts.target;
+    return out;
+  } finally {
+    const s = single();
+    duration = s && (s.cat === "video" || s.cat === "audio") ? s.duration : 0;
+  }
+}
+
+let lastPaint = 0;
+function setProgress(f, msg) {
+  const n = items.length;
+  if (current) {
+    current.it.progress = f;
+    const now = performance.now();
+    if (now - lastPaint > 80 || f >= 1) { updateRow(current.it); lastPaint = now; }
+    const total = (current.index + Math.min(f, 1)) / n;
+    $("progBar").textContent = txtBar(total);
+    $("progMsg").textContent = `> ${current.index + 1}/${n} ${current.it.file.name}: ${msg.toLowerCase()}...`;
+    status(`${current.index + 1}/${n} ${msg.toLowerCase()} ${Math.round(f * 100)}%`);
+  } else {
+    $("progBar").textContent = txtBar(f);
+    $("progMsg").textContent = "> " + msg.toLowerCase() + "...";
+    status(msg.toLowerCase() + " " + Math.round(f * 100) + "%");
+  }
+}
+
+// ---------------------------------------------------------------- video & audio (WebCodecs via Mediabunny)
+const OUT_FORMAT = {
+  mp4: (MB) => new MB.Mp4OutputFormat({ fastStart: "in-memory" }),
+  webm: (MB) => new MB.WebMOutputFormat(),
+  m4a: (MB) => new MB.Mp4OutputFormat({ fastStart: "in-memory" }),
+  mp3: (MB) => new MB.Mp3OutputFormat(),
+  wav: (MB) => new MB.WavOutputFormat(),
+  ogg: (MB) => new MB.OggOutputFormat(),
+};
+const AUDIO_RANGE = { mp3: [8e3, 320e3], m4a: [16e3, 320e3], ogg: [8e3, 320e3], webm: [6e3, 320e3], mp4: [16e3, 320e3] };
+
+async function convertMedia(opts) {
+  if (typeof VideoEncoder === "undefined" && typeof AudioEncoder === "undefined") {
+    fail("Je browser ondersteunt geen WebCodecs. Gebruik een recente Chrome, Edge, Safari of Firefox.");
+  }
+  const MB = await mediabunny();
+  const { fmt } = opts;
+  if (fmt === "mp3") { setProgress(0.01, "MP3-encoder laden"); await ensureMp3(); }
+  const audioOnly = AUDIO_OUT.has(fmt) || cat === "audio";
+  const len = opts.end - opts.start;
+  if (!(len > 0)) fail("Kan de duur van dit fragment niet bepalen.");
+  const keepAudio = info.hasAudio && !opts.removeAudio;
+  if (audioOnly && !info.hasAudio) fail("Dit bestand bevat geen geluid.");
+  if (fmt === "wav" && opts.target) fail(".wav is onverkleind; kies mp3, m4a of ogg voor een doelgrootte.");
+
+  // bitrates bepalen
+  let vBitrate = { high: MB.QUALITY_HIGH, medium: MB.QUALITY_MEDIUM, low: MB.QUALITY_LOW }[opts.quality];
+  let aBitrate = { high: 192e3, medium: 128e3, low: 96e3 }[opts.quality];
+  let height = opts.height;
+  if (opts.target) {
+    const total = opts.target * 8 * 0.95 / len;
+    if (audioOnly) {
+      const [lo, hi] = AUDIO_RANGE[fmt] || AUDIO_RANGE.mp4;
+      if (total < lo) fail(`Doelgrootte te klein: minimaal ongeveer ${human(lo * len / 8 / 0.95)} voor dit fragment.`);
+      aBitrate = Math.min(Math.round(total), hi);
+    } else {
+      aBitrate = keepAudio ? (total > 1.5e6 ? 160e3 : total > 6e5 ? 128e3 : total > 2.5e5 ? 96e3 : total > 1e5 ? 64e3 : 32e3) : 0;
+      vBitrate = Math.round(total - aBitrate);
+      if (vBitrate < 30e3) {
+        fail(`Doelgrootte te klein voor ${fmtTime(len)} video. Minimaal ongeveer ${human((30e3 + aBitrate) * len / 8 / 0.95)}; knip korter of verwijder het geluid.`);
+      }
+      if (!height && info.height) {
+        for (const [lim, h] of [[25e4, 360], [5e5, 480], [12e5, 720], [3e6, 1080]]) {
+          if (vBitrate < lim && info.height > h) { height = h; break; }
+        }
+      }
+    }
+  }
+
+  let blob = null;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const label = attempt ? `Opnieuw coderen (poging ${attempt + 1})` : "Coderen";
+    blob = await runConversion(MB, fmt, { audioOnly, keepAudio, vBitrate, aBitrate, height, opts }, label);
+    if (!opts.target || blob.size <= opts.target * 1.02) break;
+    // te groot: bitrate omlaag en opnieuw
+    const f = opts.target / blob.size * 0.95;
+    if (audioOnly) aBitrate = Math.max(8e3, Math.round(aBitrate * f));
+    else {
+      vBitrate = Math.max(30e3, Math.round(vBitrate * f));
+      // bitrate zit al op de bodem: dan ook de resolutie verlagen
+      if (info.height) height = Math.max(240, Math.round((height || info.height) * 0.7 / 2) * 2);
+    }
+  }
+  if (opts.target && blob.size > opts.target * 1.05) {
+    fail(`Kleinst gehaald: ${human(blob.size)}. Knip korter, kies een lagere resolutie of verwijder het geluid.`);
+  }
+  const outExt = fmt === "m4a" ? "m4a" : fmt;
+  return { blob, name: stemOf(file.name) + (outExt === ext ? "_bewerkt" : "") + "." + outExt,
+    kind: audioOnly ? "audio" : "video", grew: opts.target && opts.target > file.size };
+}
+
+async function runConversion(MB, fmt, p, label) {
+  const input = new MB.Input({ source: new MB.BlobSource(file), formats: MB.ALL_FORMATS });
+  const format = OUT_FORMAT[fmt === "webm" && p.audioOnly ? "webm" : fmt](MB);
+  const output = new MB.Output({ format, target: new MB.BufferTarget() });
+
+  const video = p.audioOnly ? { discard: true } : { bitrate: p.vBitrate, forceTranscode: true };
+  if (!p.audioOnly) {
+    if (p.height) video.height = p.height;
+    const codecs = format.getSupportedVideoCodecs();
+    const pref = fmt === "mp4" ? ["avc", "hevc", "vp9", "av1"] : codecs;
+    const codec = await MB.getFirstEncodableVideoCodec(pref.filter((c) => codecs.includes(c)),
+      { width: info.width, height: p.height || info.height });
+    if (!codec) fail(`Je browser kan geen video coderen voor .${fmt}. Probeer ${fmt === "mp4" ? "webm" : "mp4"} of een andere browser.`);
+    video.codec = codec;
+  }
+  let audio = { discard: true };
+  if (p.keepAudio || p.audioOnly) {
+    const codecs = format.getSupportedAudioCodecs();
+    const pref = fmt === "mp4" || fmt === "m4a" ? ["aac", "opus"] : codecs;
+    const codec = await MB.getFirstEncodableAudioCodec(pref.filter((c) => codecs.includes(c)));
+    if (!codec) fail(`Je browser kan geen audio coderen voor .${fmt}.`);
+    audio = { codec, forceTranscode: true };
+    if (!codec.startsWith("pcm") && codec !== "flac") audio.bitrate = p.aBitrate;
+  }
+  const conversion = await MB.Conversion.init({
+    input, output, video, audio,
+    trim: { start: p.opts.start, end: p.opts.end },
+    showWarnings: false,
+  });
+  if (!conversion.isValid) {
+    const reasons = conversion.discardedTracks.map((t) => t.reason).join(", ");
+    fail(`Deze conversie kan je browser niet uitvoeren (${reasons}). Probeer een ander formaat of Chrome/Edge.`);
+  }
+  conversion.onProgress = (f) => setProgress(f, label);
+  await conversion.execute();
+  const mime = { mp4: "video/mp4", webm: "video/webm", m4a: "audio/mp4", mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg" }[fmt];
+  return new Blob([output.target.buffer], { type: mime });
+}
+
+async function videoToGif(opts) {
+  const MB = await mediabunny();
+  const { GIFEncoder, quantize, applyPalette } = await gifenc();
+  const input = new MB.Input({ source: new MB.BlobSource(file), formats: MB.ALL_FORMATS });
+  const track = await input.getPrimaryVideoTrack();
+  if (!track || !(await track.canDecode())) fail("Je browser kan deze video niet decoderen.");
+  let fps = Math.min(opts.gifFps || 12, 30);
+  let width = opts.gifWidth || Math.min(info.width || 480, 480);
+  const len = opts.end - opts.start;
+  let colors = 256;
+
+  async function encode(attempt) {
+    const n = Math.min(Math.ceil(len * fps), 900);
+    const height = Math.max(2, Math.round(width * info.height / info.width));
+    const sink = new MB.CanvasSink(track, { width, height, fit: "fill", poolSize: 2 });
+    const times = Array.from({ length: n }, (_, i) => opts.start + i / fps);
+    const gif = GIFEncoder();
+    let i = 0;
+    const work = new OffscreenCanvas(width, height), g = work.getContext("2d", { willReadFrequently: true });
+    for await (const wrapped of sink.canvasesAtTimestamps(times)) {
+      if (wrapped) {
+        g.drawImage(wrapped.canvas, 0, 0);
+        const { data } = g.getImageData(0, 0, width, height);
+        const palette = quantize(data, colors);
+        gif.writeFrame(applyPalette(data, palette), width, height, { palette, delay: Math.round(1000 / fps) });
+      }
+      i++;
+      setProgress(i / n, attempt ? `GIF verkleinen (poging ${attempt + 1})` : "GIF maken");
+      if (i % 10 === 0) await new Promise((r) => setTimeout(r));
+    }
+    gif.finish();
+    return new Blob([gif.bytes()], { type: "image/gif" });
+  }
+
+  let blob = await encode(0);
+  for (let attempt = 1; opts.target && blob.size > opts.target && attempt < 6; attempt++) {
+    const ratio = Math.sqrt(opts.target / blob.size);
+    width = Math.max(80, Math.round(width * Math.max(Math.min(ratio, 0.9), 0.5)));
+    if (width <= 200 && fps > 8) fps = 8;
+    if (width <= 200) colors = Math.max(32, colors / 2);
+    blob = await encode(attempt);
+  }
+  if (opts.target && blob.size > opts.target) fail(`GIF komt niet onder ${human(opts.target)} (${human(blob.size)}). Knip de video korter.`);
+  return { blob, name: stemOf(file.name) + ".gif", kind: "image" };
+}
+
+// ---------------------------------------------------------------- afbeeldingen (canvas)
+const MAX_SIDE = 12000;
+async function convertImage(opts) {
+  const { fmt } = opts;
+  setProgress(0.05, "Afbeelding laden");
+  let bmp = await createImageBitmap(file);
+  let W = bmp.width, H = bmp.height;
+  if (opts.scalePct) { W = Math.round(W * opts.scalePct / 100); H = Math.round(H * opts.scalePct / 100); }
+  else if (opts.w || opts.h) {
+    const w = opts.w || Math.round(bmp.width * opts.h / bmp.height);
+    const h = opts.h || Math.round(bmp.height * opts.w / bmp.width);
+    W = w; H = h;
+  }
+  W = Math.max(1, Math.min(W, MAX_SIDE)); H = Math.max(1, Math.min(H, MAX_SIDE));
+  const enc = (scale, q) => encodeImage(bmp, fmt, Math.max(1, Math.round(W * scale)), Math.max(1, Math.round(H * scale)), q);
+
+  let blob;
+  const quality = { high: 92, medium: 82, low: 65 }[opts.quality];
+  if (!opts.target) blob = await enc(1, quality);
+  else if (fmt === "jpg" || fmt === "webp" || fmt === "pdf") blob = await fitLossy(enc, opts.target, W, H);
+  else blob = await fitLossless(enc, opts.target, W, H);
+  bmp.close();
+  return { blob, name: stemOf(file.name) + (fmt === ext ? "_bewerkt" : "") + "." + fmt, kind: fmt === "pdf" ? "file" : "image" };
+}
+
+async function fitLossy(enc, target, W, H) {
+  const first = await enc(1, 95);
+  if (first.size < target) {
+    const max = await enc(1, 100);
+    if (max.size >= target * 0.9) return max.size <= target ? max : first;
+    return grow(enc, target, 100, max, W, H);
+  }
+  let scale = 1;
+  for (let round = 0; round < 8; round++) {
+    setProgress(0.1 + round * 0.1, "Kwaliteit zoeken");
+    const small = await enc(scale, 5);
+    if (small.size > target) { scale *= Math.sqrt(target / small.size) * 0.95; continue; }
+    let lo = 5, hi = 95, best = small;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const b = await enc(scale, mid);
+      if (b.size <= target) { best = b; lo = mid + 1; } else hi = mid - 1;
+    }
+    return best;
+  }
+  fail(`Kon niet onder ${human(target)} komen.`);
+}
+async function fitLossless(enc, target, W, H) {
+  let b = await enc(1, 100);
+  if (b.size < target * 0.9) return grow(enc, target, 100, b, W, H);
+  let scale = 1;
+  for (let round = 0; round < 12 && b.size > target; round++) {
+    setProgress(0.1 + round * 0.07, "Schaal zoeken");
+    scale *= Math.sqrt(target / b.size) * 0.97;
+    b = await enc(scale, 100);
+  }
+  if (b.size > target) fail(`Kon niet onder ${human(target)} komen.`);
+  return b;
+}
+async function grow(enc, target, q, b, W, H) {
+  let best = b, scale = 1;
+  const maxScale = MAX_SIDE / Math.max(W, H);
+  for (let round = 0; round < 10; round++) {
+    setProgress(0.1 + round * 0.08, "Vergroten");
+    const ratio = target / b.size;
+    if (ratio >= 0.97 && ratio <= 1) break;
+    scale = Math.min(scale * Math.sqrt(ratio) * (ratio < 1 ? 0.99 : 1), maxScale);
+    b = await enc(scale, q);
+    if (b.size <= target && b.size > best.size) best = b;
+    if (scale >= maxScale && b.size < target) break;
+  }
+  return best;
+}
+
+async function encodeImage(bmp, fmt, w, h, q) {
+  const c = new OffscreenCanvas(w, h), g = c.getContext("2d");
+  if (fmt === "jpg" || fmt === "pdf" || fmt === "bmp") { g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); }
+  g.imageSmoothingQuality = "high";
+  g.drawImage(bmp, 0, 0, w, h);
+  if (fmt === "jpg" || fmt === "webp" || fmt === "png") {
+    const type = "image/" + (fmt === "jpg" ? "jpeg" : fmt);
+    const b = await c.convertToBlob({ type, quality: q / 100 });
+    if (b.type !== type) fail(`Je browser kan geen .${fmt} maken. Kies jpg of png.`);
+    return b;
+  }
+  if (fmt === "pdf") {
+    const jpg = await c.convertToBlob({ type: "image/jpeg", quality: q / 100 });
+    return jpegToPdf(new Uint8Array(await jpg.arrayBuffer()), w, h);
+  }
+  if (fmt === "ico") {
+    const side = Math.min(256, Math.max(w, h));
+    const s = new OffscreenCanvas(side, side), sg = s.getContext("2d");
+    const k = Math.min(side / w, side / h);
+    sg.drawImage(bmp, (side - w * k) / 2, (side - h * k) / 2, w * k, h * k);
+    const png = new Uint8Array(await (await s.convertToBlob({ type: "image/png" })).arrayBuffer());
+    return pngToIco(png, side);
+  }
+  const data = g.getImageData(0, 0, w, h).data;
+  if (fmt === "bmp") return rgbaToBmp(data, w, h);
+  if (fmt === "gif") {
+    const { GIFEncoder, quantize, applyPalette } = await gifenc();
+    const palette = quantize(data, 256, { format: "rgba4444", oneBitAlpha: true });
+    const index = applyPalette(data, palette, "rgba4444");
+    const gif = GIFEncoder();
+    const transparent = palette.findIndex((p) => p[3] === 0);
+    gif.writeFrame(index, w, h, { palette, transparent: transparent >= 0, transparentIndex: Math.max(0, transparent) });
+    gif.finish();
+    return new Blob([gif.bytes()], { type: "image/gif" });
+  }
+  fail(`Formaat .${fmt} wordt niet ondersteund.`);
+}
+
+function rgbaToBmp(d, w, h) {
+  const row = (w * 3 + 3) & ~3, size = 54 + row * h;
+  const buf = new ArrayBuffer(size), v = new DataView(buf), u = new Uint8Array(buf);
+  v.setUint16(0, 0x4d42, true); v.setUint32(2, size, true); v.setUint32(10, 54, true);
+  v.setUint32(14, 40, true); v.setInt32(18, w, true); v.setInt32(22, h, true);
+  v.setUint16(26, 1, true); v.setUint16(28, 24, true); v.setUint32(34, row * h, true);
+  v.setInt32(38, 2835, true); v.setInt32(42, 2835, true);
+  for (let y = 0; y < h; y++) {
+    let o = 54 + (h - 1 - y) * row;
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      u[o++] = d[i + 2]; u[o++] = d[i + 1]; u[o++] = d[i];
+    }
+  }
+  return new Blob([buf], { type: "image/bmp" });
+}
+function pngToIco(png, side) {
+  const head = new DataView(new ArrayBuffer(22));
+  head.setUint16(2, 1, true); head.setUint16(4, 1, true);
+  head.setUint8(6, side >= 256 ? 0 : side); head.setUint8(7, side >= 256 ? 0 : side);
+  head.setUint16(10, 1, true); head.setUint16(12, 32, true);
+  head.setUint32(14, png.length, true); head.setUint32(18, 22, true);
+  return new Blob([head.buffer, png], { type: "image/x-icon" });
+}
+function jpegToPdf(jpg, w, h) {
+  const enc = new TextEncoder();
+  const pw = (w * 0.75).toFixed(2), ph = (h * 0.75).toFixed(2);
+  const content = `q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`;
+  const parts = [], offsets = [];
+  let pos = 0;
+  const push = (x) => { const b = typeof x === "string" ? enc.encode(x) : x; parts.push(b); pos += b.length; };
+  push("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+  const obj = (n, body) => { offsets[n] = pos; push(`${n} 0 obj\n${body}\nendobj\n`); };
+  obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+  obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+  obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`);
+  offsets[4] = pos;
+  push(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`);
+  push(jpg);
+  push("\nendstream\nendobj\n");
+  obj(5, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+  const xref = pos;
+  let x = "xref\n0 6\n0000000000 65535 f \n";
+  for (let n = 1; n <= 5; n++) x += String(offsets[n]).padStart(10, "0") + " 00000 n \n";
+  push(x + `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(parts, { type: "application/pdf" });
+}
+
+// ---------------------------------------------------------------- overige bestanden: zip
+async function zipFile(opts) {
+  const { zip } = await fflate();
+  setProgress(0.2, "Inpakken");
+  const data = new Uint8Array(await file.arrayBuffer());
+  const out = await new Promise((res, rej) => zip({ [file.name]: [data, { level: 9 }] }, (e, d) => e ? rej(e) : res(d)));
+  const blob = new Blob([out], { type: "application/zip" });
+  if (opts.target && blob.size > opts.target) {
+    fail(`Inpakken haalt ${human(blob.size)}, niet ${human(opts.target)}. Dit bestandstype is al gecomprimeerd en kan verliesvrij niet kleiner.`);
+  }
+  return { blob, name: file.name + ".zip", kind: "file" };
+}
+
+// ---------------------------------------------------------------- resultaat + opslaan
+let downloadsP = null;
+function downloadsCap() {
+  if (!window.claude?.use) return Promise.resolve(null);
+  return downloadsP ??= window.claude.use("downloads").catch(() => null);
+}
+setTimeout(downloadsCap, 0);
+
+function showSummary() {
+  $("progress").hidden = true;
+  const done = items.filter((it) => it.state === "done");
+  const failed = items.filter((it) => it.state === "error");
+  const res = $("result");
+  res.innerHTML = "";
+  if (!done.length) {
+    res.className = "result error";
+    res.innerHTML = '<span class="head">!! FOUT</span>\n';
+    res.append(document.createTextNode(failed.length === 1 ? failed[0].err : "Geen enkel bestand is gelukt. Zie de meldingen in de lijst."));
+    res.hidden = false;
+    status("mislukt - zie de lijst");
+    step(2);
+    return;
+  }
+  res.className = "result";
+  const before = done.reduce((a, it) => a + it.file.size, 0);
+  const after = done.reduce((a, it) => a + it.out.blob.size, 0);
+  const diff = (after - before) / before * 100;
+  const w = barWidth() - 8;
+  const max = Math.max(before, after);
+  const bar = (n) => { const k = Math.max(1, Math.round(n / max * w)); return "█".repeat(k) + "░".repeat(w - k); };
+  const head = failed.length ? `KLAAR: ${done.length} OK · ${failed.length} FOUT` : (done.length > 1 ? `STATUS: ${done.length} OK` : "STATUS: OK");
+  res.innerHTML = `<span class="head"></span>
+<div class="cmp"><span class="lbl">${done.length > 1 ? "BESTANDEN " : "BESTAND   "}</span><span class="fn"></span>
+<span class="lbl">ORIGINEEL </span>${bar(before)} ${human(before)}
+<span class="lbl">NIEUW     </span>${bar(after)} ${human(after)}
+<span class="lbl">VERSCHIL  </span><span class="down">${diff <= 0 ? "▼" : "▲"} ${Math.abs(diff).toFixed(1)}% ${diff <= 0 ? "kleiner" : "groter"}</span></div>`;
+  res.querySelector(".head").textContent = head;
+  res.querySelector(".fn").textContent = done.length > 1 ? `${done.length} stuks` : done[0].out.name;
+
+  if (done.length === 1) {
+    const out = done[0].out;
+    if (out.kind === "image" || out.kind === "video" || out.kind === "audio") {
+      const scr = document.createElement("div");
+      scr.className = "screen";
+      const el = document.createElement(out.kind === "image" ? "img" : out.kind);
+      el.src = URL.createObjectURL(out.blob);
+      if (out.kind !== "image") { el.controls = true; el.playsInline = true; }
+      el.alt = "Voorbeeld van het resultaat";
+      el.onerror = () => scr.remove();
+      scr.append(el);
+      res.append(scr);
+    }
+  }
+  const btn = document.createElement("button");
+  btn.className = "save"; btn.type = "button";
+  if (done.length > 1) {
+    btn.textContent = `[ ↓ ALLES OPSLAAN ALS .ZIP (${done.length}) ]`;
+    btn.addEventListener("click", saveAll);
+  } else {
+    btn.textContent = savesDirect(extOf(done[0].out.name)) ? "[ ↓ OPSLAAN ]" : "[ ↓ OPSLAAN ALS .ZIP ]";
+    btn.addEventListener("click", () => saveOne(done[0]));
+  }
+  const note = document.createElement("p");
+  note.className = "note dim small"; note.id = "saveNote";
+  const short = done.filter((it) => it.cat !== "other" && it.out.target && it.out.target > it.file.size && it.out.blob.size < it.out.target * 0.85);
+  if (short.length) {
+    note.textContent = short.length === 1 && done.length === 1
+      ? `// doel was ${human(short[0].out.target)}; meer haalt je browser hier niet uit (maximale kwaliteit/resolutie bereikt).`
+      : `// ${short.length} bestand(en) haalden de doelgrootte niet: maximale kwaliteit/resolutie bereikt.`;
+  } else if (done.length > 1) {
+    note.textContent = "// of sla bestanden los op met [↓] in de lijst.";
+  }
+  res.append(btn, note);
+  res.hidden = false;
+  status(failed.length ? `klaar met ${failed.length} fout(en)` : `klaar: ${done.length} ${done.length === 1 ? "bestand" : "bestanden"} (${human(after)})`);
+}
+
+function setNote(msg) { const n = $("saveNote"); if (n) n.textContent = "// " + msg; status(msg); }
+
+async function zipBlob(entries) {
+  const { zip } = await fflate();
+  const files = {};
+  const used = new Set();
+  for (const { name, blob } of entries) {
+    let n = name, k = 2;
+    while (used.has(n.toLowerCase())) n = `${stemOf(name)}_${k++}.${extOf(name)}`;
+    used.add(n.toLowerCase());
+    files[n] = [new Uint8Array(await blob.arrayBuffer()), { level: 0 }];
+  }
+  const z = await new Promise((res, rej) => zip(files, (e, d) => (e ? rej(e) : res(d))));
+  return new Blob([z], { type: "application/zip" });
+}
+
+async function saveOne(it) {
+  let { blob, name } = it.out;
+  if ((await downloadsCap()) && !SAVE_OK.has(extOf(name))) { blob = await zipBlob([{ name, blob }]); name += ".zip"; }
+  await saveBlob(blob, name);
+}
+async function saveAll() {
+  const done = items.filter((it) => it.state === "done");
+  setNote("zip maken…");
+  const blob = await zipBlob(done.map((it) => it.out));
+  await saveBlob(blob, `anything-converter-${done.length}-bestanden.zip`);
+}
+
+async function saveBlob(blob, name) {
+  const dl = await downloadsCap();
+  if (dl) {
+    try {
+      await dl.save({ filename: name, data: blob });
+      setNote("opgeslagen: " + name);
+    } catch (err) {
+      setNote({
+        declined: "opslaan geannuleerd",
+        rate_limited: "er staat al een opslagvraag open, probeer het zo opnieuw",
+        too_large: "bestand is te groot om hier op te slaan; kies een kleinere doelgrootte",
+      }[err?.code] || "opslaan is hier niet beschikbaar (" + (err?.code || "onbekend") + ")");
+    }
+    return;
+  }
+  // Buiten de claude.ai-viewer (bijv. als los HTML-bestand): gewone download-link
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.append(a); a.click(); a.remove();
+  setNote("download gestart: " + name);
+}
+
+function showError(msg) {
+  $("progress").hidden = true;
+  const res = $("result");
+  res.className = "result error";
+  res.innerHTML = '<span class="head">!! FOUT</span>\n';
+  res.append(document.createTextNode(msg));
+  res.hidden = false;
+  status("fout - zie melding");
+}
+
+// ---------------------------------------------------------------- PDF: bibliotheken
+const PDF_CDN = {
+  lib: "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.esm.min.js",
+  js: "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs",
+  worker: "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs",
+};
+let pdfLibP = null, pdfJsP = null;
+const pdfLib = () => (pdfLibP ??= import(PDF_CDN.lib));
+function pdfJs() {
+  return (pdfJsP ??= (async () => {
+    // De worker draait in de hoofdthread: een worker van een andere host is niet toegestaan.
+    globalThis.pdfjsWorker ??= await import(PDF_CDN.worker);
+    const lib = await import(PDF_CDN.js);
+    lib.GlobalWorkerOptions.workerSrc = PDF_CDN.worker;
+    return lib;
+  })());
+}
+const pdfDocCache = new WeakMap(); // File -> pdf.js document
+async function openPdfJs(f) {
+  if (pdfDocCache.has(f)) return pdfDocCache.get(f);
+  const lib = await pdfJs();
+  const p = (async () => {
+    const data = new Uint8Array(await f.arrayBuffer());
+    try {
+      return await lib.getDocument({ data, isEvalSupported: false, useSystemFonts: true, verbosity: 0 }).promise;
+    } catch (err) {
+      if (err?.name === "PasswordException") fail("Deze PDF is beveiligd met een wachtwoord en kan niet geopend worden.");
+      throw err;
+    }
+  })();
+  pdfDocCache.set(f, p);
+  return p;
+}
+async function openPdfLib(bytesOrFile) {
+  const { PDFDocument } = await pdfLib();
+  const bytes = bytesOrFile instanceof Blob ? new Uint8Array(await bytesOrFile.arrayBuffer()) : bytesOrFile;
+  try {
+    return await PDFDocument.load(bytes, { updateMetadata: false });
+  } catch (err) {
+    if (/encrypt/i.test(err?.message || "")) fail("Deze PDF is versleuteld; bewerken kan alleen zonder beveiliging.");
+    throw err;
+  }
+}
+async function renderPdfPage(doc, n, scale, extraRotation = 0) {
+  const page = await doc.getPage(n);
+  const viewport = page.getViewport({ scale, rotation: (page.rotate + extraRotation) % 360 });
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.floor(viewport.width));
+  c.height = Math.max(1, Math.floor(viewport.height));
+  const g = c.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: g, viewport }).promise;
+  page.cleanup();
+  return c;
+}
+const canvasBlob = (c, type, q) => new Promise((res) => c.toBlob(res, type, q));
+
+// Rasteriseren = elke pagina als JPEG opnieuw opslaan. Maakt PDF's met veel beeld veel kleiner.
+async function rasterizePdf(blob, dpi, quality, label) {
+  const { PDFDocument } = await pdfLib();
+  const lib = await pdfJs();
+  const doc = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()), isEvalSupported: false, useSystemFonts: true, verbosity: 0 }).promise;
+  const out = await PDFDocument.create();
+  for (let n = 1; n <= doc.numPages; n++) {
+    setProgress((n - 1) / doc.numPages, label);
+    const page = await doc.getPage(n);
+    const vp = page.getViewport({ scale: 1, rotation: page.rotate });
+    const c = await renderPdfPage(doc, n, dpi / 72);
+    const jpg = await out.embedJpg(new Uint8Array(await (await canvasBlob(c, "image/jpeg", quality)).arrayBuffer()));
+    const p = out.addPage([vp.width, vp.height]);
+    p.drawImage(jpg, { x: 0, y: 0, width: vp.width, height: vp.height });
+  }
+  await doc.destroy();
+  return new Blob([await out.save()], { type: "application/pdf" });
+}
+const COMPRESS_STEPS = [[150, 0.8], [130, 0.72], [110, 0.65], [96, 0.55], [80, 0.48], [72, 0.4], [60, 0.32], [50, 0.25]];
+async function compressPdfTo(blob, target) {
+  let best = null;
+  for (let i = 0; i < COMPRESS_STEPS.length; i++) {
+    const [dpi, q] = COMPRESS_STEPS[i];
+    const b = await rasterizePdf(blob, dpi, q, `Comprimeren ${dpi} dpi (poging ${i + 1})`);
+    if (!best || b.size < best.size) best = b;
+    if (b.size <= target) return b;
+  }
+  fail(`Kleinst haalbaar: ${human(best.size)}. ${human(target)} lukt niet; verwijder pagina's of kies een groter doel.`);
+}
+
+// ---------------------------------------------------------------- PDF in de converteer-modus
+async function convertPdf(opts) {
+  const { fmt } = opts;
+  const name = stemOf(file.name);
+  if (fmt === "pdf") {
+    let blob;
+    if (opts.target) {
+      if (opts.target >= file.size) fail("Een PDF groter maken heeft geen zin; kies een doel kleiner dan het origineel.");
+      blob = await compressPdfTo(file, opts.target);
+    } else {
+      const [dpi, q] = { high: [200, 0.85], medium: [130, 0.72], low: [96, 0.55] }[opts.quality];
+      blob = await rasterizePdf(file, dpi, q, `Comprimeren (${dpi} dpi)`);
+      if (blob.size >= file.size) blob = file; // niet groter maken dan het origineel
+    }
+    return { blob, name: name + "_klein.pdf", kind: "file" };
+  }
+  const doc = await openPdfJs(file);
+  if (fmt === "txt") {
+    let text = "";
+    for (let n = 1; n <= doc.numPages; n++) {
+      setProgress(n / doc.numPages, "Tekst lezen");
+      const tc = await (await doc.getPage(n)).getTextContent();
+      text += tc.items.map((it) => (it.str || "") + (it.hasEOL ? "\n" : "")).join("") + `\n\n--- pagina ${n} ---\n\n`;
+    }
+    if (!text.replace(/--- pagina \d+ ---|\s/g, "")) fail("Deze PDF bevat geen tekst (waarschijnlijk gescand). Tekstherkenning (OCR) zit er niet in.");
+    return { blob: new Blob([text], { type: "text/plain" }), name: name + ".txt", kind: "file" };
+  }
+  // jpg / png per pagina
+  const dpi = { high: 200, medium: 150, low: 100 }[opts.quality];
+  const type = fmt === "png" ? "image/png" : "image/jpeg";
+  const pages = [];
+  for (let n = 1; n <= doc.numPages; n++) {
+    setProgress((n - 1) / doc.numPages, `Pagina ${n}/${doc.numPages} renderen`);
+    const c = await renderPdfPage(doc, n, dpi / 72);
+    pages.push({ name: `${name}-p${String(n).padStart(3, "0")}.${fmt}`, blob: await canvasBlob(c, type, 0.9) });
+  }
+  if (pages.length === 1) return { blob: pages[0].blob, name: name + "." + fmt, kind: "image" };
+  return { blob: await zipBlob(pages), name: `${name}-${pages.length}-paginas.zip`, kind: "file" };
+}
+
+// ---------------------------------------------------------------- PDF-werkbank
+let mode = "convert"; // "convert" | "pdf"
+let pages = [];       // { key, item, n (1-based of pdf), rot, canvas, sel }
+let pageKey = 1;
+let thumbJob = 0;
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.mode === m)));
+  document.querySelectorAll(".mode-convert").forEach((el) => (el.hidden = m !== "convert"));
+  document.querySelectorAll(".mode-pdf").forEach((el) => (el.hidden = m !== "pdf"));
+  $("result").hidden = true;
+  $("goBtn").textContent = m === "pdf" ? "[ ▶ MAAK PDF ]" : "[ ▶ START ]";
+  if (m === "pdf") syncPages();
+  else refresh();
+}
+document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => { if (!busy) setMode(b.dataset.mode); }));
+
+const pdfable = (it) => it.state !== "reading" && (it.cat === "pdf" || it.cat === "image");
+
+async function syncPages() {
+  if (mode !== "pdf") return;
+  pages = pages.filter((p) => items.includes(p.item) && pdfable(p.item));
+  for (const it of items) {
+    if (!pdfable(it) || pages.some((p) => p.item === it)) continue;
+    const count = it.cat === "pdf" ? it.info.pages || 0 : 1;
+    // nieuwe bestanden komen op hun plek in de lijstvolgorde
+    const after = pages.filter((p) => items.indexOf(p.item) < items.indexOf(it)).length;
+    const fresh = Array.from({ length: count }, (_, i) => ({ key: pageKey++, item: it, n: i + 1, rot: 0, canvas: null, sel: false }));
+    pages.splice(after, 0, ...fresh);
+  }
+  const skipped = items.filter((it) => !pdfable(it) && it.state !== "reading");
+  $("pdfSkip").hidden = !skipped.length;
+  $("pdfSkip").textContent = `// ${skipped.length} bestand(en) zijn geen PDF of afbeelding en tellen hier niet mee.`;
+  $("photoBox").hidden = !pages.some((p) => p.item.cat === "image");
+  renderPages();
+  renderThumbs();
+}
+
+function renderPages() {
+  const grid = $("pageGrid");
+  grid.innerHTML = "";
+  const selCount = pages.filter((p) => p.sel).length;
+  $("pagesTitle").textContent = `PAGINA'S (${pages.length})`;
+  $("selInfo").textContent = selCount ? `${selCount} geselecteerd` : "klik op pagina's om te selecteren";
+  if (!pages.length) {
+    grid.innerHTML = '<p class="dim">// geen PDF of afbeeldingen in de lijst. voeg ze toe met [ + TOEVOEGEN ].</p>';
+    return;
+  }
+  pages.forEach((p, i) => {
+    const card = document.createElement("div");
+    card.className = "pg" + (p.sel ? " sel" : "");
+    card.draggable = true;
+    card.dataset.key = p.key;
+    card.innerHTML = `<button type="button" class="pg-face" aria-pressed="${p.sel}"><span class="pg-img"></span></button>
+<div class="pg-cap"><span class="pg-no">${String(i + 1).padStart(2, "0")}</span><span class="pg-src"></span></div>
+<div class="pg-tools">
+  <button type="button" data-a="left" title="Naar voren" aria-label="Pagina ${i + 1} naar voren">◀</button>
+  <button type="button" data-a="ccw" title="Linksom draaien" aria-label="Pagina ${i + 1} linksom draaien">↺</button>
+  <button type="button" data-a="cw" title="Rechtsom draaien" aria-label="Pagina ${i + 1} rechtsom draaien">↻</button>
+  <button type="button" data-a="del" title="Verwijderen" aria-label="Pagina ${i + 1} verwijderen">✕</button>
+  <button type="button" data-a="right" title="Naar achteren" aria-label="Pagina ${i + 1} naar achteren">▶</button>
+</div>`;
+    card.querySelector(".pg-src").textContent = p.item.cat === "pdf" ? `${stemOf(p.item.file.name)} · p${p.n}` : stemOf(p.item.file.name);
+    card.querySelector(".pg-face").title = p.item.file.name;
+    placeThumb(card.querySelector(".pg-img"), p);
+    grid.append(card);
+  });
+}
+
+function placeThumb(holder, p) {
+  holder.innerHTML = "";
+  if (!p.canvas) { holder.textContent = "…"; return; }
+  const c = p.canvas;
+  const W = 116, H = 150;
+  const turned = p.rot % 180 !== 0;
+  const w = turned ? c.height : c.width, h = turned ? c.width : c.height;
+  const k = Math.min(W / w, H / h);
+  c.style.width = Math.round(c.width * k) + "px";
+  c.style.height = Math.round(c.height * k) + "px";
+  c.style.transform = `rotate(${p.rot}deg)`;
+  holder.append(c);
+}
+
+async function renderThumbs() {
+  const job = ++thumbJob;
+  for (const p of pages) {
+    if (job !== thumbJob) return;
+    if (p.canvas) continue;
+    try {
+      if (p.item.cat === "pdf") {
+        const doc = await openPdfJs(p.item.file);
+        const pg = await doc.getPage(p.n);
+        const vp = pg.getViewport({ scale: 1, rotation: pg.rotate });
+        p.canvas = await renderPdfPage(doc, p.n, 230 / Math.max(vp.width, vp.height));
+      } else {
+        const bmp = await createImageBitmap(p.item.file);
+        const k = 230 / Math.max(bmp.width, bmp.height);
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
+        c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+        bmp.close();
+        p.canvas = c;
+      }
+    } catch (err) {
+      console.warn(err);
+      p.canvas = document.createElement("canvas"); p.canvas.width = 80; p.canvas.height = 110;
+    }
+    const card = $("pageGrid").querySelector(`[data-key="${p.key}"] .pg-img`);
+    if (card) placeThumb(card, p);
+  }
+}
+
+$("pageGrid").addEventListener("click", (e) => {
+  const card = e.target.closest(".pg");
+  if (!card || busy) return;
+  const i = pages.findIndex((p) => p.key === +card.dataset.key);
+  const p = pages[i];
+  const a = e.target.closest("[data-a]")?.dataset.a;
+  if (!a) { p.sel = !p.sel; return renderPages(); }
+  if (a === "cw") p.rot = (p.rot + 90) % 360;
+  if (a === "ccw") p.rot = (p.rot + 270) % 360;
+  if (a === "del") pages.splice(i, 1);
+  if (a === "left" && i > 0) [pages[i - 1], pages[i]] = [pages[i], pages[i - 1]];
+  if (a === "right" && i < pages.length - 1) [pages[i + 1], pages[i]] = [pages[i], pages[i + 1]];
+  renderPages();
+  const again = $("pageGrid").querySelector(`[data-key="${p.key}"] [data-a="${a}"]`);
+  if (again) again.focus();
+});
+// slepen om de volgorde te veranderen
+let dragKey = null;
+$("pageGrid").addEventListener("dragstart", (e) => {
+  const card = e.target.closest(".pg");
+  if (!card) return;
+  dragKey = +card.dataset.key;
+  e.dataTransfer.effectAllowed = "move";
+  e.dataTransfer.setData("text/plain", "pagina");
+  card.classList.add("dragging");
+});
+$("pageGrid").addEventListener("dragover", (e) => {
+  if (dragKey == null) return;
+  e.preventDefault(); e.stopPropagation();
+  const card = e.target.closest(".pg");
+  document.querySelectorAll(".pg.drop-before").forEach((el) => el.classList.remove("drop-before"));
+  if (card && +card.dataset.key !== dragKey) card.classList.add("drop-before");
+});
+$("pageGrid").addEventListener("drop", (e) => {
+  if (dragKey == null) return;
+  e.preventDefault(); e.stopPropagation();
+  const card = e.target.closest(".pg");
+  const from = pages.findIndex((p) => p.key === dragKey);
+  const [moved] = pages.splice(from, 1);
+  let to = card ? pages.findIndex((p) => p.key === +card.dataset.key) : pages.length;
+  if (to < 0) to = pages.length;
+  pages.splice(to, 0, moved);
+  dragKey = null;
+  renderPages();
+});
+$("pageGrid").addEventListener("dragend", () => { dragKey = null; document.querySelectorAll(".pg.dragging, .pg.drop-before").forEach((el) => el.classList.remove("dragging", "drop-before")); });
+
+function targetsForTools() { const s = pages.filter((p) => p.sel); return s.length ? s : pages; }
+$("pgSelAll").addEventListener("click", () => { const all = pages.every((p) => p.sel); pages.forEach((p) => (p.sel = !all)); renderPages(); });
+$("pgRotCw").addEventListener("click", () => { targetsForTools().forEach((p) => (p.rot = (p.rot + 90) % 360)); renderPages(); });
+$("pgRotCcw").addEventListener("click", () => { targetsForTools().forEach((p) => (p.rot = (p.rot + 270) % 360)); renderPages(); });
+$("pgDel").addEventListener("click", () => {
+  const sel = pages.filter((p) => p.sel);
+  if (!sel.length) return setPgInfo("selecteer eerst de pagina's die weg moeten");
+  pages = pages.filter((p) => !p.sel); renderPages();
+});
+$("pgKeep").addEventListener("click", () => {
+  const sel = pages.filter((p) => p.sel);
+  if (!sel.length) return setPgInfo("selecteer eerst de pagina's die je wilt houden");
+  pages = sel; pages.forEach((p) => (p.sel = false)); renderPages();
+});
+$("pgReverse").addEventListener("click", () => { pages.reverse(); renderPages(); });
+$("pgReset").addEventListener("click", () => { pages = []; syncPages(); });
+function setPgInfo(msg) { $("selInfo").textContent = msg; }
+
+document.querySelectorAll("input[name=pdfOut]").forEach((r) => r.addEventListener("change", () => {
+  $("rangeRow").hidden = radio("pdfOut") !== "ranges";
+}));
+$("pdfCompress").addEventListener("change", () => { $("pdfTargetRow").hidden = $("pdfCompress").value !== "target"; });
+$("wmOn").addEventListener("change", () => { $("wmRow").hidden = !$("wmOn").checked; });
+$("pnOn").addEventListener("change", () => { $("pnRow").hidden = !$("pnOn").checked; });
+
+function parseRanges(text, n) {
+  const out = [];
+  for (const part of text.split(/[,;]+/).map((s) => s.trim()).filter(Boolean)) {
+    const m = /^(\d+)?\s*(-)?\s*(\d+)?$/.exec(part);
+    if (!m || (!m[1] && !m[3])) fail(`Ongeldig bereik: "${part}". Gebruik bijvoorbeeld 1-3, 5, 8-`);
+    const a = m[1] ? +m[1] : 1, b = m[2] ? (m[3] ? +m[3] : n) : a;
+    if (a < 1 || b > n || a > b) fail(`Bereik "${part}" valt buiten 1-${n}.`);
+    out.push([a, b]);
+  }
+  if (!out.length) fail("Vul minstens één bereik in, bijvoorbeeld 1-3, 4-6.");
+  return out;
+}
+
+const PAPER = { a4: [595.28, 841.89], letter: [612, 792], a5: [419.53, 595.28] };
+
+async function buildPdf() {
+  const { PDFDocument, StandardFonts, rgb, degrees } = await pdfLib();
+  const out = await PDFDocument.create();
+  const srcDocs = new Map();
+  const paper = $("photoPaper").value, orient = $("photoOrient").value, margin = +$("photoMargin").value;
+
+  for (let i = 0; i < pages.length; i++) {
+    const p = pages[i];
+    setProgress(i / pages.length * 0.6, `Pagina ${i + 1}/${pages.length} plaatsen`);
+    if (p.item.cat === "pdf") {
+      if (!srcDocs.has(p.item)) srcDocs.set(p.item, await openPdfLib(p.item.file));
+      const [cp] = await out.copyPages(srcDocs.get(p.item), [p.n - 1]);
+      cp.setRotation(degrees((cp.getRotation().angle + p.rot) % 360));
+      out.addPage(cp);
+    } else {
+      const img = await embedImage(out, p.item);
+      let [pw, ph] = paper === "fit" ? [img.width * 0.75, img.height * 0.75] : PAPER[paper];
+      const land = orient === "landscape" || (orient === "auto" && img.width > img.height);
+      if (paper !== "fit" && land !== pw > ph) [pw, ph] = [ph, pw];
+      const m = paper === "fit" ? 0 : margin;
+      const k = Math.min((pw - 2 * m) / img.width, (ph - 2 * m) / img.height);
+      const w = img.width * k, h = img.height * k;
+      const page = out.addPage([pw, ph]);
+      page.drawImage(img, { x: (pw - w) / 2, y: (ph - h) / 2, width: w, height: h });
+      if (p.rot) page.setRotation(degrees(p.rot));
+    }
+  }
+
+  // extra's: paginanummers en watermerk
+  const all = out.getPages();
+  const font = ($("pnOn").checked || $("wmOn").checked) ? await out.embedFont(StandardFonts.Helvetica) : null;
+  const wmText = $("wmOn").checked ? $("wmText").value.trim() : "";
+  all.forEach((page, i) => {
+    const box = page.getMediaBox(), rot = ((page.getRotation().angle % 360) + 360) % 360;
+    if ($("pnOn").checked) {
+      const label = $("pnFormat").value === "of" ? `${i + 1} / ${all.length}` : $("pnFormat").value === "pagina" ? `Pagina ${i + 1}` : String(i + 1);
+      drawVisual(page, box, rot, font, label, 10, $("pnPos").value, rgb(0.2, 0.2, 0.2), degrees);
+    }
+    if (wmText) drawWatermark(page, box, rot, font, wmText, rgb(0.6, 0.6, 0.6), degrees);
+  });
+  if ($("pdfTitle").value.trim()) out.setTitle($("pdfTitle").value.trim());
+  if ($("pdfAuthor").value.trim()) out.setAuthor($("pdfAuthor").value.trim());
+  out.setProducer("Anything Converter");
+  out.setCreator("Anything Converter");
+  setProgress(0.65, "PDF opslaan");
+  return out;
+}
+
+async function embedImage(out, it) {
+  const e = it.ext;
+  if (e === "png") return out.embedPng(new Uint8Array(await it.file.arrayBuffer()));
+  // Via canvas, zodat de EXIF-draaiing van telefoonfoto's meegenomen wordt.
+  const bmp = await createImageBitmap(it.file);
+  const c = new OffscreenCanvas(bmp.width, bmp.height), g = c.getContext("2d");
+  const alpha = ["webp", "gif", "avif", "svg", "ico"].includes(e);
+  if (!alpha) { g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); }
+  g.drawImage(bmp, 0, 0); bmp.close();
+  const blob = await c.convertToBlob(alpha ? { type: "image/png" } : { type: "image/jpeg", quality: 0.92 });
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  return alpha ? out.embedPng(bytes) : out.embedJpg(bytes);
+}
+
+// Tekst rechtop zetten op de zichtbare pagina, ook als die gedraaid is.
+function drawVisual(page, box, rot, font, text, size, pos, color, degrees) {
+  const tw = font.widthOfTextAtSize(text, size);
+  const pad = 22;
+  const vw = rot % 180 ? box.height : box.width, vh = rot % 180 ? box.width : box.height;
+  // gewenste plek in zichtbare coördinaten (oorsprong linksonder)
+  let vx = { "bc": (vw - tw) / 2, "br": vw - pad - tw, "tr": vw - pad - tw, "tc": (vw - tw) / 2 }[pos];
+  let vy = pos[0] === "b" ? pad : vh - pad - size;
+  const [x, y] = toPage(vx, vy, rot, box);
+  page.drawText(text, { x, y, size, font, color, rotate: degrees(rot) });
+}
+function drawWatermark(page, box, rot, font, text, color, degrees) {
+  const vw = rot % 180 ? box.height : box.width, vh = rot % 180 ? box.width : box.height;
+  const size = Math.min(110, (Math.hypot(vw, vh) * 0.7) / Math.max(1, font.widthOfTextAtSize(text, 1)));
+  const tw = font.widthOfTextAtSize(text, size);
+  const ang = Math.atan2(vh, vw);
+  const vx = vw / 2 - Math.cos(ang) * tw / 2 + Math.sin(ang) * size * 0.35;
+  const vy = vh / 2 - Math.sin(ang) * tw / 2 - Math.cos(ang) * size * 0.35;
+  const [x, y] = toPage(vx, vy, rot, box);
+  page.drawText(text, { x, y, size, font, color, opacity: 0.18, rotate: degrees(rot + ang * 180 / Math.PI) });
+}
+// zichtbare (gedraaide) coördinaten -> paginacoördinaten
+function toPage(vx, vy, rot, box) {
+  const { x: ox, y: oy, width: w, height: h } = box;
+  if (rot === 90) return [ox + w - vy, oy + vx];
+  if (rot === 180) return [ox + w - vx, oy + h - vy];
+  if (rot === 270) return [ox + vy, oy + h - vx];
+  return [ox + vx, oy + vy];
+}
+
+async function runPdfWorkbench() {
+  if (!pages.length) fail("Er zijn geen pagina's. Voeg PDF's of foto's toe.");
+  const outMode = radio("pdfOut");
+  const ranges = outMode === "ranges" ? parseRanges($("pdfRanges").value, pages.length) : null;
+  const comp = $("pdfCompress").value;
+  let target = null;
+  if (comp === "target") {
+    const v = parseFloat($("pdfTarget").value);
+    if (!(v > 0)) fail("Vul een doelgrootte in voor de PDF, bijvoorbeeld 2 MB.");
+    target = Math.round(v * { kb: 1024, mb: MB_ }[$("pdfTargetUnit").value]);
+  }
+  const base = ($("pdfName").value.trim() || "samengevoegd").replace(/\.pdf$/i, "").replace(/[\\/:*?"<>|]+/g, "-");
+
+  const doc = await buildPdf();
+  const { PDFDocument } = await pdfLib();
+  const parts = [];
+  if (outMode === "one") parts.push({ name: base + ".pdf", doc });
+  else {
+    const groups = outMode === "each" ? pages.map((_, i) => [i + 1, i + 1]) : ranges;
+    for (const [a, b] of groups) {
+      const d = await PDFDocument.create();
+      const cp = await d.copyPages(doc, Array.from({ length: b - a + 1 }, (_, k) => a - 1 + k));
+      cp.forEach((pg) => d.addPage(pg));
+      parts.push({ name: `${base}_${a === b ? "p" + a : `p${a}-${b}`}.pdf`, doc: d });
+    }
+  }
+
+  const blobs = [];
+  for (let i = 0; i < parts.length; i++) {
+    setProgress(0.7 + 0.1 * i / parts.length, "PDF opslaan");
+    let blob = new Blob([await parts[i].doc.save()], { type: "application/pdf" });
+    if (comp === "light" || comp === "strong") {
+      const [dpi, q] = comp === "light" ? [150, 0.78] : [96, 0.55];
+      const small = await rasterizePdf(blob, dpi, q, `Comprimeren (${dpi} dpi)`);
+      if (small.size < blob.size) blob = small;
+    } else if (target && blob.size > target) {
+      blob = await compressPdfTo(blob, target);
+    }
+    blobs.push({ name: parts[i].name, blob });
+  }
+  const srcSize = [...new Set(pages.map((p) => p.item))].reduce((a, it) => a + it.file.size, 0);
+  if (blobs.length === 1) return { blob: blobs[0].blob, name: blobs[0].name, kind: "file", srcSize, count: 1, pages: pages.length };
+  return { blob: await zipBlob(blobs), name: `${base}-${blobs.length}-pdfs.zip`, kind: "file", srcSize, count: blobs.length, pages: pages.length };
+}
+
+function showPdfResult(out) {
+  $("progress").hidden = true;
+  const res = $("result");
+  res.className = "result";
+  const before = out.srcSize, after = out.blob.size;
+  const diff = (after - before) / before * 100;
+  const w = barWidth() - 8, max = Math.max(before, after);
+  const bar = (n) => { const k = Math.max(1, Math.round(n / max * w)); return "█".repeat(k) + "░".repeat(w - k); };
+  res.innerHTML = `<span class="head">STATUS: OK</span>
+<div class="cmp"><span class="lbl">BESTAND   </span><span class="fn"></span>
+<span class="lbl">INHOUD    </span>${out.pages} pagina's${out.count > 1 ? ` in ${out.count} PDF's` : ""}
+<span class="lbl">BRONNEN   </span>${bar(before)} ${human(before)}
+<span class="lbl">NIEUW     </span>${bar(after)} ${human(after)}</div>`;
+  res.querySelector(".fn").textContent = out.name;
+  const btn = document.createElement("button");
+  btn.className = "save"; btn.type = "button"; btn.textContent = "[ ↓ OPSLAAN ]";
+  btn.addEventListener("click", () => saveBlob(out.blob, out.name));
+  const note = document.createElement("p");
+  note.className = "note dim small"; note.id = "saveNote";
+  if ($("pdfCompress").value !== "none") note.textContent = "// gecomprimeerde pagina's zijn afbeeldingen geworden: tekst is niet meer te selecteren.";
+  res.append(btn, note);
+  res.hidden = false;
+  status(`klaar: ${out.name} (${human(after)})`);
+}
+
+// ---------------------------------------------------------------- thema
+
+function setSkin(s) {
+  if (s === "groen") delete document.documentElement.dataset.skin; else document.documentElement.dataset.skin = s;
+  document.querySelectorAll(".skins button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.skin === s)));
+  try { localStorage.setItem("ac-skin", s); } catch {}
+}
+document.querySelectorAll(".skins button").forEach((b) => b.addEventListener("click", () => setSkin(b.dataset.skin)));
+try { const s = localStorage.getItem("ac-skin"); if (s) setSkin(s); } catch {}
+
+if (typeof VideoEncoder === "undefined") {
+  notice("Let op: je browser ondersteunt geen WebCodecs, dus video en audio werken hier niet. Afbeeldingen en zip werken wel. Gebruik een recente Chrome, Edge, Safari of Firefox.", true);
+}
+</script>
+
+</body>
+</html>

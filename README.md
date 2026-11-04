@@ -2,7 +2,7 @@
 
 Een lokale web-app om (bijna) elk bestand te **converteren**, **kleiner of groter te maken** tot een exacte
 bestandsgrootte in KB/MB/GB, en **video's en audio te knippen**. Alles draait op je eigen computer;
-bestanden worden na 1 uur automatisch opgeruimd.
+bestanden worden na 1 uur automatisch opgeruimd. De interface heeft een retro terminal-/ASCII-stijl met drie kleurthema's (groen, amber, cyaan).
 
 ## Wat kan het?
 
@@ -67,3 +67,13 @@ python -m pytest
 
 Structuur: `app.py` (Flask-server), `converter/` (detectie, media, afbeelding, document, archief, jobs),
 `static/` (interface).
+
+## Browser-versie (zonder installatie)
+
+`index.html` (in de hoofdmap) is een losse versie die volledig in de browser draait (WebCodecs via Mediabunny,
+canvas voor afbeeldingen). Niets wordt geüpload. Online via GitHub Pages: <https://wikidave.github.io/The-Anything-Converter/>
+(GitHub Pages publiceert de hoofdmap van de branch; elke push werkt de site bij). Je kunt meerdere bestanden tegelijk verwerken en alles in één zip opslaan. Ondersteund: video (mp4/mov/webm/mkv) → mp4, webm, gif, mp3, m4a, wav; audio → mp3, m4a,
+ogg, wav, webm; afbeeldingen → jpg, png, webp, gif, pdf, bmp, ico; overige bestanden → zip. Knippen en
+doelgrootte werken ook. PDF: een PDF-werkbank om PDF's en foto's samen te voegen, pagina's te ordenen, draaien en verwijderen, te splitsen
+(per pagina of bereik), paginanummers en een watermerk toe te voegen, titel/auteur in te stellen en te comprimeren;
+losse PDF's kunnen ook naar jpg/png (per pagina) of tekst. Word/Excel/PowerPoint en avi/wmv vereisen de lokale versie.
