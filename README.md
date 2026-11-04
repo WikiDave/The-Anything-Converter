@@ -70,9 +70,9 @@ Structuur: `app.py` (Flask-server), `converter/` (detectie, media, afbeelding, d
 
 ## Browser-versie (zonder installatie)
 
-`web/index.html` is een losse versie die volledig in de browser draait (WebCodecs via Mediabunny,
+`index.html` (in de hoofdmap) is een losse versie die volledig in de browser draait (WebCodecs via Mediabunny,
 canvas voor afbeeldingen). Niets wordt geüpload. Online via GitHub Pages: <https://wikidave.github.io/The-Anything-Converter/>
-(wordt automatisch bijgewerkt bij elke push die `web/` wijzigt). Je kunt meerdere bestanden tegelijk verwerken en alles in één zip opslaan. Ondersteund: video (mp4/mov/webm/mkv) → mp4, webm, gif, mp3, m4a, wav; audio → mp3, m4a,
+(GitHub Pages publiceert de hoofdmap van de branch; elke push werkt de site bij). Je kunt meerdere bestanden tegelijk verwerken en alles in één zip opslaan. Ondersteund: video (mp4/mov/webm/mkv) → mp4, webm, gif, mp3, m4a, wav; audio → mp3, m4a,
 ogg, wav, webm; afbeeldingen → jpg, png, webp, gif, pdf, bmp, ico; overige bestanden → zip. Knippen en
 doelgrootte werken ook. PDF: een PDF-werkbank om PDF's en foto's samen te voegen, pagina's te ordenen, draaien en verwijderen, te splitsen
 (per pagina of bereik), paginanummers en een watermerk toe te voegen, titel/auteur in te stellen en te comprimeren;
