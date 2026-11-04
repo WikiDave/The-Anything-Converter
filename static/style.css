@@ -1,7 +1,7 @@
 /* ASCII / terminal UI */
 :root, [data-theme="groen"] {
-  --bg: #050805;
-  --panel: #070b07;
+  --bg: #000000;
+  --panel: #000000;
   --fg: #a6ff5c;
   --hi: #d9ffb8;
   --dim: #4f7a30;
@@ -10,8 +10,8 @@
   --glow: rgba(166, 255, 92, .35);
 }
 [data-theme="amber"] {
-  --bg: #0a0702;
-  --panel: #0d0903;
+  --bg: #000000;
+  --panel: #000000;
   --fg: #ffb000;
   --hi: #ffd98a;
   --dim: #8a6114;
@@ -20,8 +20,8 @@
   --glow: rgba(255, 176, 0, .35);
 }
 [data-theme="cyaan"] {
-  --bg: #030909;
-  --panel: #050d0d;
+  --bg: #000000;
+  --panel: #000000;
   --fg: #5ff5d0;
   --hi: #c4fff0;
   --dim: #2c7a69;
@@ -49,11 +49,6 @@ em { font-style: normal; color: var(--dim); }
 pre { margin: 0; font: inherit; }
 
 /* achtergrond: binaire ruis + scanlines */
-.bg-noise {
-  position: fixed; inset: 0; z-index: 0; overflow: hidden;
-  color: var(--faint); font-size: 12px; line-height: 1.3; text-shadow: none;
-  user-select: none; pointer-events: none; white-space: pre;
-}
 .crt {
   position: fixed; inset: 0; z-index: 3; pointer-events: none;
   background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.18) 2px 3px);

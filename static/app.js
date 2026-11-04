@@ -324,20 +324,7 @@ function showError(msg) {
   show(res, true);
 }
 
-// ---------- achtergrond-ruis en thema
-function drawNoise() {
-  const cols = Math.ceil(window.innerWidth / 7.3) + 2, rows = Math.ceil(window.innerHeight / 15.6) + 2;
-  let out = "";
-  for (let r = 0; r < rows; r++) {
-    let line = "";
-    for (let c = 0; c < cols; c++) line += Math.random() < 0.12 ? (Math.random() < 0.5 ? "0" : "1") : " ";
-    out += line + "\n";
-  }
-  $("bgNoise").textContent = out;
-}
-drawNoise();
-let noiseT;
-window.addEventListener("resize", () => { clearTimeout(noiseT); noiseT = setTimeout(drawNoise, 200); });
+// ---------- thema
 
 function setTheme(t) {
   document.documentElement.dataset.theme = t;
