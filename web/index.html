@@ -209,6 +209,35 @@ select option { background: var(--bg); color: var(--fg); }
 .result.error { border-color: var(--err); color: var(--err); white-space: pre-wrap; box-shadow: 0 0 14px color-mix(in srgb, var(--err) 35%, transparent); }
 .result.error .head { background: var(--err); }
 
+/* wachtrij */
+.q-head, .q-row {
+  display: grid; grid-template-columns: 3ch minmax(0, 1.4fr) minmax(0, 1.3fr) minmax(0, 1.2fr) auto;
+  gap: 4px 14px; align-items: baseline;
+}
+.q-head { color: var(--dim); font-size: 12px; letter-spacing: .06em; padding-bottom: 6px; border-bottom: 1px dashed var(--faint); }
+.queue { list-style: none; margin: 0; padding: 0; max-height: 340px; overflow-y: auto; }
+.q-row { padding: 7px 0; border-bottom: 1px dashed var(--faint); font-variant-numeric: tabular-nums; }
+.q-idx { color: var(--dim); }
+.q-name { color: var(--hi); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.q-meta { color: var(--dim); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.q-status { white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.q-done .q-status { color: var(--hi); }
+.q-error .q-status { color: var(--err); font-weight: 700; }
+.q-ready .q-status, .q-queued .q-status, .q-reading .q-status { color: var(--dim); }
+.q-act { display: flex; gap: 2px; justify-content: flex-end; }
+.q-msg { grid-column: 2 / -1; font-size: 12px; color: var(--dim); overflow-wrap: anywhere; }
+.q-msg.err { color: var(--err); }
+.queue-actions { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; }
+.btn:disabled { opacity: .4; cursor: not-allowed; background: none; color: var(--fg); }
+.format-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 18px; }
+.trim-note { margin: -8px 0 16px; }
+@media (max-width: 600px) {
+  .q-head { display: none; }
+  .q-row { grid-template-columns: 3ch minmax(0, 1fr) auto; }
+  .q-meta, .q-status { grid-column: 2 / 3; }
+  .q-act { grid-column: 3; grid-row: 1; }
+}
+
 .statusline {
   display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px;
   margin-top: 26px; padding-top: 10px; border-top: 1px solid var(--faint); font-size: 12px;
@@ -258,43 +287,41 @@ select option { background: var(--bg); color: var(--fg); }
 
   <section id="dropWrap">
     <label id="drop" class="drop" tabindex="0" for="fileInput">
-      <input id="fileInput" type="file" hidden>
+      <input id="fileInput" type="file" multiple hidden>
 <pre class="drop-art" aria-hidden="true">
  ┌──────────┐
- │ ░░░░░░░  └┐
- │ ░░░░░     │
- │     ▲     │
- │    ▲▲▲    │
- │   ▲▲▲▲▲   │
- │     █     │
- └───────────┘</pre>
-      <p class="big">&gt; SLEEP EEN BESTAND HIERHEEN<span class="cursor">_</span></p>
-      <p class="dim">of druk op [ENTER] / klik om te bladeren</p>
+ │ ┌──────────┐
+ │ │ ░░░░░░░  └┐
+ │ │ ░░░░░     │
+ │ │     ▲     │
+ └─│    ▲▲▲    │
+   │   ▲▲▲▲▲   │
+   │     █     │
+   └───────────┘</pre>
+      <p class="big">&gt; SLEEP BESTANDEN HIERHEEN<span class="cursor">_</span></p>
+      <p class="dim">één of meerdere tegelijk · [ENTER] / klik om te bladeren</p>
       <p class="dim small">video: mp4 · mov · webm · mkv &nbsp;|&nbsp; audio: mp3 · wav · m4a · ogg · flac<br>afbeelding: jpg · png · webp · gif · bmp · avif · svg &nbsp;|&nbsp; overig: inpakken als zip</p>
     </label>
     <div class="sample-row">
-      <button id="sampleBtn" class="btn" type="button">[ PROBEER MET EEN TESTBEELD ]</button>
+      <button id="sampleBtn" class="btn" type="button">[ PROBEER MET 3 TESTBEELDEN ]</button>
     </div>
   </section>
 
   <section id="panel" hidden>
     <fieldset class="frame">
-      <legend>BESTAND</legend>
-      <div class="file-card">
-        <dl class="kv">
-          <dt>NAAM</dt><dd id="fName"></dd>
-          <dt>INFO</dt><dd id="fMeta"></dd>
-        </dl>
-        <button id="resetBtn" class="btn" type="button">[ ANDER BESTAND ]</button>
+      <legend id="queueTitle">BESTANDEN</legend>
+      <div class="q-head" aria-hidden="true"><span>#</span><span>NAAM</span><span>INFO</span><span>STATUS</span><span></span></div>
+      <ol id="queue" class="queue"></ol>
+      <div class="queue-actions">
+        <button id="addBtn" class="btn" type="button">[ + TOEVOEGEN ]</button>
+        <button id="resetBtn" class="btn" type="button">[ ALLES WISSEN ]</button>
+        <input id="addInput" type="file" multiple hidden>
       </div>
     </fieldset>
 
     <fieldset class="frame">
       <legend>FORMAAT</legend>
-      <label class="field">
-        <span>UITVOER&gt;</span>
-        <span class="sel"><select id="format"></select></span>
-      </label>
+      <div id="formatRows" class="format-rows"></div>
       <p id="formatHint" class="dim small" hidden></p>
     </fieldset>
 
@@ -302,7 +329,7 @@ select option { background: var(--bg); color: var(--fg); }
       <legend>GROOTTE</legend>
       <div class="radios" role="radiogroup" aria-label="Modus">
         <label><input type="radio" name="sizeMode" id="modeQuality" value="quality" checked><span>Kwaliteit</span></label>
-        <label><input type="radio" name="sizeMode" id="modeTarget" value="target"><span>Doelgrootte (KB/MB/GB)</span></label>
+        <label><input type="radio" name="sizeMode" id="modeTarget" value="target"><span>Doelgrootte per bestand</span></label>
       </div>
       <div id="qualityBox" class="sub">
         <div class="radios" role="radiogroup" aria-label="Kwaliteit">
@@ -319,13 +346,14 @@ select option { background: var(--bg); color: var(--fg); }
             <option value="kb">KB</option>
             <option value="mb" selected>MB</option>
             <option value="gb">GB</option>
+            <option value="pct">%</option>
           </select></span>
         </div>
         <div class="chips" id="sizeChips">
-          <button type="button" data-f="0.1">10%</button>
-          <button type="button" data-f="0.25">25%</button>
-          <button type="button" data-f="0.5">50%</button>
-          <button type="button" data-f="2">2× GROTER</button>
+          <button type="button" data-pct="10">10%</button>
+          <button type="button" data-pct="25">25%</button>
+          <button type="button" data-pct="50">50%</button>
+          <button type="button" data-pct="200">2× GROTER</button>
           <button type="button" data-abs="8">8 MB</button>
           <button type="button" data-abs="25">25 MB</button>
         </div>
@@ -367,7 +395,7 @@ select option { background: var(--bg); color: var(--fg); }
         <label class="field"><span>BREEDTE&gt;</span><input id="imgW" type="number" min="1" placeholder="auto"></label>
         <label class="field"><span>HOOGTE&gt;</span><input id="imgH" type="number" min="1" placeholder="auto"></label>
       </div>
-      <p class="dim small">// percentage óf breedte en/of hoogte. één waarde = verhouding blijft. leeg = origineel.</p>
+      <p class="dim small">// geldt voor alle afbeeldingen. percentage óf breedte en/of hoogte. één waarde = verhouding blijft.</p>
     </fieldset>
 
     <fieldset id="trimBox" class="frame" hidden>
@@ -391,6 +419,7 @@ select option { background: var(--bg); color: var(--fg); }
       </div>
       <p class="dim small">SELECTIE: <strong id="trimLen">–</strong> // tijden als 1:23.5 of in seconden</p>
     </fieldset>
+    <p id="trimNote" class="dim small trim-note" hidden>// knippen kan per bestand: houd één video of audiobestand in de lijst over.</p>
 
     <button id="goBtn" class="go" type="button">[ ▶ START ]</button>
 
@@ -434,11 +463,17 @@ const TARGETS = {
   image: ["jpg", "png", "webp", "gif", "pdf", "bmp", "ico"],
   other: ["zip"],
 };
-const LABEL = { video: "Video", audio: "Audio", image: "Afbeelding", other: "Overig bestand" };
+const LABEL = { video: "Video", audio: "Audio", image: "Afbeelding", other: "Overig" };
+const CAT_ORDER = ["video", "audio", "image", "other"];
 const AUDIO_OUT = new Set(["mp3", "m4a", "ogg", "wav"]);
+const NO_TARGET = new Set(["wav", "bmp", "ico"]);
 
-let file = null, cat = null, ext = "", info = {}, duration = 0, busy = false;
-let lastResult = null;
+// De converters hieronder werken op "het huidige bestand"; processItem() zet deze per bestand.
+let file = null, cat = null, ext = "", info = {}, duration = 0;
+let busy = false, current = null;
+const items = [];
+const chosen = {}; // gekozen uitvoerformaat per categorie
+let nextId = 1;
 
 // ---------------------------------------------------------------- hulpjes
 const MB_ = 1024 * 1024;
@@ -494,161 +529,274 @@ async function ensureMp3() {
 const gifenc = () => import(CDN.gifenc);
 const fflate = () => import(CDN.fflate);
 
-// ---------------------------------------------------------------- bestand kiezen
+// ---------------------------------------------------------------- bestanden toevoegen
 const drop = $("drop"), fileInput = $("fileInput");
 drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
-drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
-drop.addEventListener("dragleave", () => drop.classList.remove("over"));
-drop.addEventListener("drop", (e) => {
+// Slepen werkt overal op de pagina, ook als de lijst al open staat.
+document.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) drop.classList.remove("over"); });
+document.addEventListener("drop", (e) => {
   e.preventDefault(); drop.classList.remove("over");
-  if (e.dataTransfer.files[0]) load(e.dataTransfer.files[0]);
+  if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
 });
-fileInput.addEventListener("change", () => fileInput.files[0] && load(fileInput.files[0]));
+fileInput.addEventListener("change", () => { addFiles(fileInput.files); fileInput.value = ""; });
+$("addBtn").addEventListener("click", () => $("addInput").click());
+$("addInput").addEventListener("change", () => { addFiles($("addInput").files); $("addInput").value = ""; });
+
 $("sampleBtn").addEventListener("click", async () => {
-  // Testbeeld: kleurenbalken met raster, als PNG
-  const c = new OffscreenCanvas(1920, 1080), g = c.getContext("2d");
-  const cols = ["#c0c0c0", "#c0c000", "#00c0c0", "#00c000", "#c000c0", "#c00000", "#0000c0"];
-  cols.forEach((col, i) => { g.fillStyle = col; g.fillRect(i * 1920 / 7, 0, 1920 / 7 + 1, 760); });
-  for (let x = 0; x < 1920; x += 4) { g.fillStyle = `hsl(${x / 5.33},90%,50%)`; g.fillRect(x, 760, 4, 140); }
-  g.fillStyle = "#111"; g.fillRect(0, 900, 1920, 180);
-  g.fillStyle = "#a6ff5c"; g.font = "bold 72px monospace"; g.fillText("ANYTHING CONVERTER · TESTBEELD", 120, 1010);
-  const blob = await c.convertToBlob({ type: "image/png" });
-  load(new File([blob], "testbeeld.png", { type: "image/png" }));
+  const mk = async (name, hue, label) => {
+    const c = new OffscreenCanvas(1920, 1080), g = c.getContext("2d");
+    for (let i = 0; i < 7; i++) { g.fillStyle = `hsl(${hue + i * 40},70%,${45 + (i % 2) * 10}%)`; g.fillRect(i * 1920 / 7, 0, 1920 / 7 + 1, 760); }
+    for (let x = 0; x < 1920; x += 4) { g.fillStyle = `hsl(${x / 5.33 + hue},90%,50%)`; g.fillRect(x, 760, 4, 140); }
+    g.fillStyle = "#111"; g.fillRect(0, 900, 1920, 180);
+    g.fillStyle = "#a6ff5c"; g.font = "bold 72px monospace"; g.fillText(label, 120, 1010);
+    return new File([await c.convertToBlob({ type: "image/png" })], name, { type: "image/png" });
+  };
+  addFiles([await mk("testbeeld-1.png", 0, "TESTBEELD 1"), await mk("testbeeld-2.png", 120, "TESTBEELD 2"),
+    await mk("testbeeld-3.png", 240, "TESTBEELD 3")]);
 });
 
-async function load(f) {
-  notice("");
-  file = f; ext = extOf(f.name); info = {}; duration = 0; lastResult = null;
-  if (EXT.unsupportedVideo.has(ext)) {
-    cat = "other";
-    notice(`.${ext} kan je browser niet decoderen. Je kunt het wel inpakken als zip. Voor ${ext}-conversie gebruik je de lokale versie met ffmpeg.`, true);
-  } else if (EXT.video.has(ext) || (f.type.startsWith("video/") && !EXT.audio.has(ext))) cat = "video";
-  else if (EXT.audio.has(ext) || f.type.startsWith("audio/")) cat = "audio";
-  else if (EXT.image.has(ext) || f.type.startsWith("image/")) cat = "image";
-  else cat = "other";
-
-  status("bestand lezen: " + f.name);
-  try {
-    if (cat === "video" || cat === "audio") await probeMedia();
-    if (cat === "image") await probeImage();
-  } catch (err) {
-    console.warn(err);
-    if (cat === "image") {
-      notice("Je browser kan dit afbeeldingsformaat niet openen (bijv. HEIC buiten Safari). Je kunt het wel inpakken als zip.", true);
-    } else {
-      notice("Je browser kan dit mediabestand niet lezen. Je kunt het wel inpakken als zip.", true);
-    }
-    cat = "other";
-  }
-  setupPanel();
+function categorize(f) {
+  const e = extOf(f.name);
+  if (EXT.unsupportedVideo.has(e)) return "other";
+  if (EXT.video.has(e) || (f.type.startsWith("video/") && !EXT.audio.has(e))) return "video";
+  if (EXT.audio.has(e) || f.type.startsWith("audio/")) return "audio";
+  if (EXT.image.has(e) || f.type.startsWith("image/")) return "image";
+  return "other";
 }
 
-async function probeMedia() {
+async function addFiles(list) {
+  if (busy) return;
+  const fresh = [];
+  for (const f of list) {
+    const it = { id: nextId++, file: f, ext: extOf(f.name), cat: categorize(f), info: {}, duration: 0,
+      state: "reading", progress: 0, out: null, msg: "" };
+    if (EXT.unsupportedVideo.has(it.ext)) it.msg = `.${it.ext} kan je browser niet lezen; wordt ingepakt als zip.`;
+    items.push(it); fresh.push(it);
+  }
+  if (!fresh.length) return;
+  staleResult();
+  showPanel();
+  for (const it of fresh) {
+    try {
+      if (it.cat === "video" || it.cat === "audio") await probeMedia(it);
+      if (it.cat === "image") await probeImage(it);
+    } catch (err) {
+      console.warn(err);
+      it.msg = "Je browser kan dit bestand niet openen; het wordt ingepakt als zip.";
+      it.cat = "other"; it.info = {}; it.duration = 0;
+    }
+    it.state = "ready";
+    renderQueue(); refresh();
+  }
+  status(`${items.length} ${items.length === 1 ? "bestand" : "bestanden"} geladen`);
+}
+
+async function probeMedia(it) {
   const MB = await mediabunny();
-  const input = new MB.Input({ source: new MB.BlobSource(file), formats: MB.ALL_FORMATS });
+  const input = new MB.Input({ source: new MB.BlobSource(it.file), formats: MB.ALL_FORMATS });
   const v = await input.getPrimaryVideoTrack();
   const a = await input.getPrimaryAudioTrack();
-  duration = await input.computeDuration();
-  info = { duration, width: v?.displayWidth, height: v?.displayHeight, hasVideo: !!v, hasAudio: !!a };
-  if (cat === "video" && !v) cat = "audio";
   if (!v && !a) throw new Error("geen sporen");
+  it.duration = await input.computeDuration();
+  it.info = { duration: it.duration, width: v?.displayWidth, height: v?.displayHeight, hasVideo: !!v, hasAudio: !!a };
+  if (it.cat === "video" && !v) it.cat = "audio";
 }
-async function probeImage() {
-  const bmp = await createImageBitmap(file);
-  info = { width: bmp.width, height: bmp.height };
+async function probeImage(it) {
+  const bmp = await createImageBitmap(it.file);
+  it.info = { width: bmp.width, height: bmp.height };
   bmp.close();
 }
 
-function setupPanel() {
+function showPanel() {
   $("dropWrap").hidden = true;
   $("panel").hidden = false;
-  $("result").hidden = true;
-  $("progress").hidden = true;
   step(2);
-  status(`geladen: ${file.name} [${LABEL[cat].toLowerCase()}]`);
-  $("fName").textContent = file.name;
-  const meta = [LABEL[cat], human(file.size)];
-  if (info.width) meta.push(`${info.width}×${info.height}`);
-  if (duration) meta.push(fmtTime(duration));
-  $("fMeta").textContent = meta.join(" · ");
-
-  const sel = $("format");
-  sel.innerHTML = "";
-  let targets = TARGETS[cat];
-  if (cat === "video" && !info.hasAudio) targets = targets.filter((t) => !AUDIO_OUT.has(t));
-  for (const t of targets) {
-    const o = document.createElement("option");
-    o.value = t;
-    const same = t === ext || (t === "jpg" && ext === "jpeg");
-    o.textContent = "." + t + (same ? "  (zelfde formaat)" : "") + (SAVE_OK.has(t) ? "" : "  · opgeslagen in .zip");
-    sel.appendChild(o);
-  }
-  sel.value = targets.find((t) => t === ext || (t === "jpg" && ext === "jpeg")) || targets[0];
-
-  for (const id of ["targetSize", "scalePct", "imgW", "imgH", "gifWidth", "gifFps", "trimStart", "trimEnd"]) $(id).value = "";
-  $("removeAudio").checked = false; $("height").value = "";
-  $("modeQuality").checked = true; $("qMed").checked = true;
-  setupPreview();
-  refresh();
+  renderQueue(); refresh();
 }
 
+// ---------------------------------------------------------------- wachtrij (ASCII-tabel)
+function rowStatus(it) {
+  switch (it.state) {
+    case "reading": return "lezen…";
+    case "ready": return "klaar voor start";
+    case "queued": return "in de wachtrij";
+    case "busy": return txtBar(it.progress, 10);
+    case "done": {
+      const d = (it.out.blob.size - it.file.size) / it.file.size * 100;
+      return `${d <= 0 ? "▼" : "▲"} ${Math.abs(d).toFixed(0)}% → ${human(it.out.blob.size)}`;
+    }
+    case "error": return "!! FOUT";
+  }
+  return "";
+}
+function renderQueue() {
+  const ol = $("queue");
+  ol.innerHTML = "";
+  items.forEach((it, i) => {
+    const li = document.createElement("li");
+    li.className = "q-row q-" + it.state;
+    const meta = [LABEL[it.cat].toUpperCase(), human(it.file.size)];
+    if (it.info.width) meta.push(`${it.info.width}×${it.info.height}`);
+    if (it.duration) meta.push(fmtTime(it.duration));
+    li.innerHTML = `<span class="q-idx">${String(i + 1).padStart(2, "0")}</span><span class="q-name"></span>` +
+      `<span class="q-meta"></span><span class="q-status"></span><span class="q-act"></span>`;
+    li.querySelector(".q-name").textContent = it.file.name;
+    li.querySelector(".q-name").title = it.file.name;
+    li.querySelector(".q-meta").textContent = meta.join(" · ");
+    li.querySelector(".q-status").textContent = rowStatus(it);
+    const act = li.querySelector(".q-act");
+    if (it.state === "done") {
+      const b = document.createElement("button");
+      b.className = "btn small"; b.type = "button"; b.textContent = "[↓]";
+      b.title = "Opslaan: " + it.out.name; b.setAttribute("aria-label", "Opslaan " + it.out.name);
+      b.addEventListener("click", () => saveOne(it));
+      act.append(b);
+    }
+    if (!busy) {
+      const x = document.createElement("button");
+      x.className = "btn small"; x.type = "button"; x.textContent = "[x]";
+      x.title = "Verwijderen"; x.setAttribute("aria-label", "Verwijder " + it.file.name);
+      x.addEventListener("click", () => removeItem(it));
+      act.append(x);
+    }
+    if (it.msg || it.err) {
+      const m = document.createElement("div");
+      m.className = "q-msg" + (it.err ? " err" : "");
+      m.textContent = "└ " + (it.err || it.msg);
+      li.append(m);
+    }
+    ol.append(li);
+  });
+  $("queueTitle").textContent = `BESTANDEN (${items.length})`;
+}
+function updateRow(it) {
+  const i = items.indexOf(it);
+  const li = $("queue").children[i];
+  if (li) li.querySelector(".q-status").textContent = rowStatus(it);
+}
+function staleResult() {
+  $("result").hidden = true;
+  $("goBtn").textContent = "[ ▶ START ]";
+  for (const x of items) if (x.state === "done" || x.state === "error") { x.state = "ready"; x.out = null; x.err = ""; }
+}
+function removeItem(it) {
+  if (busy) return;
+  staleResult();
+  items.splice(items.indexOf(it), 1);
+  if (!items.length) return resetAll();
+  renderQueue(); refresh();
+}
+function resetAll() {
+  if (busy) return;
+  items.length = 0;
+  try { $("preview").pause(); $("previewAudio").pause(); } catch {}
+  $("panel").hidden = true; $("dropWrap").hidden = false;
+  $("result").hidden = true; $("progress").hidden = true;
+  notice(""); step(1); status("gereed");
+}
+$("resetBtn").addEventListener("click", resetAll);
+
+// ---------------------------------------------------------------- opties
+const cats = () => CAT_ORDER.filter((c) => items.some((it) => it.cat === c));
+const single = () => (items.length === 1 ? items[0] : null);
+
+function renderFormats() {
+  const box = $("formatRows");
+  const present = cats();
+  const key = present.join(",") + "|" + items.length;
+  if (box.dataset.key === key) return;
+  box.dataset.key = key;
+  box.innerHTML = "";
+  for (const c of present) {
+    const group = items.filter((it) => it.cat === c);
+    let targets = TARGETS[c];
+    if (c === "video" && group.every((it) => !it.info.hasAudio)) targets = targets.filter((t) => !AUDIO_OUT.has(t));
+    if (!targets.includes(chosen[c])) {
+      const exts = new Set(group.map((it) => (it.ext === "jpeg" ? "jpg" : it.ext)));
+      const same = exts.size === 1 ? [...exts][0] : null;
+      chosen[c] = targets.includes(same) ? same : targets[0];
+    }
+    const lab = document.createElement("label");
+    lab.className = "field";
+    lab.innerHTML = `<span></span><span class="sel"><select></select></span>`;
+    lab.firstElementChild.textContent = `${LABEL[c].toUpperCase()} (${group.length})>`;
+    const sel = lab.querySelector("select");
+    sel.id = "fmt-" + c;
+    for (const t of targets) {
+      const o = document.createElement("option");
+      o.value = t;
+      o.textContent = "." + t + (SAVE_OK.has(t) ? "" : "  · opgeslagen in .zip");
+      sel.append(o);
+    }
+    sel.value = chosen[c];
+    sel.addEventListener("change", () => { chosen[c] = sel.value; refresh(); });
+    box.append(lab);
+  }
+}
+
+let previewFor = null;
 function setupPreview() {
+  const it = single();
+  const media = it && (it.cat === "video" || it.cat === "audio") && it.state !== "reading";
+  if (media && previewFor === it) return;
   const v = $("preview"), a = $("previewAudio");
   for (const el of [v, a]) { if (el.src) URL.revokeObjectURL(el.src); el.removeAttribute("src"); el.hidden = true; }
   $("previewScreen").hidden = true;
+  $("trimStart").value = ""; $("trimEnd").value = "";
   $("rStart").value = 0; $("rEnd").value = 1000;
+  previewFor = media ? it : null;
+  duration = media ? it.duration : 0;
   syncSel();
-  if (cat !== "video" && cat !== "audio") return;
-  const el = cat === "video" ? v : a;
+  if (!media) return;
+  const el = it.cat === "video" ? v : a;
   el.onerror = () => { el.hidden = true; $("previewScreen").hidden = true; };
-  el.src = URL.createObjectURL(file);
+  el.src = URL.createObjectURL(it.file);
   el.hidden = false; $("previewScreen").hidden = false;
 }
 
 function refresh() {
-  if (!file) return;
-  const fmt = $("format").value;
-  const media = cat === "video" || cat === "audio";
-  const toVideo = cat === "video" && (fmt === "mp4" || fmt === "webm");
-  const sizeable = !(fmt === "wav" || fmt === "ico" || fmt === "bmp");
+  if (!items.length) return;
+  renderFormats();
+  const fmts = cats().map((c) => chosen[c]);
+  const anyVideo = items.some((it) => it.cat === "video");
+  const sizeable = fmts.some((f) => !NO_TARGET.has(f));
   $("modeTarget").disabled = !sizeable;
   if (!sizeable && $("modeTarget").checked) $("modeQuality").checked = true;
   const target = radio("sizeMode") === "target";
   $("targetBox").hidden = !target;
-  $("qualityBox").hidden = target || fmt === "wav" || cat === "other";
-  $("videoBox").hidden = !toVideo;
-  $("gifBox").hidden = !(cat === "video" && fmt === "gif");
-  $("imageBox").hidden = cat !== "image";
-  $("trimBox").hidden = !media;
+  $("qualityBox").hidden = target;
+  $("videoBox").hidden = !(anyVideo && ["mp4", "webm"].includes(chosen.video));
+  $("gifBox").hidden = !(anyVideo && chosen.video === "gif");
+  $("imageBox").hidden = !items.some((it) => it.cat === "image");
+  const it = single();
+  const mediaSingle = it && (it.cat === "video" || it.cat === "audio");
+  $("trimBox").hidden = !mediaSingle;
+  $("trimNote").hidden = mediaSingle || !items.some((x) => x.cat === "video" || x.cat === "audio");
+  setupPreview();
 
-  const hints = {
-    video: "Groter dan het origineel kan ook: de bitrate gaat dan omhoog.",
-    audio: "De bitrate wordt berekend uit de lengte van het (geknipte) fragment.",
-    image: "Kleiner: lagere kwaliteit en/of resolutie. Groter: hogere kwaliteit en resolutie.",
-    other: "Verliesvrij inpakken. Al gecomprimeerde bestanden worden nauwelijks kleiner.",
-  };
-  $("targetHint").textContent = hints[cat];
-  const fh = $("formatHint");
-  fh.hidden = SAVE_OK.has(fmt);
-  fh.textContent = `// .${fmt} wordt in een .zip opgeslagen, omdat de viewer dit bestandstype niet los laat downloaden.`;
+  const skipped = fmts.filter((f) => NO_TARGET.has(f));
+  let hint = items.length > 1 ? "Geldt per bestand. Met % krijgt elk bestand een doel naar verhouding van zijn eigen grootte." :
+    "Groter dan het origineel kan ook: bitrate, kwaliteit of resolutie gaan dan omhoog.";
+  if (skipped.length) hint += ` Voor .${skipped.join(", .")} geldt geen doelgrootte.`;
+  $("targetHint").textContent = hint;
+  const zipped = [...new Set(fmts.filter((f) => !SAVE_OK.has(f)))];
+  $("formatHint").hidden = !zipped.length;
+  $("formatHint").textContent = `// .${zipped.join(", .")} wordt in een .zip opgeslagen, omdat de viewer dit bestandstype niet los laat downloaden.`;
 }
-$("format").addEventListener("change", refresh);
 document.querySelectorAll("input[name=sizeMode]").forEach((r) => r.addEventListener("change", refresh));
 
 $("sizeChips").addEventListener("click", (e) => {
   const b = e.target.closest("button");
-  if (!b || !file) return;
-  let bytes = b.dataset.abs ? Number(b.dataset.abs) * MB_ : file.size * Number(b.dataset.f);
-  if (b.dataset.f && duration) { const s = selection(); if (s) bytes *= s.len / duration; }
-  const unit = bytes < MB_ ? "kb" : bytes < 1024 * MB_ ? "mb" : "gb";
-  $("targetUnit").value = unit;
-  $("targetSize").value = +(bytes / { kb: 1024, mb: MB_, gb: 1024 * MB_ }[unit]).toFixed(2);
+  if (!b) return;
+  if (b.dataset.pct) { $("targetUnit").value = "pct"; $("targetSize").value = b.dataset.pct; }
+  else { $("targetUnit").value = "mb"; $("targetSize").value = b.dataset.abs; }
 });
 $("scalePct").addEventListener("input", () => { if ($("scalePct").value) { $("imgW").value = ""; $("imgH").value = ""; } });
 for (const id of ["imgW", "imgH"]) $(id).addEventListener("input", () => { if ($(id).value) $("scalePct").value = ""; });
 
-// ---------------------------------------------------------------- knippen
-function player() { return cat === "video" ? $("preview") : $("previewAudio"); }
+// ---------------------------------------------------------------- knippen (alleen bij één bestand)
+function player() { return single()?.cat === "video" ? $("preview") : $("previewAudio"); }
 function selection() {
   const s = parseTime($("trimStart").value) ?? 0;
   const e = parseTime($("trimEnd").value) ?? duration;
@@ -686,71 +834,114 @@ $("trimEnd").addEventListener("input", syncSliders);
 $("setStart").addEventListener("click", () => { $("trimStart").value = fmtTime(player().currentTime || 0); syncSliders(); });
 $("setEnd").addEventListener("click", () => { $("trimEnd").value = fmtTime(player().currentTime || 0); syncSliders(); });
 
-$("resetBtn").addEventListener("click", () => {
-  if (busy) return;
-  file = null; fileInput.value = ""; notice("");
-  try { $("preview").pause(); $("previewAudio").pause(); } catch {}
-  $("panel").hidden = true; $("dropWrap").hidden = false;
-  step(1); status("gereed");
-});
-
 // ---------------------------------------------------------------- starten
+function readSettings() {
+  const s = { quality: radio("quality") };
+  if (radio("sizeMode") === "target") {
+    const v = parseFloat($("targetSize").value);
+    if (!(v > 0)) fail("Vul een doelgrootte in, bijvoorbeeld 8 MB of 50 %.");
+    const unit = $("targetUnit").value;
+    if (unit === "pct") s.targetPct = v / 100;
+    else s.targetAbs = Math.round(v * { kb: 1024, mb: MB_, gb: 1024 * MB_ }[unit]);
+  }
+  s.height = +$("height").value || null;
+  s.removeAudio = $("removeAudio").checked;
+  s.gifWidth = +$("gifWidth").value || null;
+  s.gifFps = +$("gifFps").value || null;
+  s.scalePct = +$("scalePct").value || null;
+  s.w = +$("imgW").value || null;
+  s.h = +$("imgH").value || null;
+  const it = single();
+  if (it && (it.cat === "video" || it.cat === "audio")) {
+    const a = parseTime($("trimStart").value), b = parseTime($("trimEnd").value);
+    if (Number.isNaN(a) || Number.isNaN(b)) fail("Controleer de knip-tijden: gebruik bijvoorbeeld 1:23.5 of 83.5.");
+    if (a != null && it.duration && a >= it.duration) fail("Het startpunt ligt na het einde van het bestand.");
+    if (a != null && b != null && b <= a) fail("Het eindpunt moet na het startpunt liggen.");
+    s.trim = { start: a || 0, end: b };
+  }
+  return s;
+}
+
+function optsFor(it, s) {
+  const fmt = chosen[it.cat];
+  const opts = { ...s, fmt };
+  const start = s.trim?.start || 0;
+  const end = s.trim?.end != null ? Math.min(s.trim.end, it.duration || s.trim.end) : it.duration;
+  opts.start = start; opts.end = end;
+  if (!NO_TARGET.has(fmt)) {
+    if (s.targetAbs) opts.target = s.targetAbs;
+    if (s.targetPct) {
+      const frac = it.duration && end ? (end - start) / it.duration : 1;
+      opts.target = Math.max(1024, Math.round(it.file.size * s.targetPct * frac));
+    }
+  }
+  return opts;
+}
+
 $("goBtn").addEventListener("click", async () => {
-  if (!file || busy) return;
-  const fmt = $("format").value;
-  const opts = { fmt, quality: radio("quality") };
-  try {
-    if (radio("sizeMode") === "target") {
-      const v = parseFloat($("targetSize").value);
-      if (!(v > 0)) fail("Vul een doelgrootte in, bijvoorbeeld 8 MB.");
-      opts.target = Math.round(v * { kb: 1024, mb: MB_, gb: 1024 * MB_ }[$("targetUnit").value]);
-    }
-    if (cat === "video" || cat === "audio") {
-      const s = parseTime($("trimStart").value), e = parseTime($("trimEnd").value);
-      if (Number.isNaN(s) || Number.isNaN(e)) fail("Controleer de knip-tijden: gebruik bijvoorbeeld 1:23.5 of 83.5.");
-      if (s != null && duration && s >= duration) fail("Het startpunt ligt na het einde van het bestand.");
-      if (s != null && e != null && e <= s) fail("Het eindpunt moet na het startpunt liggen.");
-      opts.start = s || 0;
-      opts.end = e != null ? Math.min(e, duration || e) : duration;
-      opts.height = +$("height").value || null;
-      opts.removeAudio = $("removeAudio").checked;
-      opts.gifWidth = +$("gifWidth").value || null;
-      opts.gifFps = +$("gifFps").value || null;
-    }
-    if (cat === "image") {
-      opts.scalePct = +$("scalePct").value || null;
-      opts.w = +$("imgW").value || null;
-      opts.h = +$("imgH").value || null;
-    }
-  } catch (err) { return showError(err.message); }
+  if (!items.length || busy) return;
+  if (items.some((it) => it.state === "reading")) return showError("Even wachten: nog niet alle bestanden zijn gelezen.");
+  let s;
+  try { s = readSettings(); } catch (err) { return showError(err.message); }
 
   busy = true;
   $("goBtn").disabled = true; $("goBtn").textContent = "[ BEZIG... ]";
+  $("addBtn").disabled = true; $("resetBtn").disabled = true;
   $("result").hidden = true; $("progress").hidden = false;
   step(4);
-  setProgress(0, "Starten");
+  for (const it of items) { it.state = "queued"; it.out = null; it.err = ""; it.progress = 0; }
+  renderQueue();
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    current = { it, index: i };
+    it.state = "busy"; renderQueue();
+    try {
+      it.out = await processItem(it, optsFor(it, s));
+      it.state = "done";
+    } catch (err) {
+      console.error(err);
+      it.state = "error";
+      it.err = err instanceof UserError ? err.message : "Er ging iets mis: " + (err?.message || err);
+    }
+    renderQueue();
+  }
+  current = null;
+  busy = false;
+  $("goBtn").disabled = false; $("goBtn").textContent = "[ ▶ OPNIEUW ]";
+  $("addBtn").disabled = false; $("resetBtn").disabled = false;
+  renderQueue();
+  showSummary();
+});
+
+async function processItem(it, opts) {
+  // zet het "huidige bestand" voor de converters
+  file = it.file; cat = it.cat; ext = it.ext; info = it.info; duration = it.duration;
   try {
     let out;
     if (cat === "image") out = await convertImage(opts);
     else if (cat === "other") out = await zipFile(opts);
-    else if (fmt === "gif") out = await videoToGif(opts);
+    else if (opts.fmt === "gif") out = await videoToGif(opts);
     else out = await convertMedia(opts);
     out.target = opts.target;
-    showResult(out);
-  } catch (err) {
-    console.error(err);
-    showError(err instanceof UserError ? err.message : "Er ging iets mis: " + (err?.message || err) +
-      "\nProbeer een ander uitvoerformaat, of een recente Chrome/Edge.");
+    return out;
   } finally {
-    busy = false;
-    $("goBtn").disabled = false; $("goBtn").textContent = "[ ▶ START ]";
+    const s = single();
+    duration = s && (s.cat === "video" || s.cat === "audio") ? s.duration : 0;
   }
-});
+}
 
+let lastPaint = 0;
 function setProgress(f, msg) {
-  $("progBar").textContent = txtBar(f);
-  $("progMsg").textContent = "> " + msg.toLowerCase() + "...";
-  status(msg.toLowerCase() + " " + Math.round(f * 100) + "%");
+  const n = items.length;
+  if (current) {
+    current.it.progress = f;
+    const now = performance.now();
+    if (now - lastPaint > 80 || f >= 1) { updateRow(current.it); lastPaint = now; }
+    const total = (current.index + Math.min(f, 1)) / n;
+    $("progBar").textContent = txtBar(total);
+    $("progMsg").textContent = `> ${current.index + 1}/${n} ${current.it.file.name}: ${msg.toLowerCase()}...`;
+    status(`${current.index + 1}/${n} ${msg.toLowerCase()} ${Math.round(f * 100)}%`);
+  }
 }
 
 // ---------------------------------------------------------------- video & audio (WebCodecs via Mediabunny)
@@ -803,14 +994,18 @@ async function convertMedia(opts) {
   }
 
   let blob = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 4; attempt++) {
     const label = attempt ? `Opnieuw coderen (poging ${attempt + 1})` : "Coderen";
     blob = await runConversion(MB, fmt, { audioOnly, keepAudio, vBitrate, aBitrate, height, opts }, label);
     if (!opts.target || blob.size <= opts.target * 1.02) break;
     // te groot: bitrate omlaag en opnieuw
     const f = opts.target / blob.size * 0.95;
     if (audioOnly) aBitrate = Math.max(8e3, Math.round(aBitrate * f));
-    else vBitrate = Math.max(30e3, Math.round(vBitrate * f));
+    else {
+      vBitrate = Math.max(30e3, Math.round(vBitrate * f));
+      // bitrate zit al op de bodem: dan ook de resolutie verlagen
+      if (info.height) height = Math.max(240, Math.round((height || info.height) * 0.7 / 2) * 2);
+    }
   }
   if (opts.target && blob.size > opts.target * 1.05) {
     fail(`Kleinst gehaald: ${human(blob.size)}. Knip korter, kies een lagere resolutie of verwijder het geluid.`);
@@ -1086,70 +1281,115 @@ function downloadsCap() {
 }
 setTimeout(downloadsCap, 0);
 
-function showResult(out) {
-  lastResult = out;
+function showSummary() {
   $("progress").hidden = true;
+  const done = items.filter((it) => it.state === "done");
+  const failed = items.filter((it) => it.state === "error");
   const res = $("result");
+  res.innerHTML = "";
+  if (!done.length) {
+    res.className = "result error";
+    res.innerHTML = '<span class="head">!! FOUT</span>\n';
+    res.append(document.createTextNode(failed.length === 1 ? failed[0].err : "Geen enkel bestand is gelukt. Zie de meldingen in de lijst."));
+    res.hidden = false;
+    status("mislukt - zie de lijst");
+    step(2);
+    return;
+  }
   res.className = "result";
-  const diff = (out.blob.size - file.size) / file.size * 100;
+  const before = done.reduce((a, it) => a + it.file.size, 0);
+  const after = done.reduce((a, it) => a + it.out.blob.size, 0);
+  const diff = (after - before) / before * 100;
   const w = barWidth() - 8;
-  const max = Math.max(out.blob.size, file.size);
+  const max = Math.max(before, after);
   const bar = (n) => { const k = Math.max(1, Math.round(n / max * w)); return "█".repeat(k) + "░".repeat(w - k); };
-  res.innerHTML = `<span class="head">STATUS: OK</span>
-<div class="cmp"><span class="lbl">BESTAND   </span><span class="fn"></span>
-<span class="lbl">ORIGINEEL </span>${bar(file.size)} ${human(file.size)}
-<span class="lbl">NIEUW     </span>${bar(out.blob.size)} ${human(out.blob.size)}
+  const head = failed.length ? `KLAAR: ${done.length} OK · ${failed.length} FOUT` : (done.length > 1 ? `STATUS: ${done.length} OK` : "STATUS: OK");
+  res.innerHTML = `<span class="head"></span>
+<div class="cmp"><span class="lbl">${done.length > 1 ? "BESTANDEN " : "BESTAND   "}</span><span class="fn"></span>
+<span class="lbl">ORIGINEEL </span>${bar(before)} ${human(before)}
+<span class="lbl">NIEUW     </span>${bar(after)} ${human(after)}
 <span class="lbl">VERSCHIL  </span><span class="down">${diff <= 0 ? "▼" : "▲"} ${Math.abs(diff).toFixed(1)}% ${diff <= 0 ? "kleiner" : "groter"}</span></div>`;
-  res.querySelector(".fn").textContent = out.name;
+  res.querySelector(".head").textContent = head;
+  res.querySelector(".fn").textContent = done.length > 1 ? `${done.length} stuks` : done[0].out.name;
 
-  if (out.kind === "image" || out.kind === "video" || out.kind === "audio") {
-    const scr = document.createElement("div");
-    scr.className = "screen";
-    const el = document.createElement(out.kind === "image" ? "img" : out.kind);
-    el.src = URL.createObjectURL(out.blob);
-    if (out.kind !== "image") { el.controls = true; el.playsInline = true; }
-    el.alt = "Voorbeeld van het resultaat";
-    el.onerror = () => scr.remove();
-    scr.append(el);
-    res.append(scr);
+  if (done.length === 1) {
+    const out = done[0].out;
+    if (out.kind === "image" || out.kind === "video" || out.kind === "audio") {
+      const scr = document.createElement("div");
+      scr.className = "screen";
+      const el = document.createElement(out.kind === "image" ? "img" : out.kind);
+      el.src = URL.createObjectURL(out.blob);
+      if (out.kind !== "image") { el.controls = true; el.playsInline = true; }
+      el.alt = "Voorbeeld van het resultaat";
+      el.onerror = () => scr.remove();
+      scr.append(el);
+      res.append(scr);
+    }
   }
   const btn = document.createElement("button");
   btn.className = "save"; btn.type = "button";
-  const zipped = !SAVE_OK.has(extOf(out.name));
-  btn.textContent = zipped ? "[ ↓ OPSLAAN ALS .ZIP ]" : "[ ↓ OPSLAAN ]";
-  btn.addEventListener("click", () => save(out, btn));
+  if (done.length > 1) {
+    btn.textContent = `[ ↓ ALLES OPSLAAN ALS .ZIP (${done.length}) ]`;
+    btn.addEventListener("click", saveAll);
+  } else {
+    btn.textContent = SAVE_OK.has(extOf(done[0].out.name)) ? "[ ↓ OPSLAAN ]" : "[ ↓ OPSLAAN ALS .ZIP ]";
+    btn.addEventListener("click", () => saveOne(done[0]));
+  }
   const note = document.createElement("p");
   note.className = "note dim small"; note.id = "saveNote";
-  if (out.target && out.blob.size < out.target * 0.85) {
-    note.textContent = `// doel was ${human(out.target)}; meer haalt je browser hier niet uit (maximale kwaliteit/resolutie bereikt).`;
+  const short = done.filter((it) => it.cat !== "other" && it.out.target && it.out.target > it.file.size && it.out.blob.size < it.out.target * 0.85);
+  if (short.length) {
+    note.textContent = short.length === 1 && done.length === 1
+      ? `// doel was ${human(short[0].out.target)}; meer haalt je browser hier niet uit (maximale kwaliteit/resolutie bereikt).`
+      : `// ${short.length} bestand(en) haalden de doelgrootte niet: maximale kwaliteit/resolutie bereikt.`;
+  } else if (done.length > 1) {
+    note.textContent = "// of sla bestanden los op met [↓] in de lijst.";
   }
   res.append(btn, note);
   res.hidden = false;
-  status(`klaar: ${out.name} (${human(out.blob.size)})`);
+  status(failed.length ? `klaar met ${failed.length} fout(en)` : `klaar: ${done.length} ${done.length === 1 ? "bestand" : "bestanden"} (${human(after)})`);
 }
 
-async function save(out, btn) {
-  const note = $("saveNote");
-  let { blob, name } = out;
-  if (!SAVE_OK.has(extOf(name))) {
-    const { zip } = await fflate();
-    const data = new Uint8Array(await blob.arrayBuffer());
-    const z = await new Promise((res, rej) => zip({ [name]: [data, { level: 0 }] }, (e, d) => e ? rej(e) : res(d)));
-    blob = new Blob([z], { type: "application/zip" }); name += ".zip";
+function setNote(msg) { const n = $("saveNote"); if (n) n.textContent = "// " + msg; status(msg); }
+
+async function zipBlob(entries) {
+  const { zip } = await fflate();
+  const files = {};
+  const used = new Set();
+  for (const { name, blob } of entries) {
+    let n = name, k = 2;
+    while (used.has(n.toLowerCase())) n = `${stemOf(name)}_${k++}.${extOf(name)}`;
+    used.add(n.toLowerCase());
+    files[n] = [new Uint8Array(await blob.arrayBuffer()), { level: 0 }];
   }
+  const z = await new Promise((res, rej) => zip(files, (e, d) => (e ? rej(e) : res(d))));
+  return new Blob([z], { type: "application/zip" });
+}
+
+async function saveOne(it) {
+  let { blob, name } = it.out;
+  if (!SAVE_OK.has(extOf(name))) { blob = await zipBlob([{ name, blob }]); name += ".zip"; }
+  await saveBlob(blob, name);
+}
+async function saveAll() {
+  const done = items.filter((it) => it.state === "done");
+  setNote("zip maken…");
+  const blob = await zipBlob(done.map((it) => it.out));
+  await saveBlob(blob, `anything-converter-${done.length}-bestanden.zip`);
+}
+
+async function saveBlob(blob, name) {
   const dl = await downloadsCap();
   if (dl) {
     try {
       await dl.save({ filename: name, data: blob });
-      note.textContent = "// opgeslagen: " + name;
-      status("opgeslagen: " + name);
+      setNote("opgeslagen: " + name);
     } catch (err) {
-      const msg = {
+      setNote({
         declined: "opslaan geannuleerd",
         rate_limited: "er staat al een opslagvraag open, probeer het zo opnieuw",
         too_large: "bestand is te groot om hier op te slaan; kies een kleinere doelgrootte",
-      }[err?.code] || "opslaan is hier niet beschikbaar (" + (err?.code || "onbekend") + ")";
-      note.textContent = "// " + msg;
+      }[err?.code] || "opslaan is hier niet beschikbaar (" + (err?.code || "onbekend") + ")");
     }
     return;
   }
@@ -1157,7 +1397,7 @@ async function save(out, btn) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = name;
   document.body.append(a); a.click(); a.remove();
-  note.textContent = "// download gestart: " + name;
+  setNote("download gestart: " + name);
 }
 
 function showError(msg) {
@@ -1168,7 +1408,6 @@ function showError(msg) {
   res.append(document.createTextNode(msg));
   res.hidden = false;
   status("fout - zie melding");
-  if (file) step(2);
 }
 
 // ---------------------------------------------------------------- thema
