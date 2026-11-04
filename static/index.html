@@ -68,6 +68,22 @@
     <pre id="uploadBar" class="txtbar hidden"></pre>
   </section>
 
+  <!-- Of: video ophalen via een link -->
+  <form id="urlForm" class="url-form" autocomplete="off">
+    <fieldset class="frame">
+      <legend>OF PLAK EEN LINK</legend>
+      <div class="row">
+        <span class="prompt">LINK&gt;</span>
+        <input id="urlInput" type="text" inputmode="url" placeholder="https://www.youtube.com/watch?v=…" aria-label="Link naar een video">
+        <button id="urlBtn" class="btn" type="submit">[ OPHALEN ]</button>
+      </div>
+      <label class="check"><input id="urlAudio" type="checkbox"><span>Alleen geluid</span></label>
+      <pre id="urlBar" class="txtbar hidden"></pre>
+      <p id="urlMsg" class="dim small hidden"></p>
+      <p class="dim small">// youtube, vimeo en honderden andere sites. alleen voor je eigen video's, video's met een vrije licentie (bijv. creative commons) of met toestemming van de maker.</p>
+    </fieldset>
+  </form>
+
   <!-- Stap 2: opties -->
   <section id="panel" class="hidden">
     <fieldset class="frame">
@@ -77,7 +93,10 @@
           <dt>NAAM</dt><dd id="fName"></dd>
           <dt>INFO</dt><dd id="fMeta"></dd>
         </dl>
-        <button id="resetBtn" class="btn" type="button">[ ANDER BESTAND ]</button>
+        <span class="file-actions">
+          <a id="saveSrc" class="btn hidden" href="#" download>[ ↓ OPSLAAN ]</a>
+          <button id="resetBtn" class="btn" type="button">[ ANDER BESTAND ]</button>
+        </span>
       </div>
     </fieldset>
 

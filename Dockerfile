@@ -5,6 +5,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libreoffice-writer libreoffice-calc libreoffice-impress fonts-dejavu \
     && rm -rf /var/lib/apt/lists/*
 
+# Deno: JavaScript-runtime die yt-dlp nodig heeft voor YouTube
+COPY --from=denoland/deno:bin-2.1.4 /deno /usr/local/bin/deno
+
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

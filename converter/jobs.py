@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from . import archive, document, image, media
+from . import archive, document, fetch, image, media
 from .util import ConversionError
 
 
@@ -26,12 +26,15 @@ class Job:
     result: Optional[Path] = None
     error: Optional[str] = None
     created: float = field(default_factory=time.time)
+    kind: str = "convert"  # convert | fetch
+    extra: dict = field(default_factory=dict)
 
     def public(self) -> dict:
         d = {"id": self.id, "status": self.status, "progress": round(self.progress, 3), "message": self.message}
         if self.result:
-            d.update(filename=self.result.name, size=self.result.stat().st_size,
-                     original_size=self.src.stat().st_size)
+            d.update(filename=self.result.name, size=self.result.stat().st_size)
+            if self.src.is_file():
+                d["original_size"] = self.src.stat().st_size
         if self.error:
             d["error"] = self.error
         return d
@@ -57,8 +60,8 @@ class JobManager:
         root.mkdir(parents=True, exist_ok=True)
         threading.Thread(target=self._cleanup_loop, daemon=True).start()
 
-    def submit(self, src: Path, category: str, opts: dict) -> Job:
-        job = Job(id=uuid.uuid4().hex, src=src, category=category, opts=opts)
+    def submit(self, src: Path, category: str, opts: dict, kind: str = "convert") -> Job:
+        job = Job(id=uuid.uuid4().hex, src=src, category=category, opts=opts, kind=kind)
         with self.lock:
             self.jobs[job.id] = job
         threading.Thread(target=self._run, args=(job,), daemon=True).start()
@@ -70,14 +73,18 @@ class JobManager:
     def _run(self, job: Job) -> None:
         with self.sem:
             job.status, job.message = "running", "Starten"
-            out_dir = job.src.parent / f"out_{job.id[:8]}"
-            out_dir.mkdir(exist_ok=True)
+            # fetch: src is de (lege) uploadmap waar de download in komt
+            out_dir = job.src if job.kind == "fetch" else job.src.parent / f"out_{job.id[:8]}"
+            out_dir.mkdir(parents=True, exist_ok=True)
 
             def progress(frac: float, msg: str) -> None:
                 job.progress, job.message = max(job.progress, min(frac, 0.99)), msg
 
             try:
-                job.result = run_conversion(job.src, out_dir, job.category, job.opts, progress)
+                if job.kind == "fetch":
+                    job.result = fetch.download(job.opts["url"], out_dir, bool(job.opts.get("audio_only")), progress)
+                else:
+                    job.result = run_conversion(job.src, out_dir, job.category, job.opts, progress)
                 job.status, job.progress, job.message = "done", 1.0, "Klaar"
             except ConversionError as exc:
                 job.status, job.error, job.message = "error", str(exc), "Mislukt"

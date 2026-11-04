@@ -128,7 +128,7 @@ pre { margin: 0; font: inherit; }
 
 /* invoer */
 input, select, button { font: inherit; color: inherit; text-shadow: inherit; }
-input[type=number], input:not([type]), select {
+input[type=number], input[type=text], input:not([type]), select {
   width: 100%; min-width: 0; padding: 7px 10px;
   background: var(--bg); color: var(--hi);
   border: 1px solid var(--dim); border-radius: 0; caret-color: var(--fg);
@@ -219,6 +219,13 @@ audio { background: transparent; filter: invert(1) grayscale(1) contrast(.9); }
 .result .download:hover, .result .download:focus-visible { outline: none; background: var(--fg); color: var(--bg); text-shadow: none; }
 .result.error { border-color: var(--err); color: var(--err); box-shadow: 0 0 14px color-mix(in srgb, var(--err) 35%, transparent); white-space: pre-wrap; }
 .result.error .head { background: var(--err); }
+
+.url-form { margin-top: 18px; }
+.url-form .row { margin-bottom: 4px; }
+.url-form .row input { flex: 1; }
+#urlMsg.err { color: var(--err); }
+.file-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+a.btn { text-decoration: none; display: inline-block; }
 
 .statusline {
   display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px;

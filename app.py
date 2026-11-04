@@ -44,12 +44,39 @@ def upload():
         name = "bestand." + f.filename.rsplit(".", 1)[-1].lower()
     path = folder / name
     f.save(path)
+    return jsonify(register_upload(uid, path))
+
+
+def register_upload(uid: str, path: Path) -> dict:
+    """Maak een bestand beschikbaar voor conversie en geef de info voor de interface."""
     category = detect(path)
     info = media_info(path) if category in ("video", "audio", "image") else {}
-    ext = extension(path)
     uploads[uid] = {"path": path, "category": category}
-    return jsonify(id=uid, name=name, size=path.stat().st_size, ext=ext, category=category,
-                   label=LABELS[category], targets=TARGETS[category], info=info)
+    return dict(id=uid, name=path.name, size=path.stat().st_size, ext=extension(path), category=category,
+                label=LABELS[category], targets=TARGETS[category], info=info)
+
+
+@app.post("/api/fetch")
+def fetch_url():
+    """Video ophalen via een link (yt-dlp). Alleen voor eigen of vrij te gebruiken video's."""
+    data = request.get_json(force=True, silent=True) or {}
+    url = str(data.get("url") or "").strip()
+    if not url:
+        return jsonify(error="Plak eerst een link."), 400
+    uid = uuid.uuid4().hex
+    job = jobs.submit(WORK / uid, "fetch", {"url": url, "audio_only": bool(data.get("audio_only"))}, kind="fetch")
+    job.extra["uid"] = uid
+    return jsonify(job.public())
+
+
+@app.get("/api/file/<uid>")
+def uploaded_file(uid):
+    """Het geüploade/opgehaalde bestand zelf, voor de preview bij knippen."""
+    up = uploads.get(uid)
+    if not up or not up["path"].exists():
+        abort(404)
+    return send_file(up["path"], conditional=True, as_attachment=request.args.get("download") == "1",
+                     download_name=up["path"].name)
 
 
 @app.post("/api/convert")
@@ -76,7 +103,12 @@ def job_status(job_id):
     job = jobs.get(job_id)
     if not job:
         return jsonify(error="Taak niet gevonden."), 404
-    return jsonify(job.public())
+    data = job.public()
+    if job.kind == "fetch" and job.status == "done" and job.result:
+        if "upload" not in job.extra:
+            job.extra["upload"] = register_upload(job.extra["uid"], job.result)
+        data["upload"] = job.extra["upload"]
+    return jsonify(data)
 
 
 @app.get("/api/download/<job_id>")

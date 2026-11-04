@@ -76,10 +76,54 @@ function upload(file) {
   xhr.send(fd);
 }
 
+// ---------- video ophalen via een link (yt-dlp, alleen lokale versie)
+$("urlForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const url = $("urlInput").value.trim();
+  const bar = $("urlBar"), msg = $("urlMsg");
+  if (!url) { $("urlInput").focus(); return; }
+  $("urlBtn").disabled = true; $("urlBtn").textContent = "[ BEZIG... ]";
+  show(msg, false); show(bar, true);
+  bar.textContent = txtBar(0, barWidth());
+  status("link ophalen...");
+  try {
+    const r = await fetch("/api/fetch", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, audio_only: $("urlAudio").checked }) });
+    let j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Ophalen mislukt.");
+    for (;;) {
+      const rr = await fetch("/api/job/" + j.id);
+      j = await rr.json();
+      if (!rr.ok) throw new Error(j.error || "Taak kwijt.");
+      bar.textContent = txtBar(j.progress, barWidth());
+      status(j.message.toLowerCase() + " " + Math.round(j.progress * 100) + "%");
+      if (j.status === "error") throw new Error(j.error);
+      if (j.status === "done" && j.upload) break;
+      await new Promise((res) => setTimeout(res, 600));
+    }
+    localFile = null;
+    $("urlInput").value = "";
+    show(bar, false);
+    setup(j.upload);
+  } catch (err) {
+    show(bar, false);
+    msg.textContent = "!! " + err.message;
+    msg.classList.add("err");
+    show(msg, true);
+    status("ophalen mislukt");
+  } finally {
+    $("urlBtn").disabled = false; $("urlBtn").textContent = "[ OPHALEN ]";
+  }
+});
+
 // ---------- opties opbouwen
 function setup(data) {
   current = data;
   show(drop, false);
+  show($("urlForm"), false);
+  // opgehaald via een link: origineel ook los op te slaan
+  $("saveSrc").href = "/api/file/" + data.id + "?download=1";
+  show($("saveSrc"), !localFile);
   show($("panel"), true);
   show($("result"), false);
   show($("progress"), false);
@@ -116,10 +160,10 @@ function setup(data) {
 
 function setupPreview(data) {
   const v = $("preview"), a = $("previewAudio");
-  for (const el of [v, a]) { if (el.src) URL.revokeObjectURL(el.src); el.removeAttribute("src"); show(el, false); }
+  for (const el of [v, a]) { if (el.src.startsWith("blob:")) URL.revokeObjectURL(el.src); el.removeAttribute("src"); show(el, false); }
   if (!["video", "audio"].includes(data.category)) return;
   const el = data.category === "video" ? v : a;
-  el.src = URL.createObjectURL(localFile);
+  el.src = localFile ? URL.createObjectURL(localFile) : "/api/file/" + data.id;
   el.onloadedmetadata = () => { if (!duration && isFinite(el.duration)) { duration = el.duration; syncSliders(); } };
   el.onerror = () => show(el, false); // browser kan dit formaat niet afspelen; knippen via tijden blijft werken
   show(el, true);
@@ -218,7 +262,7 @@ $("setEnd").addEventListener("click", () => { $("trimEnd").value = fmtTime(playe
 $("resetBtn").addEventListener("click", () => {
   current = null; fileInput.value = "";
   const p = $("preview"); p.pause && p.pause();
-  show($("panel"), false); show(drop, true);
+  show($("panel"), false); show(drop, true); show($("urlForm"), true);
   step(1); status("gereed");
 });
 
