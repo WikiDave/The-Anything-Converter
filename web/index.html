@@ -561,6 +561,9 @@ const CDN = {
 };
 // Bestandstypen die de viewer direct mag opslaan; de rest gaat in een zip.
 const SAVE_OK = new Set("gif png jpg jpeg webp mp4 webm mov txt json md docx pptx epub csv ttf html svg pdf xlsx zip fig".split(" "));
+// Alleen binnen de claude.ai-viewer geldt die lijst; als gewone website (bijv. GitHub Pages) mag alles los.
+const inViewer = () => !!window.claude?.use;
+const savesDirect = (e) => !inViewer() || SAVE_OK.has(e);
 
 const EXT = {
   video: new Set(["mp4", "m4v", "mov", "webm", "mkv", "ts", "mts", "ogv"]),
@@ -824,7 +827,7 @@ const single = () => (items.length === 1 ? items[0] : null);
 function renderFormats() {
   const box = $("formatRows");
   const present = cats();
-  const key = present.join(",") + "|" + items.length;
+  const key = present.join(",") + "|" + items.map((it) => it.state === "reading" ? "r" : it.info.hasAudio ? "a" : "n").join("");
   if (box.dataset.key === key) return;
   box.dataset.key = key;
   box.innerHTML = "";
@@ -846,7 +849,7 @@ function renderFormats() {
     for (const t of targets) {
       const o = document.createElement("option");
       o.value = t;
-      o.textContent = "." + t + (SAVE_OK.has(t) ? "" : "  · opgeslagen in .zip");
+      o.textContent = "." + t + (savesDirect(t) ? "" : "  · opgeslagen in .zip");
       sel.append(o);
     }
     sel.value = chosen[c];
@@ -900,7 +903,7 @@ function refresh() {
     "Groter dan het origineel kan ook: bitrate, kwaliteit of resolutie gaan dan omhoog.";
   if (skipped.length) hint += ` Voor .${skipped.join(", .")} geldt geen doelgrootte.`;
   $("targetHint").textContent = hint;
-  const zipped = [...new Set(fmts.filter((f) => !SAVE_OK.has(f)))];
+  const zipped = [...new Set(fmts.filter((f) => !savesDirect(f)))];
   $("formatHint").hidden = !zipped.length;
   $("formatHint").textContent = `// .${zipped.join(", .")} wordt in een .zip opgeslagen, omdat de viewer dit bestandstype niet los laat downloaden.`;
 }
@@ -1476,7 +1479,7 @@ function showSummary() {
     btn.textContent = `[ ↓ ALLES OPSLAAN ALS .ZIP (${done.length}) ]`;
     btn.addEventListener("click", saveAll);
   } else {
-    btn.textContent = SAVE_OK.has(extOf(done[0].out.name)) ? "[ ↓ OPSLAAN ]" : "[ ↓ OPSLAAN ALS .ZIP ]";
+    btn.textContent = savesDirect(extOf(done[0].out.name)) ? "[ ↓ OPSLAAN ]" : "[ ↓ OPSLAAN ALS .ZIP ]";
     btn.addEventListener("click", () => saveOne(done[0]));
   }
   const note = document.createElement("p");
@@ -1512,7 +1515,7 @@ async function zipBlob(entries) {
 
 async function saveOne(it) {
   let { blob, name } = it.out;
-  if (!SAVE_OK.has(extOf(name))) { blob = await zipBlob([{ name, blob }]); name += ".zip"; }
+  if ((await downloadsCap()) && !SAVE_OK.has(extOf(name))) { blob = await zipBlob([{ name, blob }]); name += ".zip"; }
   await saveBlob(blob, name);
 }
 async function saveAll() {
