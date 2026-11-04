@@ -34,6 +34,23 @@ def index():
     return send_from_directory(BASE / "static", "index.html")
 
 
+# De browser-versie (PDF- en archief-werkbank) wordt ook door de lokale/desktop-app aangeboden.
+WEB_FILES = {"index.html", "favicon.svg", "favicon.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png",
+             "manifest.webmanifest"}
+
+
+@app.get("/web/")
+def web_index():
+    return send_from_directory(BASE, "index.html")
+
+
+@app.get("/web/<path:name>")
+def web_file(name):
+    if name in WEB_FILES or name.startswith("vendor/"):
+        return send_from_directory(BASE, name)
+    abort(404)
+
+
 @app.get("/api/ping")
 def ping():
     """Laat de interface (en een tweede start van de desktop-app) weten dat de converter draait."""

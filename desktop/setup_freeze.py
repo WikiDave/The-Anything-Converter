@@ -25,7 +25,10 @@ VERSION = "2.1.0"
 NAME = "Anything Converter"
 ICONS = HERE / "icons"
 
-include_files = [(str(ROOT / "static"), "static")]
+include_files = [(str(ROOT / "static"), "static"), (str(ROOT / "vendor"), "vendor")]
+for name in ("index.html", "favicon.svg", "favicon.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png",
+             "manifest.webmanifest"):
+    include_files.append((str(ROOT / name), name))
 if (HERE / "bin").is_dir() and any((HERE / "bin").iterdir()):
     include_files.append((str(HERE / "bin"), "bin"))
 

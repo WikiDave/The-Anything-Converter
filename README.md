@@ -20,6 +20,22 @@ bestanden worden na 1 uur automatisch opgeruimd. De interface heeft een retro te
 > Let op: "groter maken" werkt voor video's, audio en afbeeldingen (meer bitrate/kwaliteit/resolutie).
 > Al gecomprimeerde bestanden (zip, jpg in een zip, …) kunnen verliesvrij nauwelijks kleiner.
 
+## Archief-werkbank (zip, rar, 7z, tar …)
+
+In de web-app (en in de desktop-app via **[ PDF & ARCHIEF ]**) staat de **ARCHIEF-WERKBANK**:
+
+- **Openen**: zip, rar, 7z, tar, tar.gz/.tgz, tar.bz2, tar.xz, gz, bz2, xz, zst, iso, cab, jar, lzh en meer,
+  ook versleutelde archieven (wachtwoord invullen). Meerdere archieven tegelijk komen elk in een eigen map.
+- **Bekijken**: de inhoud als ASCII-boom met mappen, aantallen en groottes, en een zoekveld.
+- **Weglaten**: vink bestanden of hele mappen uit.
+- **Toevoegen**: bestanden in een gekozen map, en losse bestanden uit de lijst gaan ook mee.
+- **Los opslaan**: elk bestand met [↓].
+- **Opslaan als**: .zip (optioneel met AES-256-wachtwoord), .tar.gz, .tar.xz of .tar.bz2.
+  Opslaan als rar of 7z kan niet (rar is een gesloten formaat).
+
+Werkt met [libarchive.js](https://github.com/nika-begiashvili/libarchivejs) (meegeleverd in `vendor/`) en
+[zip.js](https://github.com/gildas-lormeau/zip.js).
+
 ## Desktop-app (installer, alles inbegrepen)
 
 Download de installer voor jouw systeem van de
