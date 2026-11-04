@@ -1,0 +1,289 @@
+01 FILE
+02 FORMAT
+03 SIZE
+04 OUTPUT
+> DROP FILES HERE
+> convert · shrink · enlarge · trim. your file never leaves your browser
+> ready
+NO UPLOAD
+Colour theme
+Steps
+Mode
+LANGUAGE
+[GREEN]
+[AMBER]
+[CYAN]
+one or more at once · [ENTER] / click to browse
+video: mp4 · mov · webm · mkv | audio: mp3 · wav · m4a · ogg · flac
+image: jpg · png · webp · gif · bmp · avif · svg | pdf: merge · split · compress
+archive: zip · rar · 7z · tar · gz · bz2 · xz · iso · cab: view · extract · edit · convert
+[ + NEW EMPTY ARCHIVE ]
+[ TRY WITH 3 TEST IMAGES ]
+everything happens locally in your browser · nothing is uploaded
+DOWNLOADS
+The converter as an app for your computer or phone. The computer version has everything, including
+fetching youtube and other video links
+and
+downloading torrents
+SYSTEM>
+Choose your system
+computer
+phone / tablet
+Windows 10/11 · .msi
+Mac with M1–M4 · .dmg
+Mac with Intel · .dmg
+Ubuntu / Debian / Mint · .deb
+Other Linux · .AppImage
+Android 10+ · .apk
+iPhone / iPad · web app
+[ ↓ DOWNLOAD ]
+[ ? HOW THEN ]
+all downloads and versions
+1. download and double-click the .msi file
+2. 'windows protected your pc'? → more info → run anyway
+3. start 'Anything Converter' from the start menu; it opens in your browser
+1. open the .dmg and drag the app to Applications
+2. open the app; if you get a warning, close it
+3. system settings → privacy & security → 'open anyway' at the bottom
+// which mac? apple menu → about this mac: 'chip apple m…' = this one
+// which mac? apple menu → about this mac: 'processor intel' = this one
+1. download and open the .deb file (software install)
+or in a terminal: sudo apt install ./AnythingConverter-Linux.deb
+2. start 'Anything Converter' from the menu
+1. download the .AppImage file
+2. right-click → properties → turn on 'allow executing as program'
+3. double-click to start
+1. download the .apk file on your phone
+2. open it; allow 'install unknown apps' for your browser
+3. open 'Converter'; saved files are in Downloads/Anything Converter
+// youtube links and torrents only work on the computer
+apple does not allow apps outside the app store; use the web app:
+1. open this page in safari
+2. tap share (square with arrow) → add to home screen → add
+3. open 'Converter' from your home screen
+FILES
+FILES ({0})
+NAME
+INFO
+STATUS
+[ + ADD ]
+[ CLEAR ALL ]
+reading…
+ready to start
+queued
+!! ERROR
+[ CONVERT ]
+[ PDF WORKBENCH ]
+[ ARCHIVE WORKBENCH ]
+[ SOCIAL MEDIA ]
+// nothing in the list yet. add files for the archive under ADD.
+FORMAT
+SIZE
+Mode
+Quality
+Target size per file
+High
+large file
+Normal
+Low
+smallest
+TARGET>
+Target size
+Unit
+2× LARGER
+Applies per file. With % each file gets a target relative to its own size.
+Larger than the original works too: bitrate, quality or resolution go up.
+VIDEO
+RESOLUTION>
+original / automatic
+Remove sound
+WIDTH PX>
+FPS>
+DIMENSIONS
+SCALE %>
+WIDTH>
+HEIGHT>
+auto
+// applies to all images. percentage or width and/or height. one value = keeps the ratio.
+TRIM
+IN>
+OUT>
+end
+Start point
+End point
+Current position as start
+Current position as end
+[|◀ HERE]
+[HERE ▶|]
+SELECTION:
+// times like 1:23.5 or in seconds
+// trimming works per file: keep one video or audio file in the list.
+[ ▶ START ]
+[ BUSY... ]
+[ ▶ AGAIN ]
+[ ▶ MAKE PDF ]
+[ ▶ MAKE ARCHIVE ]
+[ ▶ MAKE FOR SOCIAL MEDIA ]
+STATUS: OK
+STATUS: {0} OK
+DONE: {0} OK · {1} ERROR
+FILE
+ORIGINAL
+NEW
+DIFFERENCE
+SOURCES
+CONTENTS
+{0} smaller
+{0} larger
+{0} items
+[ ↓ SAVE ]
+[ ↓ SAVE AS .ZIP ]
+[ ↓ SAVE ALL AS .ZIP ({0}) ]
+// or save files one by one with [↓] in the list.
+PAGES
+PAGES ({0})
+[ SELECT ALL ]
+[ ROTATE -90° ]
+[ ROTATE +90° ]
+[ ✕ DELETE SELECTION ]
+[ KEEP SELECTION ONLY ]
+[ ↕ REVERSE ]
+[ RESET ]
+// drag pages to reorder. rotating applies to the selection, or to all if nothing is selected.
+click pages to select them
+{0} selected
+OUTPUT
+Output
+One PDF
+merge
+Each page separately
+Split by range
+RANGES>
+FILE NAME>
+merged
+PHOTOS
+PAPER>
+same as photo
+ORIENTATION>
+automatic
+portrait
+landscape
+MARGIN>
+none
+small
+normal
+wide
+EXTRA
+Add page numbers
+POSITION>
+bottom centre
+bottom right
+top centre
+top right
+STYLE>
+Page 1
+Watermark
+TEXT>
+Watermark text
+TITLE>
+AUTHOR>
+optional
+COMPRESS
+LEVEL>
+none · text stays selectable
+light · 150 dpi
+strong · 96 dpi
+target size
+Target size PDF
+// compressing turns pages into images; text can no longer be selected afterwards.
+CONTENTS ({0})
+PASSWORD>
+Archive password
+[ OPEN ]
+[ ALL ]
+[ NONE ]
+[ INVERT ]
+[ OPEN ALL FOLDERS ]
+[ CLOSE ALL FOLDERS ]
+SEARCH>
+e.g. .jpg or photo
+Search in the archive
+Archive contents
+{0} of {1} files ticked · {2}
+// empty archive. add files with [ + ADD FILES ] below, or drop them on the page.
+// [x] = goes into the new archive. click a folder to open or close it. [↓] saves a single file.
+ADD
+IN FOLDER>
+(root folder)
+[ + ADD FILES ]
+// added files show in the tree with a +. single files from the list at the top are included too.
+archive
+.zip · works everywhere
+.7z · small, 7-zip/winrar
+.tar.xz · smallest
+.tar · no compression
+.iso · disc image
+.rar · not possible (only WinRAR may create rar)
+Protect with password
+(AES-256, .zip only)
+Password for the new archive
+// rar and cab can be opened too. only winrar may create rar (closed format); choose .7z or .zip, winrar opens those as well.
+PLATFORM
+Platform and format
+FORMAT>
+FIT>
+How the photo fits the format
+fill · crop (drag to choose)
+fit · blurred background
+fit · black borders
+fit · white borders
+PANORAMA
+NUMBER OF SLIDES>
+// upload the slides in order (01, 02, …) as one carousel post. swiping makes the image continue seamlessly.
+PREVIEW
+FILE>
+Which file you are viewing
+Preview of the result; drag to move the image
+// add photos or videos to the list at the top.
+ZOOM>
+Zoom in
+[ CENTRE ]
+// drag in the preview to choose which part stays visible. applies per file.
+size {0}
+photo {0}
+video {0}
+tip {0}
+portrait post 4:5 · best in the feed
+square post 1:1
+landscape post 1.91:1
+story / reels 9:16
+panorama carousel 4:5 · swipe
+panorama carousel 1:1 · swipe
+profile picture
+portrait post 4:5
+square post
+landscape post / link
+cover photo
+event photo
+video 1080p 16:9
+video 1440p 16:9 · sharper after upload
+video 4K 16:9
+shorts 9:16
+thumbnail
+channel banner
+video 9:16
+photo 9:16
+landscape post 16:9
+video 16:9
+header
+landscape post
+profile banner
+pin 2:3
+video pin 9:16
+story / spotlight 9:16
+status 9:16
+post 4:5 · max 1 MB
+stream thumbnail
+[VT]
+[ OPEN VIRUSTOTAL ]
+calculating fingerprint…

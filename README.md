@@ -20,6 +20,16 @@ bestanden worden na 1 uur automatisch opgeruimd. De interface heeft een retro te
 > Let op: "groter maken" werkt voor video's, audio en afbeeldingen (meer bitrate/kwaliteit/resolutie).
 > Al gecomprimeerde bestanden (zip, jpg in een zip, …) kunnen verliesvrij nauwelijks kleiner.
 
+## Talen
+
+De web-app is er in 14 talen: Nederlands, English, Deutsch, Español, Français, Português, Русский, Türkçe,
+Bahasa Indonesia, العربية (van rechts naar links), हिन्दी, বাংলা, 中文 en 日本語. De taal van je browser wordt
+automatisch gekozen; wisselen kan met het keuzemenu bovenaan.
+
+Vertalingen staan in `i18n/<taal>.txt`: één regel per tekst, in dezelfde volgorde als `i18n/keys.py`
+(de Nederlandse brontekst). Na een wijziging: `python i18n/build.py`. De lokale/desktop-startpagina is nog
+Nederlands; de werkbanken (via **[ PDF & ARCHIEF ]**) zijn vertaald.
+
 ## Social media
 
 Tabblad **[ SOCIAL MEDIA ]** in de web-app: kies een platform en formaat, en foto's en video's krijgen exact de

@@ -1,0 +1,289 @@
+01 DATEI
+02 FORMAT
+03 GRÖSSE
+04 AUSGABE
+> DATEIEN HIER ABLEGEN
+> konvertieren · verkleinern · vergrößern · schneiden. deine datei verlässt den browser nie
+> bereit
+KEIN UPLOAD
+Farbschema
+Schritte
+Arbeitsweise
+SPRACHE
+[GRÜN]
+[BERNSTEIN]
+[CYAN]
+eine oder mehrere gleichzeitig · [ENTER] / klicken zum durchsuchen
+video: mp4 · mov · webm · mkv | audio: mp3 · wav · m4a · ogg · flac
+bild: jpg · png · webp · gif · bmp · avif · svg | pdf: zusammenfügen · teilen · komprimieren
+archiv: zip · rar · 7z · tar · gz · bz2 · xz · iso · cab: ansehen · entpacken · bearbeiten · umwandeln
+[ + NEUES LEERES ARCHIV ]
+[ MIT 3 TESTBILDERN TESTEN ]
+alles passiert lokal in deinem browser · nichts wird hochgeladen
+DOWNLOADS
+Der Konverter als App für Computer oder Handy. Auf dem Computer ist alles dabei, auch
+youtube- und andere video-links laden
+und
+torrents herunterladen
+SYSTEM>
+Wähle dein System
+computer
+handy / tablet
+Windows 10/11 · .msi
+Mac mit M1–M4 · .dmg
+Mac mit Intel · .dmg
+Ubuntu / Debian / Mint · .deb
+Anderes Linux · .AppImage
+Android 10+ · .apk
+iPhone / iPad · Web-App
+[ ↓ HERUNTERLADEN ]
+[ ? WIE DANN ]
+alle downloads und versionen
+1. lade die .msi-datei herunter und doppelklicke sie
+2. 'der computer wurde durch windows geschützt'? → weitere informationen → trotzdem ausführen
+3. starte 'Anything Converter' im startmenü; er öffnet sich im browser
+1. öffne die .dmg und ziehe die app in Programme
+2. öffne die app; kommt eine warnung, schließe sie
+3. systemeinstellungen → datenschutz & sicherheit → unten 'dennoch öffnen'
+// welcher mac? apfelmenü → über diesen mac: 'chip apple m…' = dieser
+// welcher mac? apfelmenü → über diesen mac: 'prozessor intel' = dieser
+1. lade die .deb-datei herunter und öffne sie (softwareinstallation)
+oder im terminal: sudo apt install ./AnythingConverter-Linux.deb
+2. starte 'Anything Converter' im menü
+1. lade die .AppImage-datei herunter
+2. rechtsklick → eigenschaften → 'als programm ausführen' aktivieren
+3. zum starten doppelklicken
+1. lade die .apk-datei auf dein handy
+2. öffne sie; erlaube 'unbekannte apps installieren' für deinen browser
+3. öffne 'Converter'; gespeicherte dateien liegen in Downloads/Anything Converter
+// youtube-links und torrents gehen nur auf dem computer
+apple erlaubt keine apps außerhalb des app store; nutze die web-app:
+1. öffne diese seite in safari
+2. tippe auf teilen (quadrat mit pfeil) → zum home-bildschirm → hinzufügen
+3. öffne 'Converter' auf dem home-bildschirm
+DATEIEN
+DATEIEN ({0})
+NAME
+INFO
+STATUS
+[ + HINZUFÜGEN ]
+[ ALLES LÖSCHEN ]
+lesen…
+bereit zum start
+in der warteschlange
+!! FEHLER
+[ KONVERTIEREN ]
+[ PDF-WERKBANK ]
+[ ARCHIV-WERKBANK ]
+[ SOCIAL MEDIA ]
+// noch nichts in der liste. dateien für das archiv fügst du unter HINZUFÜGEN hinzu.
+FORMAT
+GRÖSSE
+Modus
+Qualität
+Zielgröße pro Datei
+Hoch
+große datei
+Normal
+Niedrig
+am kleinsten
+ZIEL>
+Zielgröße
+Einheit
+2× GRÖSSER
+Gilt pro Datei. Mit % bekommt jede Datei ein Ziel im Verhältnis zu ihrer eigenen Größe.
+Größer als das Original geht auch: Bitrate, Qualität oder Auflösung steigen dann.
+VIDEO
+AUFLÖSUNG>
+original / automatisch
+Ton entfernen
+BREITE PX>
+FPS>
+ABMESSUNGEN
+SKALIERUNG %>
+BREITE>
+HÖHE>
+auto
+// gilt für alle bilder. prozent oder breite und/oder höhe. ein wert = seitenverhältnis bleibt.
+SCHNEIDEN
+EIN>
+AUS>
+ende
+Startpunkt
+Endpunkt
+Aktuelle Position als Start
+Aktuelle Position als Ende
+[|◀ HIER]
+[HIER ▶|]
+AUSWAHL:
+// zeiten wie 1:23.5 oder in sekunden
+// schneiden geht pro datei: lass eine video- oder audiodatei in der liste.
+[ ▶ START ]
+[ LÄUFT... ]
+[ ▶ NOCHMAL ]
+[ ▶ PDF ERSTELLEN ]
+[ ▶ ARCHIV ERSTELLEN ]
+[ ▶ FÜR SOCIAL MEDIA ERSTELLEN ]
+STATUS: OK
+STATUS: {0} OK
+FERTIG: {0} OK · {1} FEHLER
+DATEI
+ORIGINAL
+NEU
+UNTERSCHIED
+QUELLEN
+INHALT
+{0} kleiner
+{0} größer
+{0} stück
+[ ↓ SPEICHERN ]
+[ ↓ ALS .ZIP SPEICHERN ]
+[ ↓ ALLES ALS .ZIP SPEICHERN ({0}) ]
+// oder dateien einzeln mit [↓] in der liste speichern.
+SEITEN
+SEITEN ({0})
+[ ALLES AUSWÄHLEN ]
+[ DREHEN -90° ]
+[ DREHEN +90° ]
+[ ✕ AUSWAHL LÖSCHEN ]
+[ NUR AUSWAHL BEHALTEN ]
+[ ↕ UMKEHREN ]
+[ ZURÜCKSETZEN ]
+// seiten ziehen zum sortieren. drehen gilt für die auswahl, oder für alle, wenn nichts ausgewählt ist.
+klicke seiten an, um sie auszuwählen
+{0} ausgewählt
+AUSGABE
+Ausgabe
+Ein PDF
+zusammenfügen
+Jede Seite einzeln
+Nach Bereich teilen
+BEREICHE>
+DATEINAME>
+zusammengefügt
+FOTOS
+PAPIER>
+wie das foto
+AUSRICHTUNG>
+automatisch
+hochformat
+querformat
+RAND>
+keiner
+klein
+normal
+breit
+EXTRAS
+Seitenzahlen hinzufügen
+POSITION>
+unten mitte
+unten rechts
+oben mitte
+oben rechts
+FORM>
+Seite 1
+Wasserzeichen
+TEXT>
+Wasserzeichentext
+TITEL>
+AUTOR>
+optional
+KOMPRIMIEREN
+STUFE>
+keine · text bleibt markierbar
+leicht · 150 dpi
+stark · 96 dpi
+zielgröße
+Zielgröße PDF
+// komprimieren macht seiten zu bildern; text ist danach nicht mehr markierbar.
+INHALT ({0})
+PASSWORT>
+Passwort des Archivs
+[ ÖFFNEN ]
+[ ALLE ]
+[ KEINE ]
+[ UMKEHREN ]
+[ ALLE ORDNER AUF ]
+[ ALLE ORDNER ZU ]
+SUCHE>
+z.b. .jpg oder foto
+Im Archiv suchen
+Inhalt des Archivs
+{0} von {1} dateien angehakt · {2}
+// leeres archiv. füge dateien mit [ + DATEIEN HINZUFÜGEN ] unten hinzu oder ziehe sie auf die seite.
+// [x] = kommt ins neue archiv. klicke einen ordner zum auf- oder zuklappen. [↓] speichert eine einzelne datei.
+HINZUFÜGEN
+IN ORDNER>
+(hauptordner)
+[ + DATEIEN HINZUFÜGEN ]
+// hinzugefügte dateien stehen mit einem + im baum. einzelne dateien aus der liste oben kommen auch mit.
+archiv
+.zip · geht überall
+.7z · klein, 7-zip/winrar
+.tar.xz · am kleinsten
+.tar · ohne kompression
+.iso · disk-image
+.rar · nicht möglich (nur WinRAR darf rar erstellen)
+Mit Passwort schützen
+(AES-256, nur .zip)
+Passwort für das neue Archiv
+// rar und cab lassen sich auch öffnen. nur winrar darf rar erstellen (geschlossenes format); wähle .7z oder .zip, die öffnet winrar auch.
+PLATTFORM
+Plattform und Format
+FORMAT>
+EINPASSEN>
+Wie das Foto ins Format passt
+füllen · zuschneiden (ziehen zum wählen)
+einpassen · unscharfer hintergrund
+einpassen · schwarze ränder
+einpassen · weiße ränder
+PANORAMA
+ANZAHL SLIDES>
+// lade die slides in reihenfolge (01, 02, …) als einen karussell-post hoch. beim wischen läuft das bild nahtlos weiter.
+VORSCHAU
+DATEI>
+Welche Datei du ansiehst
+Vorschau des Ergebnisses; ziehen zum Verschieben
+// füge fotos oder videos in der liste oben hinzu.
+ZOOM>
+Hineinzoomen
+[ MITTE ]
+// ziehe in der vorschau, um den sichtbaren teil zu wählen. gilt pro datei.
+größe {0}
+foto {0}
+video {0}
+tipp {0}
+post hochformat 4:5 · am besten im feed
+post quadratisch 1:1
+post querformat 1.91:1
+story / reels 9:16
+panorama-karussell 4:5 · wischen
+panorama-karussell 1:1 · wischen
+profilbild
+post hochformat 4:5
+post quadratisch
+post querformat / link
+titelbild
+veranstaltungsfoto
+video 1080p 16:9
+video 1440p 16:9 · schärfer nach upload
+video 4K 16:9
+shorts 9:16
+thumbnail
+kanalbanner
+video 9:16
+foto 9:16
+post querformat 16:9
+video 16:9
+header
+post querformat
+profilbanner
+pin 2:3
+video-pin 9:16
+story / spotlight 9:16
+status 9:16
+post 4:5 · max 1 MB
+stream-thumbnail
+[VT]
+[ VIRUSTOTAL ÖFFNEN ]
+fingerabdruck wird berechnet…
