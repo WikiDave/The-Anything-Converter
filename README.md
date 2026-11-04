@@ -41,7 +41,19 @@ programmamenu. Of typ zelf:
 | Ubuntu/Debian (.deb) | `anything-converter-tui` |
 | AppImage | `./AnythingConverter-Linux.AppImage tui` |
 | macOS | `"/Applications/Anything Converter.app/Contents/MacOS/anything-converter-tui"` |
+| Homebrew (macOS, Linux) | `brew install anything-converter` (zie hieronder) |
 | Vanuit de broncode / via SSH | `pip install -r requirements.txt` en `python tui.py [bestand]` |
+
+**Via Homebrew** (alleen de terminalversie, macOS en Linux; zonder Apple-melding):
+
+```
+brew tap wikidave/anything-converter https://github.com/WikiDave/The-Anything-Converter
+brew install anything-converter
+anything-converter-tui
+```
+
+Bijwerken met `brew upgrade anything-converter`. De formule (`Formula/anything-converter.rb`) wordt bij elke
+release automatisch bijgewerkt.
 
 ## Talen
 
