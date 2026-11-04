@@ -31,8 +31,9 @@ In de web-app (en in de desktop-app via **[ PDF & ARCHIEF ]**) staat de **ARCHIE
 - **Toevoegen**: bestanden in een gekozen map, en losse bestanden uit de lijst gaan ook mee.
 - **Los opslaan**: elk bestand met [↓].
 - **Nieuw leeg archief**: met **[ + NIEUW LEEG ARCHIEF ]** op het startscherm begin je zonder archief en voeg je zelf bestanden en mappen toe.
-- **Opslaan als**: .zip (optioneel met AES-256-wachtwoord), .tar.gz, .tar.xz of .tar.bz2.
-  Opslaan als rar of 7z kan niet (rar is een gesloten formaat).
+- **Opslaan als**: .zip (optioneel met AES-256-wachtwoord), .7z, .tar, .tar.gz, .tar.xz, .tar.bz2 of .iso.
+  Dubbele namen (bijv. iPhone-foto's die allemaal `image.jpg` heten) worden automatisch `image_2.jpg` enz.
+  RAR maken kan niet: alleen WinRAR mag dat formaat maken. Openen en uitpakken van rar kan wel.
 
 Werkt met [libarchive.js](https://github.com/nika-begiashvili/libarchivejs) (meegeleverd in `vendor/`) en
 [zip.js](https://github.com/gildas-lormeau/zip.js).

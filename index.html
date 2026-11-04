@@ -538,16 +538,20 @@ button.ar-name:hover, button.ar-name:focus-visible { outline: none; text-decorat
         <div class="grid">
           <label class="field"><span>FORMAAT&gt;</span><span class="sel"><select id="arFormat">
             <option value="zip">.zip · werkt overal</option>
-            <option value="tar.gz">.tar.gz</option>
+            <option value="7z">.7z · klein, 7-zip/winrar</option>
             <option value="tar.xz">.tar.xz · kleinst</option>
+            <option value="tar.gz">.tar.gz</option>
             <option value="tar.bz2">.tar.bz2</option>
+            <option value="tar">.tar · zonder compressie</option>
+            <option value="iso">.iso · schijfkopie</option>
+            <option value="rar" disabled>.rar · kan niet (alleen WinRAR mag rar maken)</option>
           </select></span></label>
           <label class="field"><span>BESTANDSNAAM&gt;</span><input id="arName" type="text" placeholder="archief"></label>
         </div>
         <label class="check" id="arPwRow"><input id="arPwOn" type="checkbox"><span>Met wachtwoord beveiligen <em>(AES-256, alleen .zip)</em></span></label>
         <div class="row" id="arPwNewRow" hidden><span class="prompt">WACHTWOORD&gt;</span><input id="arPwNew" type="password" autocomplete="new-password" aria-label="Wachtwoord voor het nieuwe archief"></div>
         <p class="dim small" id="arOutHint"></p>
-        <p class="dim small">// lezen kan ook rar, 7z, iso en cab. opslaan als rar of 7z kan niet in de browser; kies .zip of .tar.xz.</p>
+        <p class="dim small">// openen kan ook rar en cab. rar maken mag alleen winrar (gesloten formaat); kies .7z of .zip, die opent winrar ook.</p>
       </fieldset>
     </div>
 
@@ -702,7 +706,7 @@ const TARGETS = {
   audio: ["mp3", "m4a", "ogg", "wav", "webm"],
   image: ["jpg", "png", "webp", "gif", "pdf", "bmp", "ico"],
   pdf: ["pdf", "jpg", "png", "txt"],
-  archive: ["zip", "tar.gz", "tar.xz", "tar.bz2"],
+  archive: ["zip", "7z", "tar.xz", "tar.gz", "tar.bz2", "tar", "iso"],
   other: ["zip"],
 };
 const LABEL = { video: "Video", audio: "Audio", image: "Afbeelding", pdf: "PDF", archive: "Archief", other: "Overig" };
@@ -2225,15 +2229,28 @@ function libarchive() {
     return m;
   })());
 }
-// Schrijven: zip via zip.js (ook met AES-wachtwoord), tar.* via libarchive.js.
-// (libarchive.js 2.0.2 schrijft zip/7z/tar zonder compressie als leeg bestand, daarom niet die route.)
-const ARCH_OUT = ["zip", "tar.gz", "tar.xz", "tar.bz2"];
+// Schrijven: zip via zip.js (ook met AES-wachtwoord), de rest via libarchive.js.
+// libarchive.js 2.0.2 schrijft zonder compressiefilter een leeg bestand. Daarom schrijven we 7z, tar en iso
+// met een gzip-laag eromheen en halen die er in de browser meteen weer af (DecompressionStream).
+const ARCH_OUT = ["zip", "7z", "tar", "tar.gz", "tar.xz", "tar.bz2", "iso"];
 const ZIPJS = "https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.23.0/index.js";
 let zipjsP = null;
 const zipjs = () => (zipjsP ??= import(ZIPJS).then((z) => { z.configure({ useWebWorkers: false }); return z; }));
 function archSpec(m, fmt) {
   const F = m.ArchiveFormat, C = m.ArchiveCompression;
-  return { "tar.gz": [F.PAX, C.GZIP], "tar.xz": [F.PAX, C.XZ], "tar.bz2": [F.PAX, C.BZIP2] }[fmt];
+  return {
+    "tar.gz": [F.PAX, C.GZIP, false], "tar.xz": [F.PAX, C.XZ, false], "tar.bz2": [F.PAX, C.BZIP2, false],
+    "7z": [F.SEVEN_ZIP, C.GZIP, true], tar: [F.PAX, C.GZIP, true], iso: [F.ISO9660, C.GZIP, true],
+  }[fmt];
+}
+// Dubbele paden krijgen _2, _3 ... (een iPhone noemt foto's uit de bibliotheek allemaal "image.jpg")
+function uniquePath(path, taken) {
+  let p = path, n = 2;
+  const dot = path.lastIndexOf("."), slash = path.lastIndexOf("/");
+  const [stem, ext] = dot > slash + 0 && dot > 0 ? [path.slice(0, dot), path.slice(dot)] : [path, ""];
+  while (taken.has(p.toLowerCase())) p = `${stem}_${n++}${ext}`;
+  taken.add(p.toLowerCase());
+  return p;
 }
 // "foto.tar.gz" -> "foto"
 const archStem = (name) => name.replace(/\.(tar\.(gz|bz2|xz|zst)|tgz|tbz2?|txz|tzst|[^.]+)$/i, "");
@@ -2538,8 +2555,9 @@ $("arPwOn").addEventListener("change", renderArch);
 $("arAddBtn").addEventListener("click", () => $("arAddInput").click());
 $("arAddInput").addEventListener("change", () => {
   const dir = $("arAddDir").value.trim().replace(/^\/+|\/+$/g, "");
+  const taken = new Set(arEntries.map((e) => e.path.toLowerCase()));
   for (const f of $("arAddInput").files) {
-    const path = (dir ? dir + "/" : "") + f.name;
+    const path = uniquePath((dir ? dir + "/" : "") + f.name, taken);
     arEntries.push({ key: arKey++, path, inner: null, size: f.size, item: null, cf: null, file: f, on: true, added: true });
     if (dir) dir.split("/").forEach((_, i, a) => arOpen.add(a.slice(0, i + 1).join("/")));
   }
@@ -2549,6 +2567,8 @@ $("arAddInput").addEventListener("change", () => {
 
 // Bestanden inpakken in het gekozen formaat
 async function packFiles(files, fmt, name, pw) {
+  const taken = new Set();
+  files = files.map((f) => ({ ...f, pathname: uniquePath(f.pathname, taken) }));
   if (fmt === "zip") {
     const z = await zipjs();
     const w = new z.ZipWriter(new z.BlobWriter("application/zip"), pw ? { password: pw, encryptionStrength: 3 } : {});
@@ -2559,11 +2579,15 @@ async function packFiles(files, fmt, name, pw) {
     return await w.close();
   }
   const m = await libarchive();
-  const [format, compression] = archSpec(m, fmt);
+  const [format, compression, unwrap] = archSpec(m, fmt);
   setProgress(0.75, `Inpakken als .${fmt}`);
   const out = await m.Archive.write({ files, outputFileName: name, compression, format, passphrase: null });
   if (!out || !out.size) fail(`Inpakken als .${fmt} is mislukt. Kies .zip.`);
-  return new Blob([out], { type: "application/octet-stream" });
+  if (!unwrap) return new Blob([out], { type: "application/octet-stream" });
+  if (typeof DecompressionStream === "undefined") fail(`Je browser is te oud voor .${fmt}. Kies .zip of .tar.gz.`);
+  setProgress(0.95, `Afronden .${fmt}`);
+  const raw = await new Response(out.stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+  return new Blob([raw], { type: "application/octet-stream" });
 }
 
 async function runArchiveWorkbench() {

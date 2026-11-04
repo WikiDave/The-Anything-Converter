@@ -10,8 +10,8 @@ android {
         applicationId 'nl.anythingconverter.app'
         minSdk 29          // Android 10+: opslaan in Downloads zonder extra rechten
         targetSdk 35
-        versionCode (project.findProperty('versionCode') ?: '210') as int
-        versionName project.findProperty('versionName') ?: '2.1.0'
+        versionCode Integer.parseInt((project.findProperty('versionCode') ?: '20100').toString())
+        versionName((project.findProperty('versionName') ?: '2.1.0').toString())
     }
 
     // Ondertekenen met de sleutel uit GitHub-geheimen (zie README). Zonder sleutel: debug-ondertekening,
