@@ -1,7 +1,0 @@
-README.md
-AnythingConverter.egg-info/PKG-INFO
-AnythingConverter.egg-info/SOURCES.txt
-AnythingConverter.egg-info/dependency_links.txt
-AnythingConverter.egg-info/top_level.txt
-tests/test_converter.py
-tests/test_fetch.py
