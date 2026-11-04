@@ -25,6 +25,11 @@ on:
 permissions:
   contents: read
 
+# Een nieuwe push op dezelfde branch stopt een oudere bouw die nog loopt.
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
 jobs:
   build:
     name: ${{ matrix.name }}
@@ -87,14 +92,11 @@ jobs:
       - name: Bouwen (Linux .deb + .AppImage)
         if: matrix.platform == 'linux-x64'
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq libfuse2
           python desktop/setup_freeze.py build_exe
           BUILD=$(ls -d build/exe.*)
           mkdir -p out
           bash desktop/make_deb.sh "$BUILD" "${{ inputs.version || '2.1.0' }}" out/AnythingConverter-Linux.deb
-          python desktop/setup_freeze.py bdist_appimage
-          cp "$(find dist -name '*.AppImage' | head -1)" out/AnythingConverter-Linux.AppImage
-          chmod +x out/AnythingConverter-Linux.AppImage
+          bash desktop/make_appimage.sh "$BUILD" out/AnythingConverter-Linux.AppImage
           echo "EXE=$BUILD/AnythingConverter" >> "$GITHUB_ENV"
 
       - name: Rooktest (starten, converteren, afsluiten)
