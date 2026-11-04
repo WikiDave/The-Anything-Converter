@@ -109,7 +109,8 @@ input::placeholder, textarea::placeholder { font-family: var(--mono); }
 .drop-art { display: inline-block; text-align: left; line-height: 1.15; }
 .drop p { margin: 6px 0; }
 .drop .big { font-size: 16px; font-weight: 700; color: var(--hi); margin-top: 14px; }
-.sample-row { margin-top: 12px; text-align: center; }
+.sample-row { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; }
+.q-empty { padding: 8px 0; }
 .dl-frame { margin-top: 18px; }
 .dl-intro { margin: 0 0 12px; }
 .dl-grid { display: flex; flex-wrap: wrap; gap: 8px 10px; }
@@ -368,6 +369,7 @@ button.ar-name:hover, button.ar-name:focus-visible { outline: none; text-decorat
       <p class="dim small">video: mp4 · mov · webm · mkv &nbsp;|&nbsp; audio: mp3 · wav · m4a · ogg · flac<br>afbeelding: jpg · png · webp · gif · bmp · avif · svg &nbsp;|&nbsp; pdf: samenvoegen · splitsen · comprimeren<br>archief: zip · rar · 7z · tar · gz · bz2 · xz · iso · cab: bekijken · uitpakken · aanpassen · omzetten</p>
     </label>
     <div class="sample-row">
+      <button id="newArchBtn" class="btn" type="button">[ + NIEUW LEEG ARCHIEF ]</button>
       <button id="sampleBtn" class="btn" type="button">[ PROBEER MET 3 TESTBEELDEN ]</button>
     </div>
     <fieldset class="frame dl-frame">
@@ -787,6 +789,15 @@ $("sampleBtn").addEventListener("click", async () => {
     await mk("testbeeld-3.png", 240, "TESTBEELD 3")]);
 });
 
+$("newArchBtn").addEventListener("click", () => {
+  if (busy) return;
+  showPanel();
+  setMode("arch");
+  $("arName").placeholder = "nieuw-archief";
+  $("arAddBtn").focus();
+  status("nieuw leeg archief: voeg bestanden toe");
+});
+
 function categorize(f) {
   const e = extOf(f.name);
   if (EXT.unsupportedVideo.has(e)) return "other";
@@ -870,6 +881,9 @@ function rowStatus(it) {
 function renderQueue() {
   const ol = $("queue");
   ol.innerHTML = "";
+  if (!items.length) {
+    ol.innerHTML = '<li class="q-empty dim small">// nog niets in de lijst. bestanden voor het archief voeg je toe bij TOEVOEGEN.</li>';
+  }
   items.forEach((it, i) => {
     const li = document.createElement("li");
     li.className = "q-row q-" + it.state;
@@ -922,7 +936,7 @@ function removeItem(it) {
   if (busy) return;
   staleResult();
   items.splice(items.indexOf(it), 1);
-  if (!items.length) return resetAll();
+  if (!items.length && !(mode === "arch" && arEntries.some((e) => e.added))) return resetAll();
   renderQueue(); refresh(); syncPages(); syncArch();
 }
 function resetAll() {
@@ -930,6 +944,8 @@ function resetAll() {
   items.length = 0;
   pages = [];
   arEntries = []; arOpen.clear();
+  $("arName").value = ""; $("arAddDir").value = "";
+  if (mode !== "convert") setMode("convert");
   try { $("preview").pause(); $("previewAudio").pause(); } catch {}
   $("panel").hidden = true; $("dropWrap").hidden = false;
   $("result").hidden = true; $("progress").hidden = true;
@@ -1119,7 +1135,7 @@ function optsFor(it, s) {
 }
 
 $("goBtn").addEventListener("click", async () => {
-  if (!items.length || busy) return;
+  if (busy || (!items.length && !(mode === "arch" && arEntries.length))) return;
   if (items.some((it) => it.state === "reading")) return showError("Even wachten: nog niet alle bestanden zijn gelezen.");
   if (mode === "pdf") return runWorkbenchClick(runPdfWorkbench, showPdfResult, "PDF opbouwen");
   if (mode === "arch") return runWorkbenchClick(runArchiveWorkbench, showArchResult, "Archief maken");
@@ -2316,7 +2332,7 @@ async function doSyncArch() {
     }
   }
   const first = archives[0];
-  if (first && !$("arName").value) $("arName").placeholder = archStem(first.file.name);
+  if (!$("arName").value) $("arName").placeholder = first ? archStem(first.file.name) : "nieuw-archief";
   renderArch();
 }
 
@@ -2373,7 +2389,7 @@ function renderArch() {
   $("archTitle").textContent = `INHOUD (${arEntries.length})`;
   $("arStats").textContent = arEntries.length
     ? `${on.length} van ${arEntries.length} bestanden aangevinkt · ${human(sum(on))}` + (q ? ` · ${shown.length} gevonden` : "")
-    : "// nog geen archief. sleep een zip, rar, 7z, tar of ander archief in de lijst bovenaan.";
+    : "// leeg archief. voeg bestanden toe met [ + BESTANDEN TOEVOEGEN ] hieronder, of sleep ze op de pagina.";
   const lines = [];
   const LIMIT = 2500;
   const walk = (node, depth, guides) => {

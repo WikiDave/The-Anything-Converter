@@ -30,6 +30,7 @@ In de web-app (en in de desktop-app via **[ PDF & ARCHIEF ]**) staat de **ARCHIE
 - **Weglaten**: vink bestanden of hele mappen uit.
 - **Toevoegen**: bestanden in een gekozen map, en losse bestanden uit de lijst gaan ook mee.
 - **Los opslaan**: elk bestand met [↓].
+- **Nieuw leeg archief**: met **[ + NIEUW LEEG ARCHIEF ]** op het startscherm begin je zonder archief en voeg je zelf bestanden en mappen toe.
 - **Opslaan als**: .zip (optioneel met AES-256-wachtwoord), .tar.gz, .tar.xz of .tar.bz2.
   Opslaan als rar of 7z kan niet (rar is een gesloten formaat).
 
