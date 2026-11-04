@@ -49,10 +49,6 @@ em { font-style: normal; color: var(--dim); }
 pre { margin: 0; font: inherit; }
 
 /* achtergrond: binaire ruis + scanlines */
-.crt {
-  position: fixed; inset: 0; z-index: 3; pointer-events: none;
-  background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.18) 2px 3px);
-}
 .wrap { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 20px 16px 40px; }
 
 /* kopregel + logo */

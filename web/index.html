@@ -48,10 +48,6 @@ body {
 em { font-style: normal; color: var(--dim); }
 pre { margin: 0; font: inherit; }
 
-.crt {
-  position: fixed; inset: 0; z-index: 5; pointer-events: none;
-  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0,0,0,.18) 2px 3px);
-}
 .wrap {
   position: relative; z-index: 1; max-width: 860px; margin: 0 auto;
   padding-block: 20px 40px;
@@ -275,7 +271,6 @@ select option { background: var(--bg); color: var(--fg); }
 .statusline span { min-width: 0; overflow-wrap: anywhere; }
 </style>
 
-<div class="crt" aria-hidden="true"></div>
 
 <main class="wrap">
   <div class="topline">
