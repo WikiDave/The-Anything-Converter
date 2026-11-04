@@ -94,27 +94,88 @@ def open_terminal():
 
 @app.post("/api/upload")
 def upload():
-    f = request.files.get("file")
-    if not f or not f.filename:
+    """Eén bestand, of meerdere die bij elkaar horen (CUE + BIN's, ROM + patch)."""
+    files = [f for f in request.files.getlist("file") if f and f.filename]
+    if not files:
         return jsonify(error="Geen bestand ontvangen."), 400
     uid = uuid.uuid4().hex
     folder = WORK / uid
     folder.mkdir(parents=True)
-    name = secure_filename(f.filename) or "bestand"
-    if "." not in name and "." in f.filename:  # secure_filename kan niet-ASCII namen leegmaken
-        name = "bestand." + f.filename.rsplit(".", 1)[-1].lower()
-    path = folder / name
-    f.save(path)
-    return jsonify(register_upload(uid, path))
+    paths = []
+    for f in files:
+        name = safe_name(f.filename)
+        path = folder / name
+        n = 2
+        while path.exists():
+            path = folder / f"{Path(name).stem}_{n}{Path(name).suffix}"
+            n += 1
+        f.save(path)
+        paths.append(path)
+    return jsonify(register_upload(uid, pick_main(folder, paths)))
+
+
+def safe_name(raw: str) -> str:
+    """Bestandsnaam veilig maken maar herkenbaar houden (spaties, haakjes en accenten blijven;
+    belangrijk voor ROM-namen en .cue-verwijzingen)."""
+    import re
+    import unicodedata
+    name = unicodedata.normalize("NFC", raw.replace("\\", "/").rsplit("/", 1)[-1])
+    name = re.sub(r'[\x00-\x1f<>:"|?*]', "_", name).strip().lstrip(".")
+    if not name or name in (".", ".."):
+        name = secure_filename(raw) or "bestand"
+    return name[:200]
+
+
+def pick_main(folder: Path, paths: list[Path]) -> Path:
+    """Welk bestand is 'het' bestand: de .cue bij BIN's, de ROM bij een patch, een zip met een schijf erin."""
+    from converter import rom
+    if len(paths) == 1 and paths[0].suffix.lower() in (".zip", ".7z"):
+        inner = archive_listing(paths[0])
+        if any(n.lower().endswith(tuple("." + e for e in rom.CUE_LIKE)) for n in inner):
+            from converter.archive import _safe_extract
+            _safe_extract(paths[0], folder)
+            paths[0].unlink()
+            paths = [p for p in folder.rglob("*") if p.is_file()]
+    for ext in rom.CUE_LIKE:
+        hit = next((p for p in paths if p.suffix.lower() == "." + ext), None)
+        if hit:
+            return hit
+    rest = [p for p in paths if p.suffix.lower().lstrip(".") not in rom.PATCH_EXT]
+    return rest[0] if rest else paths[0]
+
+
+def archive_listing(path: Path) -> list[str]:
+    import zipfile
+    try:
+        if zipfile.is_zipfile(path):
+            return zipfile.ZipFile(path).namelist()
+        import py7zr
+        with py7zr.SevenZipFile(path) as z:
+            return z.getnames()
+    except Exception:  # noqa: BLE001
+        return []
 
 
 def register_upload(uid: str, path: Path) -> dict:
     """Maak een bestand beschikbaar voor conversie en geef de info voor de interface."""
     category = detect(path)
     info = media_info(path) if category in ("video", "audio", "image") else {}
+    targets = TARGETS[category]
+    from converter import rom
+    patches = [p for p in path.parent.iterdir() if p.suffix.lower().lstrip(".") in rom.PATCH_EXT and p != path]
+    if patches and category not in ("disc", "rom"):
+        category = "rom"  # bijv. een .bin-cartridge met een patch erbij
+    if category in ("disc", "rom"):
+        targets = rom.targets(path, category, patches)
+        extra = [p.name for p in (rom.disc_files(path) if category == "disc" else [path, *patches])
+                 if p != path]
+        if extra:
+            info = dict(info, files=extra)
     uploads[uid] = {"path": path, "category": category}
-    return dict(id=uid, name=path.name, size=path.stat().st_size, ext=extension(path), category=category,
-                label=LABELS[category], targets=TARGETS[category], info=info)
+    size = sum(p.stat().st_size for p in path.parent.iterdir() if p.is_file()) if category == "disc" \
+        else path.stat().st_size
+    return dict(id=uid, name=path.name, size=size, ext=extension(path), category=category,
+                label=LABELS[category], targets=targets, info=info)
 
 
 @app.post("/api/fetch")

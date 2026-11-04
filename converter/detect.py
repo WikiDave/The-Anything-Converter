@@ -27,12 +27,15 @@ TARGETS = {
     "presentation": ["pdf", "pptx", "ppt", "odp", "png", "jpg"],
     "ebook": ["epub", "mobi", "azw3", "fb2", "pdf", "docx", "txt", "html", "rtf", "lit", "lrf", "pdb", "tcr"],
     "archive": ["zip", "7z", "tar.gz", "tar.bz2", "tar.xz", "tar"],
+    "disc": ["iso", "cue", "zip"],  # precies per bestand: converter.rom.targets
+    "rom": ["zip", "7z"],
     "other": ["zip", "7z", "tar.gz", "tar.xz"],
 }
 
 LABELS = {
     "video": "Video", "audio": "Audio", "image": "Afbeelding", "pdf": "PDF",
     "document": "Document", "spreadsheet": "Spreadsheet", "presentation": "Presentatie", "ebook": "E-book",
+    "disc": "Schijfimage (emulator)", "rom": "ROM (emulator)",
     "archive": "Archief", "other": "Overig bestand",
 }
 
@@ -46,7 +49,12 @@ def extension(path: Path | str) -> str:
 
 
 def detect(path: Path) -> str:
+    from . import rom
     ext = extension(path)
+    if ext in rom.DISC_EXT or (ext == "bin" and rom.is_disc_bin(path)):
+        return "disc"
+    if ext in rom.ROM_EXT or ext == "bin":
+        return "rom"
     for cat, exts in (("video", VIDEO), ("audio", AUDIO), ("image", IMAGE), ("pdf", PDF),
                       ("ebook", EBOOK), ("document", DOCUMENT), ("spreadsheet", SPREADSHEET),
                       ("presentation", PRESENTATION)):

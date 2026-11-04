@@ -36,6 +36,8 @@ Op het startscherm staat **[ GEREEDSCHAP ]** met snelle keuzes: kies een tegel, 
 | Afbeelding | JPG, PNG, WEBP, AVIF, GIF, BMP, TIFF, ICO, PDF, SVG, EPS, TGA, WBMP, EXR, HDR |
 | E-book | EPUB, MOBI, AZW3, FB2, LIT, LRF, PDB, TCR, PDF, DOCX, TXT, HTML. EPUB/FB2 lezen en EPUB maken kan altijd; de rest met het gratis [Calibre](https://calibre-ebook.com) (wordt vanzelf gevonden) |
 | Archief | ZIP, 7Z, TAR, TAR.GZ, TAR.BZ2, TAR.XZ (in- en uitpakken, omzetten) |
+| Emulators: schijven | CUE/BIN (ook meerdere sporen), IMG/CCD, MDF/MDS, NRG, ISO, CSO, GDI, CHD → ISO, één BIN+CUE (sporen samenvoegen), audiosporen als WAV, CSO (PSP) en CHD. Kies de .cue met alle .bin's samen, of één zip. CHD gebruikt `chdman` (macOS: `brew install rom-tools`, Linux: `sudo apt install mame-tools`) |
+| Emulators: ROM's | N64 .z64/.v64/.n64 (bytevolgorde), SNES .smc ↔ .sfc (kopieerheader), Mega Drive .smd → .md, Nintendo DS inkorten; patches toepassen: IPS, UPS en BPS (kies ROM en patch samen); CRC-32/MD5/SHA-1 voor No-Intro/Redump-controle. Geen ontsleuteling: alleen voor je eigen back-ups |
 | Checksum | CRC-32, Adler-32, MD4, MD5, RIPEMD-160, SHA-1/224/256/384/512, SHA3, BLAKE2, ook als HMAC met een sleutel |
 | Website | opslaan als PDF, PNG of JPG (met Chrome/Edge op je computer) |
 

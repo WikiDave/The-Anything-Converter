@@ -36,7 +36,8 @@ class Job:
         elif self.result:
             d.update(filename=self.result.name, size=self.result.stat().st_size)
             if self.src.is_file():
-                d["original_size"] = self.src.stat().st_size
+                d["original_size"] = (sum(p.stat().st_size for p in self.src.parent.iterdir() if p.is_file())
+                                      if self.category == "disc" else self.src.stat().st_size)
         if self.error:
             d["error"] = self.error
         if "virus" in self.extra:
@@ -61,6 +62,9 @@ def run_conversion(src: Path, out_dir: Path, category: str, opts: dict, progress
             progress(0.9, "opslaan")
         from .pdftools import text_to_document
         return text_to_document(text, out_dir / f"{src.stem}.{fmt}", fmt)
+    if category in ("disc", "rom"):
+        from . import rom
+        return rom.process(src, out_dir, category, opts, progress)
     if category == "ebook" or (category == "document" and fmt in ("mobi", "azw3", "fb2", "epub")):
         from . import ebook
         return ebook.convert(src, out_dir, fmt, opts, progress)

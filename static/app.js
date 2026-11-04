@@ -7,7 +7,10 @@ let presetFormat = null; // gekozen via het gereedschap (bijv. "PDF naar Word")
 // Uitleg achter het formaat in de keuzelijst
 const FMT_LABEL = {
   docx: "Word", doc: "Word 97-2003", odt: "OpenDocument-tekst", xlsx: "Excel", xls: "Excel 97-2003",
-  ods: "OpenDocument-rekenblad", pptx: "PowerPoint", ppt: "PowerPoint 97-2003", odp: "OpenDocument-presentatie",
+  ods: "OpenDocument-rekenblad", iso: "ISO (datatrack)", cue: "één BIN + CUE (samengevoegd)", wav: "WAV",
+  chd: "CHD (compact, voor RetroArch/MAME/DuckStation)", cso: "CSO (PSP, gecomprimeerd)", z64: "N64 big-endian",
+  v64: "N64 byteswapped", n64: "N64 little-endian", sfc: "SNES zonder kopieerheader", smc: "SNES met kopieerheader",
+  nds: "ingekort (trim)", patch: "patch toepassen (IPS/UPS/BPS)", zip: "zip", bin: "Mega Drive (gewoon)", pptx: "PowerPoint", ppt: "PowerPoint 97-2003", odp: "OpenDocument-presentatie",
   rtf: "Rich Text", txt: "platte tekst", html: "webpagina", xml: "XML", md: "Markdown", csv: "CSV",
   epub: "e-book", mobi: "Kindle (oud)", azw3: "Kindle", fb2: "FictionBook", lit: "Microsoft Reader",
   lrf: "Sony Reader", pdb: "Palm", tcr: "Psion", pdf: "PDF", svg: "SVG (vector-verpakking)", eps: "PostScript",
@@ -20,6 +23,8 @@ function fmtLabel(cat, t) {
   if (TEXT_OUT.includes(t) && (cat === "video" || cat === "audio")) return t === "txt" ? "spraak naar tekst" : "spraak naar ondertitels";
   if (cat === "image" && ["txt", "docx", "rtf", "xlsx"].includes(t)) return "tekst herkennen (OCR) → " + (FMT_LABEL[t] || t);
   if (cat === "pdf" && t === "pdf") return "PDF comprimeren / verkleinen";
+  if (cat === "disc" && t === "wav") return "audiosporen als WAV";
+  if (cat === "rom" && t === "md") return "Mega Drive (gewoon)";
   if (cat === "pdf" && ["png", "jpg"].includes(t)) return "elke pagina als afbeelding";
   return FMT_LABEL[t] || "";
 }
@@ -71,20 +76,29 @@ drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.ad
 drop.addEventListener("dragleave", () => drop.classList.remove("over"));
 drop.addEventListener("drop", (e) => {
   e.preventDefault(); drop.classList.remove("over");
-  if (e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]);
+  if (e.dataTransfer.files.length) upload(e.dataTransfer.files);
 });
-fileInput.addEventListener("change", () => fileInput.files[0] && upload(fileInput.files[0]));
+fileInput.addEventListener("change", () => fileInput.files.length && upload(fileInput.files));
 
-function upload(file) {
+// Meerdere bestanden die bij elkaar horen (CUE + BIN's, ROM + patch) gaan samen; anders alleen het eerste.
+const BELONG = /\.(cue|gdi|ccd|mds|ips|ups|bps)$/i;
+function upload(fileOrList) {
+  const list = fileOrList instanceof File ? [fileOrList] : [...fileOrList];
+  const together = list.length > 1 && list.some((f) => BELONG.test(f.name));
+  const file = list[0];
+  if (together) return uploadFiles(list, list.find((f) => /\.(cue|gdi|ccd|mds)$/i.test(f.name)) || list.find((f) => !BELONG.test(f.name)) || file);
+  return uploadFiles([file], file);
+}
+function uploadFiles(files, file) {
   // een .torrent-bestand op het sleepvak: torrent starten in plaats van converteren
   if (/\.torrent$/i.test(file.name)) { const fd = new FormData(); fd.append("file", file); return startTorrent(fd); }
-  localFile = file;
+  localFile = files.length === 1 ? file : null;
   const bar = $("uploadBar");
   show(bar, true);
   bar.textContent = txtBar(0, barWidth());
   status("uploaden: " + file.name);
   const fd = new FormData();
-  fd.append("file", file);
+  for (const f of files) fd.append("file", f);
   const xhr = new XMLHttpRequest();
   xhr.open("POST", "/api/upload");
   xhr.upload.onprogress = (e) => { if (e.lengthComputable) bar.textContent = txtBar(e.loaded / e.total, barWidth()); };
@@ -325,6 +339,7 @@ function setup(data) {
   const i = data.info || {};
   if (i.width) meta.push(`${i.width}×${i.height}`);
   if (i.duration && data.category !== "image") meta.push(fmtTime(i.duration));
+  if (i.files && i.files.length) meta.push("+ " + i.files.join(", "));
   $("fMeta").textContent = meta.join(" · ");
   duration = i.duration || 0;
 
@@ -370,7 +385,8 @@ function refresh() {
   const isMedia = cat === "video" || cat === "audio";
   const speech = isMedia && TEXT_OUT.includes(fmt);
   const textual = speech || (cat === "image" && ["txt", "docx", "rtf", "xlsx", "svg", "wbmp", "exr", "hdr", "eps", "tga"].includes(fmt)) ||
-    (cat === "pdf" && fmt !== "pdf" && !["png", "jpg"].includes(fmt)) || (cat === "ebook" && fmt !== "pdf");
+    (cat === "pdf" && fmt !== "pdf" && !["png", "jpg"].includes(fmt)) || (cat === "ebook" && fmt !== "pdf") ||
+    cat === "disc" || cat === "rom";
   const toVideo = cat === "video" && !AUDIO_OUT.includes(fmt) && fmt !== "gif" && !speech;
   const target = radio("sizeMode") === "target";
 
@@ -653,6 +669,12 @@ const TOOLS = [
   ["DOC", "EPUB", "E-book maken", ".doc,.docx,.odt,.txt,.md,.html,.pdf,.epub", "epub"],
   ["EPUB", "AZW", "E-book voor Kindle", ".epub,.mobi,.fb2,.pdf,.docx", "azw3"],
   ["♪", "M4R", "iPhone-beltoon", MEDIA, "m4r"], ["WWW", "PDF", "Website naar PDF", null, "web"],
+  ["BIN", "ISO", "CUE/BIN naar ISO", ".cue,.bin,.img,.ccd,.mdf,.mds,.nrg,.zip,.7z", "iso"],
+  ["BIN", "1×", "BIN-sporen samenvoegen", ".cue,.bin,.zip,.7z", "cue"],
+  ["ISO", "CHD", "Naar CHD (RetroArch)", ".cue,.bin,.iso,.gdi,.zip,.7z", "chd"],
+  ["ISO", "CSO", "PSP ISO naar CSO", ".iso,.cso", "cso"],
+  ["ROM", "IPS", "ROM patchen", "*", "patch"],
+  ["N64", "Z64", "N64-ROM omzetten", ".n64,.v64,.z64", "z64"],
   ["#", "SHA", "Checksum / hash", "*", "hash"], ["*", "ZIP", "Inpakken (zip, 7z)", "*", "zip"],
 ];
 (function buildTools() {
@@ -676,9 +698,11 @@ function runTool(accept, fmt, label) {
   if (fmt === "screen") return screenOcr();
   if (fmt === "web") { show($("webForm"), true); $("webUrl").focus(); return; }
   presetFormat = fmt === "hash" ? null : fmt;
+  status("kies een bestand voor: " + label.toLowerCase());
+  if (fmt === "patch") status("kies de ROM en de patch (.ips/.ups/.bps) samen");
+  if (["iso", "cue", "chd"].includes(fmt) && accept && accept.includes(".cue")) status("kies de .cue met alle .bin-bestanden samen (of één zip)");
   hashAfterUpload = fmt === "hash";
   fileInput.accept = accept === "*" ? "" : accept;
-  status("kies een bestand voor: " + label.toLowerCase());
   fileInput.click();
   setTimeout(() => { fileInput.accept = ""; }, 1000);
 }
