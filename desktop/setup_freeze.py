@@ -58,19 +58,22 @@ if sys.platform.startswith("linux"):
 
 PACKAGES = ["converter", "textual", "rich", "flask", "werkzeug", "jinja2", "markupsafe", "itsdangerous", "click",
             "blinker", "PIL", "pikepdf", "yt_dlp", "yt_dlp_ejs", "certifi", "libtorrent",
-            "webview", "proxy_tools", "bottle", "typing_extensions"]
+            "webview", "proxy_tools", "bottle", "typing_extensions",
+            # PDF-gereedschap, Office-bestanden, 7z, spraakherkenning
+            "pymupdf", "fitz", "docx", "openpyxl", "pptx", "lxml", "py7zr", "numpy", "pywhispercpp"]
 if sys.platform == "win32":
-    PACKAGES += ["clr_loader", "pythonnet"]
+    PACKAGES += ["clr_loader", "pythonnet", "winrt"]  # winrt: Windows-tekstherkenning
 elif sys.platform == "darwin":
-    PACKAGES += ["objc", "AppKit", "Foundation", "WebKit", "PyObjCTools", "UniformTypeIdentifiers"]
+    PACKAGES += ["objc", "AppKit", "Foundation", "WebKit", "PyObjCTools", "UniformTypeIdentifiers", "Vision", "Quartz"]
 # niet op elk platform beschikbaar
-OPTIONAL = {"pikepdf", "libtorrent", "UniformTypeIdentifiers"}
+OPTIONAL = {"pikepdf", "libtorrent", "UniformTypeIdentifiers", "pywhispercpp", "winrt", "Vision", "Quartz"}
 
 build_exe = {
     "packages": [p for p in PACKAGES if p not in OPTIONAL or importlib.util.find_spec(p)],
-    "includes": ["app", "window"] + (["clr"] if sys.platform == "win32" else []),
+    "includes": ["app", "window"] + (["clr"] if sys.platform == "win32" else [])
+                + (["_pywhispercpp"] if importlib.util.find_spec("_pywhispercpp") else []),
     "include_files": include_files,
-    "excludes": ["tkinter", "unittest", "pytest", "test", "pydoc_data", "cx_Freeze", "numpy", "fontTools",
+    "excludes": ["tkinter", "unittest", "pytest", "test", "pydoc_data", "cx_Freeze", "fontTools",
                  "yaml", "matplotlib", "pandas", "scipy", "IPython", "setuptools", "pip"],
     "include_msvcr": True,
     "optimize": 1,

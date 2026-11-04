@@ -1,7 +1,28 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
-const AUDIO_OUT = ["mp3", "m4a", "aac", "wav", "flac", "ogg", "opus"];
-const LOSSLESS_AUDIO = ["wav", "flac"];
+const AUDIO_OUT = ["mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "aiff", "wma", "m4r", "mmf"];
+const LOSSLESS_AUDIO = ["wav", "flac", "aiff", "mmf"];
+const TEXT_OUT = ["txt", "srt", "vtt"];
+let presetFormat = null; // gekozen via het gereedschap (bijv. "PDF naar Word")
+// Uitleg achter het formaat in de keuzelijst
+const FMT_LABEL = {
+  docx: "Word", doc: "Word 97-2003", odt: "OpenDocument-tekst", xlsx: "Excel", xls: "Excel 97-2003",
+  ods: "OpenDocument-rekenblad", pptx: "PowerPoint", ppt: "PowerPoint 97-2003", odp: "OpenDocument-presentatie",
+  rtf: "Rich Text", txt: "platte tekst", html: "webpagina", xml: "XML", md: "Markdown", csv: "CSV",
+  epub: "e-book", mobi: "Kindle (oud)", azw3: "Kindle", fb2: "FictionBook", lit: "Microsoft Reader",
+  lrf: "Sony Reader", pdb: "Palm", tcr: "Psion", pdf: "PDF", svg: "SVG (vector-verpakking)", eps: "PostScript",
+  tga: "Targa", wbmp: "WAP-bitmap", exr: "OpenEXR (HDR)", hdr: "Radiance HDR", ico: "pictogram / favicon",
+  m4r: "iPhone-beltoon", mmf: "beltoon (SMAF)", wma: "Windows Media Audio", aiff: "Apple-audio",
+  wmv: "Windows Media Video", flv: "Flash-video", mpg: "MPEG-2", ogv: "Ogg-video", "3gp": "oude telefoons",
+  "3g2": "oude telefoons", srt: "ondertitels", vtt: "ondertitels (web)", "7z": "7-Zip",
+};
+function fmtLabel(cat, t) {
+  if (TEXT_OUT.includes(t) && (cat === "video" || cat === "audio")) return t === "txt" ? "spraak naar tekst" : "spraak naar ondertitels";
+  if (cat === "image" && ["txt", "docx", "rtf", "xlsx"].includes(t)) return "tekst herkennen (OCR) → " + (FMT_LABEL[t] || t);
+  if (cat === "pdf" && t === "pdf") return "PDF comprimeren / verkleinen";
+  if (cat === "pdf" && ["png", "jpg"].includes(t)) return "elke pagina als afbeelding";
+  return FMT_LABEL[t] || "";
+}
 let current = null;   // upload-info van de server
 let localFile = null; // het bestand zelf, voor de preview
 let duration = 0;
@@ -288,6 +309,8 @@ function setup(data) {
   $("scanMsg").className = "scan-msg hidden"; $("scanMsg").textContent = "";
   show(drop, false);
   show($("urlForm"), false);
+  show($("tools"), false);
+  show($("hashBox"), false);
   // opgehaald via een link: origineel ook los op te slaan
   $("saveSrc").href = "/api/file/" + data.id + "?download=1";
   show($("saveSrc"), !localFile);
@@ -310,19 +333,22 @@ function setup(data) {
   for (const t of data.targets) {
     const o = document.createElement("option");
     o.value = t;
-    o.textContent = "." + t + (t === data.ext || (t === "jpg" && data.ext === "jpeg") ? "  (zelfde formaat)" : "");
+    const lbl = fmtLabel(data.category, t);
+    o.textContent = "." + t + (lbl ? "  · " + lbl : "") + (t === data.ext || (t === "jpg" && data.ext === "jpeg") ? "  (zelfde formaat)" : "");
     sel.appendChild(o);
   }
   const same = data.targets.find((t) => t === data.ext || (t === "jpg" && data.ext === "jpeg"));
-  sel.value = same || data.targets[0];
+  sel.value = (presetFormat && data.targets.includes(presetFormat)) ? presetFormat : (same || data.targets[0]);
+  presetFormat = null;
 
   // reset velden
   for (const id of ["targetSize", "scalePct", "imgW", "imgH", "gifWidth", "gifFps", "trimStart", "trimEnd"]) $(id).value = "";
-  $("removeAudio").checked = false; $("fastTrim").checked = false; $("height").value = "";
+  $("removeAudio").checked = false; $("fastTrim").checked = false; $("height").value = ""; $("device").value = "";
   document.querySelector("input[name=sizeMode][value=quality]").checked = true;
 
   setupPreview(data);
   refresh();
+  if (hashAfterUpload) { hashAfterUpload = false; runHash(); }
 }
 
 function setupPreview(data) {
@@ -342,13 +368,17 @@ function refresh() {
   if (!current) return;
   const cat = current.category, fmt = $("format").value;
   const isMedia = cat === "video" || cat === "audio";
-  const toVideo = cat === "video" && !AUDIO_OUT.includes(fmt) && fmt !== "gif";
+  const speech = isMedia && TEXT_OUT.includes(fmt);
+  const textual = speech || (cat === "image" && ["txt", "docx", "rtf", "xlsx", "svg", "wbmp", "exr", "hdr", "eps", "tga"].includes(fmt)) ||
+    (cat === "pdf" && fmt !== "pdf" && !["png", "jpg"].includes(fmt)) || (cat === "ebook" && fmt !== "pdf");
+  const toVideo = cat === "video" && !AUDIO_OUT.includes(fmt) && fmt !== "gif" && !speech;
   const target = radio("sizeMode") === "target";
 
   const sizeable = (isMedia && !LOSSLESS_AUDIO.includes(fmt)) ||
     (cat === "image" && !["ico", "pdf"].includes(fmt)) ||
     fmt === "pdf" || ["archive", "other"].includes(cat);
-  show($("sizeField"), sizeable || isMedia || cat === "image");
+  show($("sizeField"), !textual && (sizeable || isMedia || cat === "image"));
+  show($("speechBox"), speech);
   document.querySelector("input[name=sizeMode][value=target]").disabled = !sizeable;
   if (!sizeable && target) document.querySelector("input[name=sizeMode][value=quality]").checked = true;
 
@@ -357,7 +387,7 @@ function refresh() {
   show($("qualityBox"), !t && !(cat === "audio" && LOSSLESS_AUDIO.includes(fmt)));
   show($("videoBox"), toVideo);
   show($("gifBox"), cat === "video" && fmt === "gif");
-  show($("imageBox"), cat === "image");
+  show($("imageBox"), cat === "image" && !textual);
   show($("trimBox"), isMedia);
   $("fastTrim").parentElement.classList.toggle("hidden", fmt !== current.ext);
 
@@ -429,7 +459,7 @@ $("setEnd").addEventListener("click", () => { $("trimEnd").value = fmtTime(playe
 $("resetBtn").addEventListener("click", () => {
   current = null; fileInput.value = "";
   const p = $("preview"); p.pause && p.pause();
-  show($("panel"), false); show(drop, true); show($("urlForm"), true);
+  show($("panel"), false); show(drop, true); show($("urlForm"), true); show($("tools"), true);
   step(1); status("gereed");
 });
 
@@ -448,6 +478,7 @@ $("goBtn").addEventListener("click", async () => {
   if (cat === "video") {
     opts.height = $("height").value;
     opts.remove_audio = $("removeAudio").checked;
+    opts.device = $("device").value;
     opts.gif_width = $("gifWidth").value;
     opts.gif_fps = $("gifFps").value;
   }
@@ -460,6 +491,11 @@ $("goBtn").addEventListener("click", async () => {
     const s = parseTime($("trimStart").value), e = parseTime($("trimEnd").value);
     if (Number.isNaN(s) || Number.isNaN(e) || (s != null && e != null && e <= s)) { alert("Controleer de knip-tijden."); return; }
     opts.trim_start = s; opts.trim_end = e;
+    if (TEXT_OUT.includes(fmt)) {
+      opts.language = $("speechLang").value;
+      opts.speech_model = $("speechModel").value;
+      opts.translate = $("speechTranslate").checked;
+    }
     opts.fast_trim = $("fastTrim").checked && fmt === current.ext;
   }
 
@@ -520,6 +556,15 @@ function showResult(j) {
   a.href = "/api/download/" + j.id;
   a.textContent = "[ ↓ DOWNLOAD ]";
   res.append(a);
+  if (/\.(txt|srt|vtt)$/i.test(j.filename)) {
+    // herkende tekst meteen laten zien
+    fetch("/api/download/" + j.id).then((r) => r.text()).then((t) => {
+      const pre = document.createElement("textarea");
+      pre.className = "text-preview"; pre.readOnly = true; pre.rows = 10;
+      pre.value = t.length > 50000 ? t.slice(0, 50000) + "\n…" : t;
+      res.append(pre);
+    }).catch(() => {});
+  }
   show(res, true);
   status(`klaar: ${j.filename} (${human(j.size)})`);
 }
@@ -588,3 +633,148 @@ document.querySelectorAll(".themes button").forEach((b) => b.addEventListener("c
 let savedTheme = "groen";
 try { savedTheme = localStorage.getItem("ac-theme") || "groen"; } catch {}
 setTheme(savedTheme);
+
+
+// ---------- gereedschap: snelle keuzes (zoals "PDF naar Word")
+const OFFICE = ".doc,.docx,.odt", SHEET = ".xls,.xlsx,.ods,.csv", SLIDES = ".ppt,.pptx,.odp";
+const MEDIA = "audio/*,video/*,.mkv,.flac,.opus,.m4a,.wma,.amr";
+const TOOLS = [
+  ["PDF", "DOC", "PDF naar Word", ".pdf", "docx"], ["PDF", "XLS", "PDF naar Excel", ".pdf", "xlsx"],
+  ["PDF", "PPT", "PDF naar PPT", ".pdf", "pptx"], ["PDF", "PNG", "PDF naar PNG", ".pdf", "png"],
+  ["PDF", "JPG", "PDF naar JPEG", ".pdf", "jpg"], ["PDF", "RTF", "PDF naar RTF", ".pdf", "rtf"],
+  ["PDF", "TXT", "PDF naar TXT", ".pdf", "txt"], ["PDF", "HTM", "PDF naar HTML", ".pdf", "html"],
+  ["PDF", "XML", "PDF naar XML", ".pdf", "xml"], ["DOC", "PDF", "Word naar PDF", OFFICE, "pdf"],
+  ["XLS", "PDF", "Excel naar PDF", SHEET, "pdf"], ["PPT", "PDF", "PPT naar PDF", SLIDES, "pdf"],
+  ["IMG", "PDF", "Afbeelding naar PDF", "image/*,.heic,.heif", "pdf"], ["RTF", "PDF", "RTF naar PDF", ".rtf", "pdf"],
+  ["TXT", "PDF", "TXT naar PDF", ".txt,.md", "pdf"], ["PDF", "+", "PDF samenvoegen", null, "web:pdf"],
+  ["PDF", "÷", "PDF splitsen", null, "web:pdf"], ["PDF", "▼", "PDF comprimeren", ".pdf", "pdf"],
+  ["IMG", "TXT", "Bestands-OCR", "image/*,.pdf", "txt"], ["[▢]", "TXT", "Screenshot-OCR", null, "screen"],
+  ["♪", "TXT", "Audio/video naar tekst", MEDIA, "txt"], ["▶", "SRT", "Ondertitels maken", MEDIA, "srt"],
+  ["DOC", "EPUB", "E-book maken", ".doc,.docx,.odt,.txt,.md,.html,.pdf,.epub", "epub"],
+  ["EPUB", "AZW", "E-book voor Kindle", ".epub,.mobi,.fb2,.pdf,.docx", "azw3"],
+  ["♪", "M4R", "iPhone-beltoon", MEDIA, "m4r"], ["WWW", "PDF", "Website naar PDF", null, "web"],
+  ["#", "SHA", "Checksum / hash", "*", "hash"], ["*", "ZIP", "Inpakken (zip, 7z)", "*", "zip"],
+];
+(function buildTools() {
+  const grid = $("toolGrid");
+  for (const [a, b, label, accept, fmt] of TOOLS) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tool";
+    btn.innerHTML = '<span class="ticon"><span class="t1"></span><span class="t2"></span></span><span class="tlabel"></span>';
+    btn.querySelector(".t1").textContent = a;
+    btn.querySelector(".t2").textContent = b;
+    btn.querySelector(".tlabel").textContent = label;
+    btn.addEventListener("click", () => runTool(accept, fmt, label));
+    grid.append(btn);
+  }
+})();
+
+let hashAfterUpload = false;
+function runTool(accept, fmt, label) {
+  if (fmt === "web:pdf") { const a = document.createElement("a"); a.href = "/web/#pdf"; document.body.append(a); a.click(); a.remove(); return; }
+  if (fmt === "screen") return screenOcr();
+  if (fmt === "web") { show($("webForm"), true); $("webUrl").focus(); return; }
+  presetFormat = fmt === "hash" ? null : fmt;
+  hashAfterUpload = fmt === "hash";
+  fileInput.accept = accept === "*" ? "" : accept;
+  status("kies een bestand voor: " + label.toLowerCase());
+  fileInput.click();
+  setTimeout(() => { fileInput.accept = ""; }, 1000);
+}
+
+// ---------- herkende tekst tonen
+function showText(text, title) {
+  $("textOutTitle").textContent = "// " + title;
+  $("textOutBox").value = text;
+  show($("textOut"), true);
+  $("textOutBox").scrollIntoView({ block: "nearest" });
+}
+$("textClose").addEventListener("click", () => show($("textOut"), false));
+$("textCopy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("textOutBox").value); status("tekst gekopieerd"); }
+  catch { $("textOutBox").select(); document.execCommand("copy"); status("tekst gekopieerd"); }
+});
+$("textSave").addEventListener("click", async () => {
+  const blob = new Blob([$("textOutBox").value], { type: "text/plain" });
+  const api = nativeApi();
+  if (api) {
+    const r = await api.save_begin("tekst.txt");
+    if (r.path) {
+      const b64 = btoa(unescape(encodeURIComponent($("textOutBox").value)));
+      await api.save_chunk(b64); const d = await api.save_end(); status("opgeslagen: " + d.path);
+    }
+    return;
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "tekst.txt";
+  document.body.append(a); a.click(); a.remove();
+});
+
+async function screenOcr() {
+  status("kies een gebied op je scherm…");
+  try {
+    const r = await fetch("/api/ocr/screen", { method: "POST" });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    showText(j.text || "(geen tekst gevonden)", "tekst uit schermafbeelding");
+    status("tekst herkend");
+  } catch (err) { status("FOUT: " + err.message); alert(err.message); }
+}
+
+// Plakken (ctrl+v / cmd+v) van een schermafbeelding: direct tekst herkennen
+document.addEventListener("paste", async (e) => {
+  if (current || /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "")) return;
+  const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith("image/"));
+  if (!item) return;
+  e.preventDefault();
+  const fd = new FormData();
+  fd.append("file", item.getAsFile(), "plakken.png");
+  status("tekst herkennen in geplakte afbeelding…");
+  try {
+    const r = await fetch("/api/ocr/image", { method: "POST", body: fd });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    showText(j.text || "(geen tekst gevonden)", "tekst uit geplakte afbeelding");
+    status("tekst herkend");
+  } catch (err) { status("FOUT: " + err.message); }
+});
+
+// ---------- checksum
+async function runHash() {
+  if (!current) return;
+  show($("hashBox"), true);
+  $("hashOut").textContent = "berekenen…";
+  const r = await fetch("/api/hash/" + current.id, { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key: $("hashKey").value }) });
+  const j = await r.json();
+  if (!r.ok) { $("hashOut").textContent = j.error; return; }
+  const w = Math.max(...Object.keys(j.hashes).map((k) => k.length));
+  $("hashOut").textContent = ($("hashKey").value ? "HMAC\n" : "") +
+    Object.entries(j.hashes).map(([k, v]) => k.padEnd(w + 1) + v).join("\n");
+}
+$("hashBtn").addEventListener("click", runHash);
+$("hashKey").addEventListener("change", runHash);
+
+// ---------- website opslaan als pdf/png/jpg
+$("webGo").addEventListener("click", async () => {
+  const url = $("webUrl").value.trim();
+  if (!url) return;
+  $("webGo").disabled = true;
+  status("website laden…");
+  try {
+    const r = await fetch("/api/webshot", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, format: $("webFmt").value }) });
+    let j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    for (;;) {
+      const rr = await fetch("/api/job/" + j.id); j = await rr.json();
+      if (j.status === "error") throw new Error(j.error);
+      if (j.status === "done") break;
+      await new Promise((res) => setTimeout(res, 700));
+    }
+    const a = document.createElement("a"); a.href = "/api/download/" + j.id; a.setAttribute("download", "");
+    document.body.append(a); a.click(); a.remove();
+    status("website opgeslagen: " + j.filename);
+  } catch (err) { status("FOUT: " + err.message); alert(err.message); }
+  finally { $("webGo").disabled = false; }
+});

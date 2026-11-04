@@ -7,8 +7,9 @@ from typing import Optional
 
 from .util import NO_WINDOW, ConversionError, ProgressFn, ffprobe, parse_time, human_size
 
-AUDIO_ONLY = {"mp3", "m4a", "aac", "wav", "flac", "ogg", "opus"}
-LOSSLESS_AUDIO = {"wav", "flac"}
+AUDIO_ONLY = {"mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "aiff", "wma", "m4r", "mmf"}
+LOSSLESS_AUDIO = {"wav", "flac", "aiff"}
+FIXED_AUDIO = LOSSLESS_AUDIO | {"mmf"}  # geen bitrate te kiezen
 
 AUDIO_CODEC = {
     "mp3": ["-c:a", "libmp3lame"],
@@ -18,8 +19,13 @@ AUDIO_CODEC = {
     "opus": ["-c:a", "libopus"],
     "wav": ["-c:a", "pcm_s16le"],
     "flac": ["-c:a", "flac"],
+    "aiff": ["-c:a", "pcm_s16be"],
+    "wma": ["-c:a", "wmav2"],
+    "m4r": ["-c:a", "aac", "-f", "ipod"],  # iPhone-beltoon
+    "mmf": ["-c:a", "adpcm_yamaha", "-ar", "8000", "-ac", "1"],  # beltoon (Yamaha SMAF)
 }
-AUDIO_LIMITS = {"mp3": (8, 320), "m4a": (16, 512), "aac": (16, 512), "ogg": (45, 500), "opus": (6, 510)}
+AUDIO_LIMITS = {"mp3": (8, 320), "m4a": (16, 512), "aac": (16, 512), "ogg": (45, 500), "opus": (6, 510),
+                "wma": (32, 320), "m4r": (16, 512)}
 
 VIDEO_CODEC = {
     "mp4": ("libx264", "aac"),
@@ -27,7 +33,24 @@ VIDEO_CODEC = {
     "mkv": ("libx264", "aac"),
     "avi": ("libx264", "libmp3lame"),
     "webm": ("libvpx-vp9", "libopus"),
+    "3gp": ("libx264", "aac"),
+    "3g2": ("libx264", "aac"),
+    "flv": ("libx264", "aac"),
+    "mpg": ("mpeg2video", "mp2"),
+    "ogv": ("libtheora", "libvorbis"),
+    "wmv": ("wmv2", "wmav2"),
 }
+# Apparaat-presets: maximale hoogte en H.264-profiel/-niveau dat het apparaat zeker afspeelt
+DEVICES = {
+    "iphone": (1080, "high", "4.1"), "ipad": (1080, "high", "4.1"), "android": (1080, "high", "4.1"),
+    "ipod": (480, "baseline", "3.0"), "playstation": (1080, "high", "4.1"), "psp": (272, "main", "3.0"),
+    "xbox": (1080, "high", "4.1"), "nintendo-switch": (720, "high", "4.0"), "nintendo-3ds": (240, "baseline", "3.0"),
+    "wii": (480, "baseline", "3.0"), "blackberry": (480, "baseline", "3.0"), "kindle-fire": (720, "main", "3.1"),
+}
+
+# Codecs zonder CRF: vaste kwaliteit via -q:v (theora: hoger = beter, de rest: lager = beter)
+QSCALE = {"mpeg2video": {"high": 3, "medium": 5, "low": 9}, "wmv2": {"high": 3, "medium": 5, "low": 9},
+          "libtheora": {"high": 8, "medium": 6, "low": 4}}
 CRF = {"libx264": {"high": 20, "medium": 24, "low": 30}, "libvpx-vp9": {"high": 31, "medium": 36, "low": 42}}
 AUDIO_KBPS = {"high": 192, "medium": 128, "low": 96}
 CONTAINER_OVERHEAD = 0.96  # marge voor container-/muxoverhead
@@ -151,8 +174,8 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
 def _audio(src, dst, fmt, trim_args, duration, target, quality, progress) -> Path:
     args = [*trim_args, "-i", str(src), "-vn", "-map", "0:a:0", *AUDIO_CODEC[fmt]]
     if target:
-        if fmt in LOSSLESS_AUDIO:
-            raise ConversionError(f".{fmt} is verliesvrij; de grootte ligt vast. Kies mp3, m4a, ogg of opus "
+        if fmt in FIXED_AUDIO:
+            raise ConversionError(f".{fmt} heeft een vaste kwaliteit; de grootte ligt vast. Kies mp3, m4a, ogg of opus "
                                   "om een doelgrootte te halen.")
         if duration <= 0:
             raise ConversionError("Kan de duur niet bepalen, dus geen doelgrootte mogelijk.")
@@ -165,9 +188,11 @@ def _audio(src, dst, fmt, trim_args, duration, target, quality, progress) -> Pat
         args += ["-b:a", f"{kbps}k"]
         if kbps < 64 and fmt in ("mp3", "m4a", "aac"):
             args += ["-ac", "1"]
-    elif fmt not in LOSSLESS_AUDIO:
+    elif fmt not in FIXED_AUDIO:
         args += ["-b:a", f"{AUDIO_KBPS[quality]}k"]
-    if fmt == "m4a":
+    if fmt == "m4r" and duration > 40 and "-t" not in trim_args:
+        args += ["-t", "40"]  # iPhone-beltonen mogen maximaal 40 seconden zijn
+    if fmt in ("m4a", "m4r"):
         args += ["-movflags", "+faststart"]
     _run_ffmpeg([*args, str(dst)], duration, progress, label="Audio coderen")
     return dst
@@ -181,6 +206,9 @@ def _video(src, dst, fmt, trim_args, duration, info, opts, target, quality, prog
     vcodec, acodec = VIDEO_CODEC[fmt]
     keep_audio = info["has_audio"] and not opts.get("remove_audio")
     height = int(opts["height"]) if opts.get("height") else None
+    device = DEVICES.get(opts.get("device") or "")
+    if device and (height or info["height"] or 0) > device[0]:
+        height = device[0]
 
     base_in = [*trim_args, "-i", str(src), "-map", "0:v:0"]
     if keep_audio:
@@ -189,13 +217,16 @@ def _video(src, dst, fmt, trim_args, duration, info, opts, target, quality, prog
     common_v = ["-c:v", vcodec, "-pix_fmt", "yuv420p"]
     if vcodec == "libx264":
         common_v += ["-preset", "medium"]
-    else:
+        if device:
+            common_v += ["-profile:v", device[1], "-level", device[2]]
+    elif vcodec == "libvpx-vp9":
         common_v += ["-row-mt", "1", "-deadline", "good", "-cpu-used", "2"]
     tail = ["-movflags", "+faststart"] if fmt in ("mp4", "mov") else []
 
     if not target:
         filters = _scale_filter(height)
-        args = [*base_in, *common_v, "-crf", str(CRF[vcodec][quality])]
+        args = [*base_in, *common_v, *(["-crf", str(CRF[vcodec][quality])] if vcodec in CRF
+                                        else ["-q:v", str(QSCALE[vcodec][quality])])]
         if vcodec == "libvpx-vp9":
             args += ["-b:v", "0"]
         if filters:

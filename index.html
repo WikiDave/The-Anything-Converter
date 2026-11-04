@@ -3372,6 +3372,9 @@ try { const s = localStorage.getItem("ac-skin"); if (s) setSkin(s); } catch {}
 if (typeof VideoEncoder === "undefined") {
   notice("Let op: je browser ondersteunt geen WebCodecs, dus video en audio werken hier niet. Afbeeldingen en zip werken wel. Gebruik een recente Chrome, Edge, Safari of Firefox.", true);
 }
+
+// /web/#pdf of /web/#arch: meteen de juiste werkbank openen (bijv. vanuit de desktop-app)
+{ const m = (location.hash || "").slice(1); if (["pdf", "arch", "social"].includes(m)) setMode(m); }
 </script>
 
 </body>

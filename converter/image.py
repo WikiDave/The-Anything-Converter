@@ -12,7 +12,8 @@ from .util import ConversionError, ProgressFn, have, run, human_size
 
 LOSSY = {"jpg", "webp", "avif"}
 PIL_FORMAT = {"jpg": "JPEG", "png": "PNG", "webp": "WEBP", "avif": "AVIF", "gif": "GIF",
-              "bmp": "BMP", "tiff": "TIFF", "ico": "ICO", "pdf": "PDF"}
+              "bmp": "BMP", "tiff": "TIFF", "ico": "ICO", "pdf": "PDF", "tga": "TGA", "eps": "EPS"}
+SPECIAL = {"svg", "wbmp", "exr", "hdr"}  # zelf geschreven of via ffmpeg
 QUALITY = {"high": 92, "medium": 82, "low": 65}
 MAX_PIXELS = 20000  # maximale breedte/hoogte bij vergroten
 
@@ -46,7 +47,7 @@ def _load(src: Path, work: Path) -> list[Image.Image]:
 
 def _prepare(frame: Image.Image, fmt: str) -> Image.Image:
     has_alpha = frame.mode in ("RGBA", "LA") or (frame.mode == "P" and "transparency" in frame.info)
-    if fmt in ("jpg", "pdf", "bmp") or (fmt == "avif" and not has_alpha):
+    if fmt in ("jpg", "pdf", "bmp", "eps") or (fmt == "avif" and not has_alpha):
         if has_alpha:
             frame = frame.convert("RGBA")
             bg = Image.new("RGB", frame.size, (255, 255, 255))
@@ -174,7 +175,7 @@ def _grow(frames, fmt, target, quality, data, progress) -> bytes:
 def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn] = None) -> Path:
     fmt = (opts.get("format") or src.suffix.lstrip(".")).lower()
     fmt = {"jpeg": "jpg", "tif": "tiff", "jfif": "jpg"}.get(fmt, fmt)
-    if fmt not in PIL_FORMAT:
+    if fmt not in PIL_FORMAT and fmt not in SPECIAL:
         raise ConversionError(f"Uitvoerformaat .{fmt} wordt niet ondersteund voor afbeeldingen.")
 
     frames = _load(src, out_dir)
@@ -198,14 +199,66 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
 
     target = opts.get("target_bytes")
     quality = QUALITY.get(opts.get("quality") or "high", 92)
-    if target and fmt in ("ico", "pdf"):
+    stem = src.stem + ("_bewerkt" if fmt == src.suffix.lstrip(".").lower() else "")
+    if fmt in SPECIAL:
+        if target:
+            raise ConversionError(f"Doelgrootte wordt niet ondersteund voor .{fmt}.")
+        dst = out_dir / f"{stem}.{fmt}"
+        _special(frames[0], fmt, dst)
+        return dst
+    if target and fmt in ("ico", "pdf", "eps", "tga"):
         raise ConversionError(f"Doelgrootte wordt niet ondersteund voor .{fmt}; kies bijv. jpg, png of webp.")
     if target:
         data = (_fit_lossy if fmt in LOSSY else _fit_lossless)(frames, fmt, target, progress)
     else:
         data = _encode(frames, fmt, 1.0, quality)
 
-    stem = src.stem + ("_bewerkt" if fmt == src.suffix.lstrip(".").lower() else "")
     dst = out_dir / f"{stem}.{fmt}"
     dst.write_bytes(data)
     return dst
+
+
+def _special(frame: Image.Image, fmt: str, dst: Path) -> None:
+    import base64
+    if fmt == "svg":
+        # Pixelafbeelding verpakt in SVG (schaalbaar te plaatsen in ontwerpprogramma's en websites)
+        buf = io.BytesIO()
+        _prepare(frame, "png").save(buf, "PNG", optimize=True)
+        b64 = base64.b64encode(buf.getvalue()).decode()
+        w, h = frame.size
+        dst.write_text(f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '
+                       f'width="{w}" height="{h}" viewBox="0 0 {w} {h}">'
+                       f'<image width="{w}" height="{h}" xlink:href="data:image/png;base64,{b64}"/></svg>\n')
+    elif fmt == "wbmp":
+        # WAP-bitmap: zwart-wit, 1 bit per pixel (1 = wit)
+        bw = frame.convert("L").convert("1")
+        w, h = bw.size
+
+        def mbi(n: int) -> bytes:
+            out = [n & 0x7F]
+            n >>= 7
+            while n:
+                out.append(0x80 | (n & 0x7F))
+                n >>= 7
+            return bytes(reversed(out))
+
+        rows = bytearray()
+        px = bw.load()
+        for y in range(h):
+            byte, bits = 0, 0
+            for x in range(w):
+                byte = (byte << 1) | (1 if px[x, y] else 0)
+                bits += 1
+                if bits == 8:
+                    rows.append(byte)
+                    byte, bits = 0, 0
+            if bits:
+                rows.append(byte << (8 - bits))
+        dst.write_bytes(b"\x00\x00" + mbi(w) + mbi(h) + bytes(rows))
+    else:  # exr / hdr: HDR-formaten via ffmpeg
+        tmp = dst.with_suffix(".tmp.png")
+        _prepare(frame, "png").convert("RGB").save(tmp)
+        codec = ["-c:v", "exr", "-pix_fmt", "gbrpf32le"] if fmt == "exr" else ["-c:v", "hdr"]
+        run(["ffmpeg", "-hide_banner", "-y", "-nostdin", "-i", str(tmp), *codec, "-frames:v", "1",
+             "-update", "1", str(dst)], timeout=300)
+        tmp.unlink(missing_ok=True)

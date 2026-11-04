@@ -40,6 +40,8 @@ Priority: optional
 Architecture: amd64
 Installed-Size: $SIZE_KB
 Depends: python3, python3-gi, gir1.2-gtk-3.0, gir1.2-webkit2-4.1 | gir1.2-webkit2-4.0
+Recommends: tesseract-ocr, tesseract-ocr-nld, tesseract-ocr-eng
+Suggests: calibre, libreoffice
 Maintainer: Anything Converter <noreply@users.noreply.github.com>
 Description: Converteer, verklein, vergroot en knip bestanden
  Lokale converter voor video, audio, afbeeldingen, PDF en meer, met ffmpeg,

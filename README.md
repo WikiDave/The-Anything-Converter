@@ -20,6 +20,25 @@ bestanden worden na 1 uur automatisch opgeruimd. De interface heeft een retro te
 > Let op: "groter maken" werkt voor video's, audio en afbeeldingen (meer bitrate/kwaliteit/resolutie).
 > Al gecomprimeerde bestanden (zip, jpg in een zip, …) kunnen verliesvrij nauwelijks kleiner.
 
+## Gereedschap en formaten (desktop-app en lokale versie)
+
+Op het startscherm staat **[ GEREEDSCHAP ]** met snelle keuzes: kies een tegel, kies een bestand, klaar.
+
+| Wat | Formaten |
+|---|---|
+| PDF naar… | Word (.docx), Excel (.xlsx, tabellen worden herkend), PowerPoint (.pptx), PNG, JPEG, RTF, TXT, HTML, XML, ODT |
+| Naar PDF | Word, Excel, PowerPoint, RTF, TXT, Markdown, HTML, afbeeldingen. Met LibreOffice met volledige opmaak, zonder LibreOffice met eenvoudige opmaak |
+| PDF | samenvoegen, splitsen (werkbank), comprimeren / naar doelgrootte |
+| OCR (tekst herkennen) | afbeelding → TXT, Word, RTF, Excel; gescande PDF → TXT/Word; **Screenshot-OCR** (gebied op je scherm kiezen) en plakken met ctrl+v. macOS gebruikt Apple Vision, Windows de ingebouwde tekstherkenning, Linux Tesseract |
+| Audio/video → tekst | .txt, .srt en .vtt (ondertitels), 99 talen, ook vertalen naar Engels. Lokaal met whisper.cpp; het model (150 MB) wordt de eerste keer gedownload |
+| Audio | MP3, M4A, AAC, WAV, FLAC, OGG, OPUS, AIFF, WMA, M4R (iPhone-beltoon), MMF |
+| Video | MP4, WEBM, MKV, MOV, AVI, WMV, FLV, MPG, OGV, 3GP, 3G2, GIF, plus presets voor iPhone, iPad, Android, PlayStation, PSP, Xbox, Switch, 3DS, Wii en meer |
+| Afbeelding | JPG, PNG, WEBP, AVIF, GIF, BMP, TIFF, ICO, PDF, SVG, EPS, TGA, WBMP, EXR, HDR |
+| E-book | EPUB, MOBI, AZW3, FB2, LIT, LRF, PDB, TCR, PDF, DOCX, TXT, HTML. EPUB/FB2 lezen en EPUB maken kan altijd; de rest met het gratis [Calibre](https://calibre-ebook.com) (wordt vanzelf gevonden) |
+| Archief | ZIP, 7Z, TAR, TAR.GZ, TAR.BZ2, TAR.XZ (in- en uitpakken, omzetten) |
+| Checksum | CRC-32, Adler-32, MD4, MD5, RIPEMD-160, SHA-1/224/256/384/512, SHA3, BLAKE2, ook als HMAC met een sleutel |
+| Website | opslaan als PDF, PNG of JPG (met Chrome/Edge op je computer) |
+
 ## Terminalversie (Windows Terminal, PowerShell, bash, SSH)
 
 Dezelfde ASCII-layout als de web-app, maar als terminalprogramma: werkt in Windows Terminal/PowerShell, in

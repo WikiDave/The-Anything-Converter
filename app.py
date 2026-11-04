@@ -131,6 +131,76 @@ def fetch_url():
     return jsonify(job.public())
 
 
+@app.post("/api/webshot")
+def webshot_start():
+    """Website opslaan als PDF/PNG/JPG (headless Chrome/Edge)."""
+    data = request.get_json(force=True, silent=True) or {}
+    url = str(data.get("url") or "").strip()
+    fmt = str(data.get("format") or "pdf").lower()
+    if not url or fmt not in ("pdf", "png", "jpg"):
+        return jsonify(error="Geef een websiteadres en kies pdf, png of jpg."), 400
+    job = jobs.submit(WORK / uuid.uuid4().hex, "webshot", {"url": url, "format": fmt}, kind="webshot")
+    return jsonify(job.public())
+
+
+@app.post("/api/hash/<uid>")
+def file_hashes(uid):
+    """Checksums van een geüpload bestand (optioneel HMAC met een sleutel)."""
+    from converter.hashes import compute
+    up = uploads.get(uid)
+    if not up or not up["path"].exists():
+        return jsonify(error="Bestand niet gevonden."), 404
+    path = up["path"]
+    data = request.get_json(force=True, silent=True) or {}
+    return jsonify(name=path.name, hashes=compute(path, str(data.get("key") or "") or None))
+
+
+@app.post("/api/ocr/screen")
+def ocr_screen():
+    """Schermafbeelding maken (gebied kiezen) en de tekst herkennen. Alleen in de desktop-app/lokaal."""
+    from converter import ocr
+    try:
+        shot = ocr.capture_screen()
+        text = ocr.image(shot)
+    except ConversionError as e:
+        return jsonify(error=str(e)), 400
+    return jsonify(text=text)
+
+
+@app.post("/api/ocr/image")
+def ocr_pasted():
+    """Tekst herkennen in een geplakte/gesleepte afbeelding (klembord)."""
+    from converter import ocr
+    f = request.files.get("file")
+    if not f:
+        return jsonify(error="Geen afbeelding ontvangen."), 400
+    try:
+        text = ocr.image_bytes(f.read(), Path(f.filename or "x.png").suffix or ".png")
+    except ConversionError as e:
+        return jsonify(error=str(e)), 400
+    return jsonify(text=text)
+
+
+@app.get("/api/capabilities")
+def capabilities():
+    """Welke extra hulpprogramma's zijn er (voor uitleg in de interface)."""
+    from converter import ebook, ocr, pdftools, webshot
+    from converter.document import have
+    try:
+        import pywhispercpp.model  # noqa: F401
+        speech = True
+    except Exception:  # noqa: BLE001
+        speech = False
+    try:
+        import py7zr  # noqa: F401
+        sevenzip = True
+    except Exception:  # noqa: BLE001
+        sevenzip = False
+    return jsonify(ocr=ocr.engine(), calibre=bool(ebook.calibre()), pymupdf=pdftools.have_pymupdf(),
+                   speech=speech, sevenzip=sevenzip,
+                   libreoffice=have("soffice") or have("libreoffice"), chrome=bool(webshot.chromium()))
+
+
 @app.post("/api/torrent")
 def torrent_start():
     """Torrent downloaden: een .torrent-bestand (formulier) of een magnet-link (JSON)."""

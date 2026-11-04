@@ -260,3 +260,33 @@ a.btn { text-decoration: none; display: inline-block; }
   display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px;
   margin-top: 26px; padding-top: 10px; border-top: 1px solid var(--faint); font-size: 12px;
 }
+
+/* ---------- gereedschap (snelle keuzes) */
+.tools { margin-top: 18px; }
+.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin: 6px 0 10px; }
+.tool {
+  display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer;
+  background: var(--panel); color: var(--fg); border: 1px solid var(--dim); padding: 10px 12px; min-height: 64px;
+}
+.tool:hover, .tool:focus-visible { border-color: var(--fg); background: var(--faint); color: var(--hi); outline: none; }
+.ticon { position: relative; width: 52px; height: 40px; flex: none; font-size: 10px; line-height: 1; font-weight: 700; }
+.ticon span {
+  position: absolute; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid currentColor; background: var(--bg);
+}
+.ticon .t1 { left: 0; top: 0; color: var(--dim); align-items: flex-start; justify-content: flex-start; padding: 2px 0 0 2px; box-sizing: border-box; font-size: 8px; }
+.ticon .t2 { right: 0; bottom: 0; color: var(--fg); box-shadow: -3px -3px 0 var(--bg); }
+.tool:hover .ticon .t2 { color: var(--hi); }
+.tlabel { font-size: 13px; letter-spacing: .02em; }
+.web-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 10px; }
+.web-form .field { flex: 1 1 260px; }
+.web-form input { width: 100%; }
+.text-out { margin: 8px 0; }
+.text-out textarea, .text-preview {
+  width: 100%; box-sizing: border-box; background: var(--bg); color: var(--fg); border: 1px dashed var(--dim);
+  padding: 8px; resize: vertical; margin: 6px 0; font-size: 13px;
+}
+.text-preview { display: block; margin-top: 10px; }
+.hash-box { margin-top: 8px; }
+.hash-box pre { margin: 6px 0 0; font-size: 12px; overflow-x: auto; color: var(--hi); user-select: all; }
+@media (max-width: 480px) { .tool-grid { grid-template-columns: 1fr 1fr; } .tool { gap: 8px; padding: 8px; } .ticon { transform: scale(.85); } }
