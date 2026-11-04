@@ -67,3 +67,11 @@ python -m pytest
 
 Structuur: `app.py` (Flask-server), `converter/` (detectie, media, afbeelding, document, archief, jobs),
 `static/` (interface).
+
+## Browser-versie (zonder installatie)
+
+`web/index.html` is een losse versie die volledig in de browser draait (WebCodecs via Mediabunny,
+canvas voor afbeeldingen). Niets wordt geüpload. Open het bestand via een webserver of zet het op
+GitHub Pages. Ondersteund: video (mp4/mov/webm/mkv) → mp4, webm, gif, mp3, m4a, wav; audio → mp3, m4a,
+ogg, wav, webm; afbeeldingen → jpg, png, webp, gif, pdf, bmp, ico; overige bestanden → zip. Knippen en
+doelgrootte werken ook. Word/Excel/PowerPoint/PDF-conversie en avi/wmv vereisen de lokale versie.
