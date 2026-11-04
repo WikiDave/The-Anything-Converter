@@ -9,6 +9,7 @@ mkdir -p "$PKG/DEBIAN" "$PKG/opt/anything-converter" "$PKG/usr/bin" \
          "$PKG/usr/share/applications" "$PKG/usr/share/icons/hicolor/256x256/apps"
 cp -a "$SRC/." "$PKG/opt/anything-converter/"
 ln -s /opt/anything-converter/AnythingConverter "$PKG/usr/bin/anything-converter"
+ln -s /opt/anything-converter/anything-converter-tui "$PKG/usr/bin/anything-converter-tui"
 cp "$HERE/icons/app-256.png" "$PKG/usr/share/icons/hicolor/256x256/apps/anything-converter.png"
 cat > "$PKG/usr/share/applications/anything-converter.desktop" <<DESKTOP
 [Desktop Entry]

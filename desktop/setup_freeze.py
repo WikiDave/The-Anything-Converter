@@ -33,7 +33,7 @@ for name in ("index.html", "favicon.svg", "favicon.png", "apple-touch-icon.png",
 if (HERE / "bin").is_dir() and any((HERE / "bin").iterdir()):
     include_files.append((str(HERE / "bin"), "bin"))
 
-PACKAGES = ["converter", "flask", "werkzeug", "jinja2", "markupsafe", "itsdangerous", "click",
+PACKAGES = ["converter", "textual", "rich", "flask", "werkzeug", "jinja2", "markupsafe", "itsdangerous", "click",
             "blinker", "PIL", "pikepdf", "yt_dlp", "yt_dlp_ejs", "certifi", "libtorrent"]
 OPTIONAL = {"pikepdf", "libtorrent"}  # niet op elk platform beschikbaar
 
@@ -66,7 +66,15 @@ executables = [
         shortcut_name=NAME,
         shortcut_dir="ProgramMenuFolder",
         copyright="Anything Converter",
-    )
+    ),
+    # Terminalversie: zelfde layout in Windows Terminal/PowerShell, bash/zsh en via SSH.
+    Executable(
+        script=str(ROOT / "tui.py"),
+        base=None,  # console-programma
+        target_name="anything-converter-tui",
+        icon=icon,
+        copyright="Anything Converter",
+    ),
 ]
 
 options = {
@@ -74,7 +82,8 @@ options = {
     "bdist_msi": {
         # Vaste upgrade-code: een nieuwe versie vervangt de oude netjes.
         "upgrade_code": "{6F0A8D52-3C1E-4B7A-9E2D-5A1C7B3E9F40}",
-        "add_to_path": False,
+        # installatiemap in het PATH: dan werkt 'anything-converter-tui' in elke terminal
+        "add_to_path": True,
         # Per gebruiker installeren: geen beheerdersrechten nodig.
         "all_users": False,
         "initial_target_dir": r"[LocalAppDataFolder]\Programs\Anything Converter",

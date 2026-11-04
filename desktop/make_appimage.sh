@@ -12,6 +12,8 @@ cp -a "$SRC/." "$APPDIR/usr/lib/anything-converter/"
 cat > "$APPDIR/AppRun" <<'APPRUN'
 #!/bin/sh
 HERE="$(dirname "$(readlink -f "$0")")"
+# ./AnythingConverter-Linux.AppImage tui  -> terminalversie
+if [ "$1" = "tui" ]; then shift; exec "$HERE/usr/lib/anything-converter/anything-converter-tui" "$@"; fi
 exec "$HERE/usr/lib/anything-converter/AnythingConverter" "$@"
 APPRUN
 
