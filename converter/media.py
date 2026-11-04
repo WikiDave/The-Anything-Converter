@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
-from .util import ConversionError, ProgressFn, ffprobe, parse_time, human_size
+from .util import NO_WINDOW, ConversionError, ProgressFn, ffprobe, parse_time, human_size
 
 AUDIO_ONLY = {"mp3", "m4a", "aac", "wav", "flac", "ogg", "opus"}
 LOSSLESS_AUDIO = {"wav", "flac"}
@@ -54,7 +54,8 @@ def _probe(src: Path) -> dict:
 def _run_ffmpeg(args: list[str], duration: float, progress: Optional[ProgressFn],
                 lo: float = 0.0, hi: float = 1.0, label: str = "Bezig") -> None:
     cmd = ["ffmpeg", "-hide_banner", "-y", "-nostdin", "-progress", "pipe:1", "-nostats", *args]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                            encoding="utf-8", errors="replace", **NO_WINDOW)
     # stderr in een aparte thread lezen zodat de pipe niet volloopt
     import threading
     err_lines: list[str] = []

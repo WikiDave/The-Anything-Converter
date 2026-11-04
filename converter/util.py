@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -9,6 +10,9 @@ from pathlib import Path
 from typing import Callable, Optional
 
 ProgressFn = Callable[[float, str], None]
+
+# Op Windows geen zwart consolevenster laten flitsen bij elk ffmpeg/LibreOffice-commando.
+NO_WINDOW = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
 
 
 class ConversionError(Exception):
@@ -22,7 +26,8 @@ def have(tool: str) -> bool:
 def run(cmd: list[str], timeout: Optional[int] = None, cwd: Optional[Path] = None) -> subprocess.CompletedProcess:
     """Voer een commando uit zonder shell; gooi ConversionError bij een fout."""
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd)
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                              timeout=timeout, cwd=cwd, **NO_WINDOW)
     except FileNotFoundError as exc:
         raise ConversionError(f"Programma niet gevonden: {cmd[0]}. Is het geïnstalleerd?") from exc
     except subprocess.TimeoutExpired as exc:

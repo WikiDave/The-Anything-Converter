@@ -368,6 +368,19 @@ function showError(msg) {
   show(res, true);
 }
 
+// ---------- desktop-app: afsluiten
+fetch("/api/ping").then((r) => r.json()).then((p) => {
+  $("verLabel").textContent = "VER " + p.version.split(".").slice(0, 2).join(".");
+  if (!p.desktop) return;
+  $("modeLabel").textContent = "DESKTOP-APP";
+  show($("quitBtn"), true);
+}).catch(() => {});
+$("quitBtn").addEventListener("click", async () => {
+  try { await fetch("/api/quit", { method: "POST" }); } catch {}
+  document.querySelector("main").innerHTML =
+    '<pre class="logo-off">\n  ┌──────────────────────────────────────┐\n  │  ANYTHING CONVERTER IS AFGESLOTEN.   │\n  │  je kunt dit tabblad nu sluiten.     │\n  └──────────────────────────────────────┘</pre>';
+});
+
 // ---------- thema
 
 function setTheme(t) {

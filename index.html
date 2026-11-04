@@ -110,7 +110,16 @@ input::placeholder, textarea::placeholder { font-family: var(--mono); }
 .drop p { margin: 6px 0; }
 .drop .big { font-size: 16px; font-weight: 700; color: var(--hi); margin-top: 14px; }
 .sample-row { margin-top: 12px; text-align: center; }
-.link-note { margin: 10px 0 0; text-align: center; }
+.dl-frame { margin-top: 18px; }
+.dl-intro { margin: 0 0 12px; }
+.dl-grid { display: flex; flex-wrap: wrap; gap: 8px 10px; }
+.dl-btn { color: var(--fg); text-decoration: none; border: 1px dashed var(--dim); padding: 6px 10px; white-space: nowrap; }
+.dl-btn em { color: var(--dim); }
+.dl-btn:hover, .dl-btn:focus-visible { outline: none; background: var(--fg); color: var(--bg); text-shadow: none; border-color: var(--fg); }
+.dl-btn:hover em, .dl-btn:focus-visible em { color: var(--bg); }
+.dl-btn.mine { border: 1px solid var(--fg); color: var(--hi); box-shadow: 0 0 10px var(--glow); }
+.dim-link { color: var(--dim); }
+.dim-link:hover { color: var(--fg); }
 
 .frame {
   margin: 0 0 18px; padding: 14px 16px 16px; min-width: 0;
@@ -345,7 +354,22 @@ select option { background: var(--bg); color: var(--fg); }
     <div class="sample-row">
       <button id="sampleBtn" class="btn" type="button">[ PROBEER MET 3 TESTBEELDEN ]</button>
     </div>
-    <p class="dim small link-note">// youtube- en andere video-links ophalen kan alleen in de lokale versie (de python-app op je computer).<br>// een website mag geen video's van andere sites binnenhalen.</p>
+    <fieldset class="frame dl-frame">
+      <legend>DESKTOP-APP</legend>
+      <p class="dl-intro">Alles in één installer: ook <strong>youtube- en andere video-links ophalen</strong>, met ffmpeg ingebouwd. Geen python of andere installaties nodig.</p>
+      <div class="dl-grid" id="dlGrid">
+        <a class="dl-btn" data-os="win" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-Windows.msi" target="_blank" rel="noopener">[ ↓ WINDOWS <em>.msi</em> ]</a>
+        <a class="dl-btn" data-os="mac" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-macOS-AppleSilicon.dmg" target="_blank" rel="noopener">[ ↓ MAC M1–M4 <em>.dmg</em> ]</a>
+        <a class="dl-btn" data-os="mac" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-macOS-Intel.dmg" target="_blank" rel="noopener">[ ↓ MAC INTEL <em>.dmg</em> ]</a>
+        <a class="dl-btn" data-os="linux" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-Linux.deb" target="_blank" rel="noopener">[ ↓ UBUNTU/DEBIAN <em>.deb</em> ]</a>
+        <a class="dl-btn" data-os="linux" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest/download/AnythingConverter-Linux.AppImage" target="_blank" rel="noopener">[ ↓ LINUX <em>.AppImage</em> ]</a>
+      </div>
+      <p class="dim small" id="dlHint"></p>
+      <p class="dim small">// eerste keer openen (de app is niet betaald ondertekend):<br>
+      // windows: "windows heeft uw pc beschermd" → meer informatie → toch uitvoeren<br>
+      // mac: open, sluit de melding → systeeminstellingen → privacy en beveiliging → toch openen<br>
+      // <a class="dim-link" href="https://github.com/WikiDave/The-Anything-Converter/releases/latest" target="_blank" rel="noopener">alle downloads en versies</a></p>
+    </fieldset>
   </section>
 
   <section id="panel" hidden>
@@ -2061,6 +2085,19 @@ function showPdfResult(out) {
   res.hidden = false;
   status(`klaar: ${out.name} (${human(after)})`);
 }
+
+// ---------------------------------------------------------------- desktop-app: juiste download uitlichten
+(() => {
+  const ua = navigator.userAgent;
+  const mobile = /iPhone|iPad|iPod|Android/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const os = mobile ? null : /Windows/i.test(ua) ? "win" : /Mac OS X|Macintosh/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) ? "linux" : null;
+  document.querySelectorAll(".dl-btn").forEach((a) => a.classList.toggle("mine", a.dataset.os === os));
+  $("dlHint").textContent = mobile
+    ? "// de desktop-app is voor windows, mac en linux. op je telefoon gebruik je deze web-app."
+    : os === "mac" ? "// weet je niet welke mac? appelmenu → over deze mac: staat er 'chip apple m…', kies m1–m4."
+    : "";
+  $("dlHint").hidden = !$("dlHint").textContent;
+})();
 
 // ---------------------------------------------------------------- thema
 

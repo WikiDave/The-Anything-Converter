@@ -1,0 +1,151 @@
+name: Desktop-installers
+
+# Bouwt de desktop-app voor Windows (.msi), macOS (.dmg, Apple Silicon + Intel) en Linux
+# (.deb + .AppImage), met ffmpeg, ffprobe, yt-dlp en Deno erin.
+# - Push naar een branch: alleen bouwen en testen.
+# - Handmatig starten (Actions -> Run workflow) of een tag v*: ook publiceren als GitHub-release.
+on:
+  push:
+    branches: [main, claude/anything-converter]
+    tags: ["v*"]
+    paths:
+      - "desktop/**"
+      - "converter/**"
+      - "static/**"
+      - "app.py"
+      - "requirements.txt"
+      - ".github/workflows/desktop.yml"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versie (bijv. 2.1.0)"
+        required: true
+        default: "2.1.0"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            platform: win-x64
+          - name: macOS (Apple Silicon)
+            os: macos-15
+            platform: mac-arm64
+          - name: macOS (Intel)
+            os: macos-15-intel
+            platform: mac-x64
+          - name: Linux
+            os: ubuntu-22.04
+            platform: linux-x64
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Python-pakketten
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt "cx_Freeze==8.7.2"
+
+      - name: ffmpeg, ffprobe en Deno ophalen
+        run: bash desktop/fetch_bins.sh ${{ matrix.platform }}
+
+      - name: Bouwen (Windows .msi)
+        if: matrix.platform == 'win-x64'
+        run: |
+          python desktop/setup_freeze.py build_exe bdist_msi
+          mkdir -p out
+          cp dist/*.msi out/AnythingConverter-Windows.msi
+          echo "EXE=$(ls -d build/exe.*)/AnythingConverter.exe" >> "$GITHUB_ENV"
+
+      - name: Bouwen (macOS .dmg)
+        if: startsWith(matrix.platform, 'mac')
+        run: |
+          python desktop/setup_freeze.py bdist_dmg
+          mkdir -p out
+          NAME=$([ "${{ matrix.platform }}" = mac-arm64 ] && echo AppleSilicon || echo Intel)
+          cp "$(find build dist -name '*.dmg' 2>/dev/null | head -1)" "out/AnythingConverter-macOS-$NAME.dmg"
+          echo "EXE=$(find build -path '*.app/Contents/MacOS/AnythingConverter' | head -1)" >> "$GITHUB_ENV"
+
+      - name: Bouwen (Linux .deb + .AppImage)
+        if: matrix.platform == 'linux-x64'
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq libfuse2
+          python desktop/setup_freeze.py build_exe
+          BUILD=$(ls -d build/exe.*)
+          mkdir -p out
+          bash desktop/make_deb.sh "$BUILD" "${{ inputs.version || '2.1.0' }}" out/AnythingConverter-Linux.deb
+          python desktop/setup_freeze.py bdist_appimage
+          cp "$(find dist -name '*.AppImage' | head -1)" out/AnythingConverter-Linux.AppImage
+          chmod +x out/AnythingConverter-Linux.AppImage
+          echo "EXE=$BUILD/AnythingConverter" >> "$GITHUB_ENV"
+
+      - name: Rooktest (starten, converteren, afsluiten)
+        run: python desktop/smoke_test.py "$EXE"
+
+      - name: Logbestand bij fouten
+        if: failure()
+        run: |
+          cat "$LOCALAPPDATA/AnythingConverter/anything-converter.log" 2>/dev/null || true
+          cat ~/Library/Logs/AnythingConverter/anything-converter.log 2>/dev/null || true
+          cat ~/.local/state/AnythingConverter/anything-converter.log 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.platform }}
+          path: out/*
+          if-no-files-found: error
+
+  release:
+    name: Publiceren
+    needs: build
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Release-tekst
+        run: |
+          cat > notes.md <<'EOF'
+          ## Installeren
+
+          | Systeem | Bestand |
+          |---|---|
+          | Windows 10/11 | `AnythingConverter-Windows.msi` |
+          | Mac met M1/M2/M3/M4 | `AnythingConverter-macOS-AppleSilicon.dmg` |
+          | Mac met Intel | `AnythingConverter-macOS-Intel.dmg` |
+          | Ubuntu / Debian / Mint | `AnythingConverter-Linux.deb` |
+          | Andere Linux | `AnythingConverter-Linux.AppImage` |
+
+          ffmpeg, yt-dlp en Deno zitten erin. Na het starten opent de converter in je browser;
+          afsluiten met **[ AFSLUITEN ]** bovenaan de pagina.
+
+          **Eerste keer openen** (de app is niet betaald ondertekend):
+          - **Windows**: "Windows heeft uw pc beschermd" → **Meer informatie** → **Toch uitvoeren**.
+          - **macOS**: dubbelklik, sluit de melding, ga naar **Systeeminstellingen → Privacy en beveiliging** en klik onderaan **Toch openen**.
+          - **Linux AppImage**: rechtsklik → Eigenschappen → "Uitvoeren als programma" aanzetten.
+          EOF
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', inputs.version) }}
+          name: Anything Converter ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', inputs.version) }}
+          body_path: notes.md
+          files: out/*
+          make_latest: true
