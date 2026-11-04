@@ -58,7 +58,11 @@ jobs:
       - name: Python-pakketten
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt "cx_Freeze==8.7.2"
+          # pikepdf heeft geen kant-en-klaar pakket voor Intel-Macs; het is alleen een reserve
+          # voor PDF-compressie, dus daar laten we het weg.
+          if [ "${{ matrix.platform }}" = mac-x64 ]; then grep -v '^pikepdf' requirements.txt > req.txt
+          else cp requirements.txt req.txt; fi
+          pip install -r req.txt "cx_Freeze==8.7.2"
 
       - name: ffmpeg, ffprobe en Deno ophalen
         run: bash desktop/fetch_bins.sh ${{ matrix.platform }}

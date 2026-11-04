@@ -11,6 +11,7 @@ ze komen dan mee in de app.
 """
 from __future__ import annotations
 
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -28,9 +29,12 @@ include_files = [(str(ROOT / "static"), "static")]
 if (HERE / "bin").is_dir() and any((HERE / "bin").iterdir()):
     include_files.append((str(HERE / "bin"), "bin"))
 
+PACKAGES = ["converter", "flask", "werkzeug", "jinja2", "markupsafe", "itsdangerous", "click",
+            "blinker", "PIL", "pikepdf", "yt_dlp", "yt_dlp_ejs", "certifi"]
+OPTIONAL = {"pikepdf"}  # niet op elk platform beschikbaar
+
 build_exe = {
-    "packages": ["converter", "flask", "werkzeug", "jinja2", "markupsafe", "itsdangerous", "click",
-                 "blinker", "PIL", "pikepdf", "yt_dlp", "yt_dlp_ejs", "certifi"],
+    "packages": [p for p in PACKAGES if p not in OPTIONAL or importlib.util.find_spec(p)],
     "includes": ["app"],
     "include_files": include_files,
     "excludes": ["tkinter", "unittest", "pytest", "test", "pydoc_data", "cx_Freeze", "numpy", "fontTools",
