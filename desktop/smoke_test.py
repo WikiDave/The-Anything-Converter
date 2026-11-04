@@ -83,6 +83,15 @@ def main():
         assert info["desktop"] is True
         convert("test.png", sample_png(), "jpg")
         convert("test.wav", sample_wav(), "mp3")
+        # libtorrent aanwezig? Een kapot .torrent-bestand moet "geen geldig" geven, niet "vereisen libtorrent".
+        job = call("/api/torrent", files=("kapot.torrent", b"geen torrent"))
+        for _ in range(30):
+            job = call("/api/job/" + job["id"])
+            if job["status"] in ("done", "error"):
+                break
+            time.sleep(1)
+        assert "geldig" in (job.get("error") or ""), f"torrent-module werkt niet: {job.get('error')}"
+        print("  ok: libtorrent aanwezig")
         call("/api/quit", {})
         proc.wait(timeout=30)
         print("afgesloten met code", proc.returncode)
