@@ -14,11 +14,11 @@ from . import datafmt, objfmt, subsfmt, textfmt, unpack
 from .catalog import catalog, ext_of, looks_text, sniff
 
 FAMILY_LABELS = {
-    "text": "Tekst / code", "data": "Data", "subtitle": "Ondertitels", "playlist": "Afspeellijst", "midi": "MIDI",
-    "font": "Lettertype", "mail": "E-mail", "contact": "Contacten", "calendar": "Agenda", "gps": "GPS / kaart",
-    "model3d": "3D-model", "cad": "CAD-tekening", "vector": "Vectorafbeelding", "cert": "Certificaat / sleutel",
-    "medical": "Medisch beeld (DICOM)", "compressed": "Gecomprimeerd bestand", "archive2": "Archief / pakket",
-    "vmdisk": "VM-schijf", "comic": "Stripboek", "info": "Overig bestand",
+    "text": "Text / code", "data": "Data", "subtitle": "Subtitles", "playlist": "Playlist", "midi": "MIDI",
+    "font": "Font", "mail": "E-mail", "contact": "Contacts", "calendar": "Calendar", "gps": "GPS / map",
+    "model3d": "3D model", "cad": "CAD drawing", "vector": "Vector image", "cert": "Certificate / key",
+    "medical": "Medical image (DICOM)", "compressed": "Compressed file", "archive2": "Archive / package",
+    "vmdisk": "VM disk", "comic": "Comic book", "info": "Other file",
 }
 
 LO_VECTOR = {"odg", "vsd", "vsdx", "vssx", "pub", "cdr", "emf", "wmf", "cgm", "otg"}
@@ -138,6 +138,8 @@ def targets(path: Path, category: str, eff: str) -> list[str]:
         return subsfmt.targets(eff)
     if category in ("font", "mail", "contact", "calendar", "gps", "model3d", "cad", "vector", "cert", "medical"):
         out = objfmt.targets({"font": "font", "mail": "mail"}.get(category, category), eff)
+        if category == "font" and "otf" in out and not objfmt.is_cff(path):
+            out.remove("otf")
         if category == "vector" and eff in LO_VECTOR:
             out = ["pdf", "png", "svg", "jpg"]
         return out
@@ -164,7 +166,7 @@ def process(src: Path, out_dir: Path, category: str, eff: str, opts: dict, progr
     from .util import ConversionError
     fmt = (opts.get("format") or "").lower()
     if progress:
-        progress(0.1, "omzetten")
+        progress(0.1, "converting")
     if category == "info" or fmt == "rapport":
         if fmt in ("zip", "7z"):
             from .archive import _pack
@@ -194,4 +196,4 @@ def process(src: Path, out_dir: Path, category: str, eff: str, opts: dict, progr
         return objfmt.convert(category, src, out_dir, fmt, opts)
     if category in ("compressed", "archive2", "vmdisk", "comic"):
         return unpack.convert(category, src, out_dir, fmt, opts)
-    raise ConversionError(f"Onbekende soort: {category}")
+    raise ConversionError(f"Unknown kind: {category}")

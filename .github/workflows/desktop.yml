@@ -23,7 +23,7 @@ on:
       version:
         description: "Versie (bijv. 2.1.0)"
         required: true
-        default: "2.9.0"
+        default: "2.10.0"
 
 permissions:
   contents: read
@@ -86,6 +86,10 @@ jobs:
           mkdir -p out
           cp dist/*.msi out/AnythingConverter-Windows.msi
           echo "EXE=$(ls -d build/exe.*)/AnythingConverter.exe" >> "$GITHUB_ENV"
+          # portable zip for Scoop (scoop install anything-converter) and for use without installing
+          DIR="$(ls -d build/exe.*)"
+          rm -rf pkg && mkdir -p pkg && cp -r "$DIR" pkg/AnythingConverter
+          (cd pkg && 7z a -tzip -mx=7 ../out/AnythingConverter-Windows-portable.zip AnythingConverter > /dev/null)
 
       - name: Bouwen (macOS .dmg)
         if: startsWith(matrix.platform, 'mac')
@@ -230,6 +234,8 @@ jobs:
           | Andere Linux | `AnythingConverter-Linux.AppImage` |
           | Android 10+ | `AnythingConverter-Android.apk` |
           | iPhone / iPad | geen bestand: open de web-app in Safari → Deel → Zet op beginscherm |
+          | Terminal (Windows) | `scoop bucket add wikidave https://github.com/WikiDave/The-Anything-Converter` and `scoop install anything-converter` (or the .msi: then `anything-converter-tui` works in every new PowerShell window) |
+          | Docker | `docker run -p 8000:8000 ghcr.io/wikidave/the-anything-converter` (web) or `docker run -it --rm -v "$PWD:/data" ghcr.io/wikidave/the-anything-converter anything-converter-tui` |
           | Terminal (macOS/Linux) | `brew tap wikidave/anything-converter https://github.com/WikiDave/The-Anything-Converter` `brew trust wikidave/anything-converter` en `brew install anything-converter` |
 
           ffmpeg, yt-dlp en Deno zitten erin. De converter opent in een eigen programmavenster;
@@ -268,7 +274,12 @@ jobs:
               git config user.name "github-actions[bot]"
               git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
               git add Formula/anything-converter.rb
-              git diff --cached --quiet || { git commit -q -m "Homebrew: anything-converter $V"; git push -q origin "HEAD:$B"; }
+              if [ -f desktop/update_scoop.py ] && [ -f bucket/anything-converter.json ] && \
+                 [ -f "$OUT/AnythingConverter-Windows-portable.zip" ]; then
+                python3 desktop/update_scoop.py "$V" "$OUT" > /dev/null
+                git add bucket/anything-converter.json
+              fi
+              git diff --cached --quiet || { git commit -q -m "Homebrew + Scoop: anything-converter $V"; git push -q origin "HEAD:$B"; }
               echo "formule bijgewerkt op $B"
             fi
             cd ..
@@ -295,3 +306,18 @@ jobs:
           brew install wikidave/anything-converter/anything-converter
           anything-converter-tui --version
           brew test anything-converter
+
+  scoop:
+    name: Scoop test (Windows)
+    needs: release
+    runs-on: windows-latest
+    steps:
+      - name: Install via scoop and start
+        shell: pwsh
+        run: |
+          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+          $env:PATH = "$env:USERPROFILE\scoop\shims;$env:PATH"
+          scoop bucket add wikidave https://github.com/WikiDave/The-Anything-Converter
+          scoop install wikidave/anything-converter
+          anything-converter-tui --version
+          anything-converter-tui formats "$env:WINDIR\win.ini"

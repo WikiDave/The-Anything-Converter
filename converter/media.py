@@ -79,6 +79,125 @@ AUDIO_KBPS = {"high": 192, "medium": 128, "low": 96}
 CONTAINER_OVERHEAD = 0.96  # marge voor container-/muxoverhead
 
 
+# --------------------------------------------------------------------------- advanced settings
+# Everything "behind" a media file: codecs, frame rate, resolution, bitrates, audio channels and metadata.
+
+V_ENCODERS = {"h264": "libx264", "h265": "libx265", "vp9": "libvpx-vp9", "vp8": "libvpx", "av1": "libsvtav1",
+              "prores": "prores_ks", "dnxhd": "dnxhd", "mpeg4": "mpeg4", "mpeg2": "mpeg2video", "mjpeg": "mjpeg",
+              "theora": "libtheora", "copy": "copy"}
+A_ENCODERS = {"aac": "aac", "mp3": "libmp3lame", "opus": "libopus", "vorbis": "libvorbis", "flac": "flac",
+              "ac3": "ac3", "eac3": "eac3", "alac": "alac", "pcm": "pcm_s16le", "pcm24": "pcm_s24le", "mp2": "mp2",
+              "copy": "copy"}
+# Which codecs each container can hold (a missing container = no limits checked).
+CONTAINER_V = {"mp4": {"h264", "h265", "av1", "vp9", "mpeg4", "mpeg2", "mjpeg", "copy"},
+               "m4v": {"h264", "h265", "av1", "mpeg4", "copy"},
+               "mov": {"h264", "h265", "prores", "dnxhd", "mjpeg", "mpeg4", "av1", "copy"},
+               "webm": {"vp9", "vp8", "av1", "copy"},
+               "avi": {"h264", "mpeg4", "mjpeg", "mpeg2", "copy"},
+               "ogv": {"theora", "vp8", "copy"},
+               "mkv": set(V_ENCODERS)}
+CONTAINER_A = {"mp4": {"aac", "mp3", "opus", "flac", "ac3", "eac3", "alac", "copy"},
+               "m4v": {"aac", "ac3", "alac", "copy"},
+               "mov": {"aac", "mp3", "alac", "pcm", "pcm24", "ac3", "copy"},
+               "webm": {"opus", "vorbis", "copy"},
+               "avi": {"mp3", "ac3", "pcm", "mp2", "aac", "copy"},
+               "ogv": {"vorbis", "opus", "flac", "copy"},
+               "mkv": set(A_ENCODERS)}
+CRF_EXTRA = {"libx265": {"high": 22, "medium": 26, "low": 32}, "libsvtav1": {"high": 28, "medium": 35, "low": 45},
+             "libaom-av1": {"high": 28, "medium": 35, "low": 45}, "libvpx": {"high": 8, "medium": 12, "low": 20}}
+META_FIELDS = ("title", "artist", "album", "date", "genre", "comment", "description", "copyright", "language")
+_encoders_cache: set[str] | None = None
+
+
+def encoders() -> set[str]:
+    global _encoders_cache
+    if _encoders_cache is None:
+        try:
+            out = subprocess.run(["ffmpeg", "-hide_banner", "-encoders"], capture_output=True, text=True, timeout=20,
+                                 **NO_WINDOW).stdout
+            _encoders_cache = {ln.split()[1] for ln in out.splitlines() if len(ln.split()) > 1 and ln.startswith(" ")
+                               and len(ln.split()[0]) == 6}
+        except (OSError, subprocess.SubprocessError):
+            _encoders_cache = set()
+    return _encoders_cache
+
+
+def _pick_encoder(name: str) -> str:
+    enc = V_ENCODERS.get(name) or A_ENCODERS.get(name) or name
+    have = encoders()
+    if enc == "libsvtav1" and have and enc not in have and "libaom-av1" in have:
+        return "libaom-av1"
+    if have and enc != "copy" and enc not in have:
+        raise ConversionError(f"This ffmpeg has no {name.upper()} encoder ({enc}).")
+    return enc
+
+
+def _check_container(fmt: str, vname: str | None, aname: str | None) -> None:
+    if vname and fmt in CONTAINER_V and vname not in CONTAINER_V[fmt]:
+        raise ConversionError(f"A .{fmt} file cannot hold {vname.upper()} video. Possible: "
+                              f"{', '.join(sorted(c for c in CONTAINER_V[fmt] if c != 'copy')).upper()}.")
+    if aname and fmt in CONTAINER_A and aname not in CONTAINER_A[fmt]:
+        raise ConversionError(f"A .{fmt} file cannot hold {aname.upper()} audio. Possible: "
+                              f"{', '.join(sorted(c for c in CONTAINER_A[fmt] if c != 'copy')).upper()}.")
+
+
+def _num(v, kind=float):
+    try:
+        return kind(str(v).strip().lower().rstrip("kps").rstrip("fps").strip()) if v not in (None, "") else None
+    except ValueError:
+        raise ConversionError(f"Not a number: {v}") from None
+
+
+def metadata_args(opts: dict) -> list[str]:
+    """keep (default) / strip / edit the tags and chapters of a file."""
+    args = ["-map_metadata", "-1", "-map_chapters", "-1"] if opts.get("metadata") == "strip" else \
+        ["-map_metadata", "0"]
+    for k in META_FIELDS:
+        v = opts.get(f"meta_{k}")
+        if v is not None and str(v) != "":
+            args += ["-metadata", f"{k}={str(v)[:1000]}"]
+    return args
+
+
+def audio_extra(opts: dict) -> list[str]:
+    args = []
+    if opts.get("sample_rate"):
+        args += ["-ar", str(int(_num(opts["sample_rate"])))]
+    if opts.get("channels"):
+        ch = {"mono": 1, "stereo": 2, "5.1": 6}.get(str(opts["channels"]), None) or int(_num(opts["channels"]))
+        args += ["-ac", str(ch)]
+    if opts.get("volume"):
+        args += ["-af", f"volume={_num(opts['volume'])}dB"]
+    return args
+
+
+def media_info(src: Path) -> dict:
+    """Everything behind a media file, for the settings panel: container, streams, codecs and tags."""
+    info = ffprobe(src)
+    fmt = info.get("format", {})
+    streams = []
+    for st in info.get("streams", []):
+        kind = st.get("codec_type")
+        row = {"index": st.get("index"), "kind": kind, "codec": st.get("codec_name"),
+               "codec_long": st.get("codec_long_name"), "profile": st.get("profile"),
+               "bitrate": int(st.get("bit_rate") or 0), "language": (st.get("tags") or {}).get("language"),
+               "title": (st.get("tags") or {}).get("title")}
+        if kind == "video":
+            num, _, den = (st.get("avg_frame_rate") or st.get("r_frame_rate") or "0/1").partition("/")
+            fps = float(num) / float(den or 1) if float(den or 1) else 0
+            row.update(width=st.get("width"), height=st.get("height"), fps=round(fps, 3),
+                       pix_fmt=st.get("pix_fmt"), color=st.get("color_transfer"),
+                       cover=bool(st.get("disposition", {}).get("attached_pic")))
+        elif kind == "audio":
+            row.update(sample_rate=int(st.get("sample_rate") or 0), channels=st.get("channels"),
+                       layout=st.get("channel_layout"))
+        streams.append(row)
+    return {"container": fmt.get("format_long_name") or fmt.get("format_name"),
+            "duration": float(fmt.get("duration") or 0), "bitrate": int(fmt.get("bit_rate") or 0),
+            "size": int(fmt.get("size") or 0), "tags": fmt.get("tags") or {},
+            "chapters": len(info.get("chapters", []) or []), "streams": streams}
+
+
 # --------------------------------------------------------------------------- helpers
 
 def _probe(src: Path) -> dict:
@@ -93,12 +212,24 @@ def _probe(src: Path) -> dict:
         "width": int(v["width"]) if v else 0,
         "height": int(v["height"]) if v else 0,
         "has_video": v is not None,
+        "vcodec": v.get("codec_name") if v else None,
         "has_audio": a is not None,
+        # sommige bronnen (TTA, Speex, ...) hebben geen kanaalindeling; encoders als AAC weigeren dan
+        "fix_layout": _layout_fix(a),
+        "sample_rate": int(a.get("sample_rate") or 0) if a else 0,
     }
 
 
+def _layout_fix(a) -> list[str]:
+    """Kanaalindeling vastleggen als de bron er geen heeft (TTA, Speex, ...): anders weigeren encoders als AAC."""
+    if not a or a.get("channel_layout"):
+        return []
+    n = int(a.get("channels") or 2)
+    return ["-af", "pan=mono|c0=c0" if n == 1 else "pan=stereo|c0=c0|c1=c1"]
+
+
 def _run_ffmpeg(args: list[str], duration: float, progress: Optional[ProgressFn],
-                lo: float = 0.0, hi: float = 1.0, label: str = "Bezig") -> None:
+                lo: float = 0.0, hi: float = 1.0, label: str = "Working") -> None:
     cmd = ["ffmpeg", "-hide_banner", "-y", "-nostdin", "-progress", "pipe:1", "-nostats", *args]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                             encoding="utf-8", errors="replace", **NO_WINDOW)
@@ -154,12 +285,12 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
     end = parse_time(opts.get("trim_end"))
     full = info["duration"]
     if full and start >= full:
-        raise ConversionError("Het startpunt ligt na het einde van het bestand.")
+        raise ConversionError("The start point is after the end of the file.")
     if end is not None:
         if full:
             end = min(end, full)
         if end <= start:
-            raise ConversionError("Het eindpunt moet na het startpunt liggen.")
+            raise ConversionError("The end point must be after the start point.")
     duration = (end if end is not None else full) - start
     trimming = start > 0 or end is not None
 
@@ -169,7 +300,7 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
     if end is not None:
         trim_args += ["-t", f"{end - start:.3f}"]
 
-    stem = src.stem + ("_bewerkt" if fmt == src.suffix.lstrip(".").lower() else "")
+    stem = src.stem + ("_edited" if fmt == src.suffix.lstrip(".").lower() else "")
     dst = out_dir / f"{stem}.{ {'alac': 'm4a'}.get(fmt, fmt)}"
 
     target = opts.get("target_bytes")
@@ -178,46 +309,56 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
     # Snel knippen zonder hercoderen (zelfde formaat, geen andere wijzigingen)
     if opts.get("fast_trim") and fmt == src.suffix.lstrip(".").lower() and not target and not opts.get("height"):
         _run_ffmpeg([*trim_args, "-i", str(src), "-map", "0", "-c", "copy",
-                     "-avoid_negative_ts", "make_zero", str(dst)], duration, progress, label="Knippen")
+                     "-avoid_negative_ts", "make_zero", str(dst)], duration, progress, label="Trimming")
         return dst
 
     if fmt in AUDIO_ONLY:
         if not info["has_audio"]:
-            raise ConversionError("Dit bestand bevat geen audio.")
-        return _audio(src, dst, fmt, trim_args, duration, target, quality, progress)
+            raise ConversionError("This file has no audio.")
+        return _audio(src, dst, fmt, trim_args, duration, target, quality, progress, info, opts)
     if fmt == "gif":
         return _gif(src, dst, trim_args, duration, info, opts, target, progress)
     if fmt not in VIDEO_CODEC:
-        raise ConversionError(f"Uitvoerformaat .{fmt} wordt niet ondersteund voor video.")
+        raise ConversionError(f"Output format .{fmt} is not supported for video.")
     if not info["has_video"]:
-        raise ConversionError("Dit bestand bevat geen videobeeld.")
+        raise ConversionError("This file has no video picture.")
     return _video(src, dst, fmt, trim_args, duration, info, opts, target, quality, progress, trimming)
 
 
-def _audio(src, dst, fmt, trim_args, duration, target, quality, progress) -> Path:
-    args = [*trim_args, "-i", str(src), "-vn", "-map", "0:a:0", *AUDIO_CODEC[fmt]]
+VORBIS_Q = {"high": 6, "medium": 4, "low": 2}
+
+
+def _audio(src, dst, fmt, trim_args, duration, target, quality, progress, info=None, opts=None) -> Path:
+    info, opts = info or {}, opts or {}
+    args = [*trim_args, "-i", str(src), "-vn", "-map", "0:a:0", *AUDIO_CODEC[fmt], *info.get("fix_layout", [])]
     if target:
         if fmt in FIXED_AUDIO:
-            raise ConversionError(f".{fmt} heeft een vaste kwaliteit; de grootte ligt vast. Kies mp3, m4a, ogg of opus "
-                                  "om een doelgrootte te halen.")
+            raise ConversionError(f".{fmt} has a fixed quality; its size is fixed. Choose mp3, m4a, ogg or opus to reach a target size.")
         if duration <= 0:
-            raise ConversionError("Kan de duur niet bepalen, dus geen doelgrootte mogelijk.")
+            raise ConversionError("Cannot determine the duration, so no target size is possible.")
         kbps = target * 8 * CONTAINER_OVERHEAD / duration / 1000
         lo, hi = AUDIO_LIMITS[fmt]
         if kbps < lo:
-            raise ConversionError(f"Doelgrootte te klein: minimaal ~{human_size(int(lo * 1000 * duration / 8))} "
-                                  f"nodig voor .{fmt} bij deze lengte.")
+            raise ConversionError(f"Target size too small: at least ~{human_size(int(lo * 1000 * duration / 8))} is needed for .{fmt} at this length.")
         kbps = min(int(kbps), hi)
         args += ["-b:a", f"{kbps}k"]
         if kbps < 64 and fmt in ("mp3", "m4a", "aac"):
             args += ["-ac", "1"]
+    elif opts.get("audio_bitrate") and fmt not in FIXED_AUDIO:
+        args += ["-b:a", f"{int(_num(opts['audio_bitrate']))}k"]
+    elif fmt == "ogg":
+        args += ["-q:a", str(VORBIS_Q[quality])]  # kwaliteitsstand: werkt ook bij lage samplerates (8 kHz)
     elif fmt not in FIXED_AUDIO:
         args += ["-b:a", f"{AUDIO_KBPS[quality]}k"]
+    extra = audio_extra(opts)
+    if extra:
+        args = [a for a in args if a not in info.get("fix_layout", [])] + extra
+    args += metadata_args(opts)
     if fmt == "m4r" and duration > 40 and "-t" not in trim_args:
         args += ["-t", "40"]  # iPhone-beltonen mogen maximaal 40 seconden zijn
     if fmt in ("m4a", "m4r", "m4b", "alac"):
         args += ["-movflags", "+faststart"]
-    _run_ffmpeg([*args, str(dst)], duration, progress, label="Audio coderen")
+    _run_ffmpeg([*args, str(dst)], duration, progress, label="Encoding audio")
     return dst
 
 
@@ -225,72 +366,172 @@ def _scale_filter(height: Optional[int]) -> list[str]:
     return [f"scale=-2:{int(height)}:flags=lanczos"] if height else []
 
 
+SVT_PRESET = {"ultrafast": 12, "superfast": 11, "veryfast": 10, "faster": 9, "fast": 8, "medium": 6, "slow": 4,
+              "slower": 3, "veryslow": 2}
+SUB_CODEC = {"mp4": "mov_text", "m4v": "mov_text", "mov": "mov_text", "webm": "webvtt", "mkv": "copy"}
+
+
 def _video(src, dst, fmt, trim_args, duration, info, opts, target, quality, progress, trimming) -> Path:
     vcodec, acodec = VIDEO_CODEC[fmt]
+    vname = (opts.get("vcodec") or "").lower() or None
+    aname = (opts.get("acodec") or "").lower() or None
+    _check_container(fmt, vname, aname)
+    if vname:
+        vcodec = _pick_encoder(vname)
+    if aname:
+        acodec = _pick_encoder(aname)
     keep_audio = info["has_audio"] and not opts.get("remove_audio")
     height = int(opts["height"]) if opts.get("height") else None
+    width = int(opts["width"]) if opts.get("width") else None
+    fps = _num(opts.get("fps"))
     device = DEVICES.get(opts.get("device") or "")
     if device and (height or info["height"] or 0) > device[0]:
         height = device[0]
+    all_streams = opts.get("streams") == "all"
 
     base_in = [*trim_args, "-i", str(src), "-map", "0:v:0"]
     if keep_audio:
-        base_in += ["-map", "0:a:0?"]
+        base_in += ["-map", "0:a?" if all_streams else "0:a:0?"]
+    subs: list[str] = []
+    if all_streams and fmt in SUB_CODEC:
+        base_in += ["-map", "0:s?"]
+        subs = ["-c:s", SUB_CODEC[fmt]]
+    meta = metadata_args(opts)
 
-    common_v = ["-c:v", vcodec, "-pix_fmt", "yuv420p"]
-    if vcodec == "libx264":
-        common_v += ["-preset", "medium"]
-        if device:
-            common_v += ["-profile:v", device[1], "-level", device[2]]
-    elif vcodec == "libvpx-vp9":
-        common_v += ["-row-mt", "1", "-deadline", "good", "-cpu-used", "2"]
-    tail = (["-movflags", "+faststart"] if fmt in ("mp4", "mov", "m4v") else []) + VIDEO_EXTRA.get(fmt, [])
-
-    if not target:
-        filters = _scale_filter(height)
-        args = [*base_in, *common_v, *(["-crf", str(CRF[vcodec][quality])] if vcodec in CRF
-                                        else ["-q:v", str(QSCALE[vcodec][quality])])]
-        if vcodec == "libvpx-vp9":
-            args += ["-b:v", "0"]
-        if filters:
-            args += ["-vf", ",".join(filters)]
-        args += (["-c:a", acodec, "-b:a", f"{AUDIO_KBPS[quality]}k"] if keep_audio else ["-an"])
-        _run_ffmpeg([*args, *tail, str(dst)], duration, progress, label="Video coderen")
+    filters = []
+    if width and height:
+        filters.append(f"scale={width}:{height}:flags=lanczos")
+    elif width:
+        filters.append(f"scale={width}:-2:flags=lanczos")
+    else:
+        filters += _scale_filter(height)
+    if fps:
+        filters.append(f"fps={fps:g}")
+    if vcodec == "copy":
+        if filters or target:
+            raise ConversionError("Copying the video stream (no re-encoding) cannot change the size, resolution or "
+                                  "frame rate. Choose a codec instead of 'copy'.")
+        args = [*base_in, "-c:v", "copy"]
+        if keep_audio:
+            args += ["-c:a", acodec] + ([] if acodec == "copy" else
+                                        ["-b:a", str(opts.get("audio_bitrate") or f"{AUDIO_KBPS[quality]}k")]
+                                        + audio_extra(opts))
+        else:
+            args += ["-an"]
+        if vname == "copy" and fmt in ("mp4", "mov", "m4v") and info.get("vcodec") == "hevc":
+            args += ["-tag:v", "hvc1"]
+        tail = (["-movflags", "+faststart"] if fmt in ("mp4", "mov", "m4v") else []) + VIDEO_EXTRA.get(fmt, [])
+        _run_ffmpeg([*args, *subs, *meta, *tail, str(dst)], duration, progress, label="Copying streams")
         return dst
 
-    # ---- doelgrootte: 2-pass codering met berekende bitrate
+    pix = opts.get("pix_fmt") or ("yuv422p10le" if vcodec in ("prores_ks", "dnxhd") else "yuv420p")
+    if pix == "10bit":
+        pix = "yuv420p10le"
+    common_v = ["-c:v", vcodec, "-pix_fmt", pix]
+    preset = opts.get("preset")
+    if vcodec in ("libx264", "libx265"):
+        common_v += ["-preset", preset or "medium"]
+        if device and vcodec == "libx264":
+            common_v += ["-profile:v", device[1], "-level", device[2]]
+        if vcodec == "libx265" and fmt in ("mp4", "mov", "m4v"):
+            common_v += ["-tag:v", "hvc1"]  # so Apple devices play it
+    elif vcodec == "libvpx-vp9":
+        common_v += ["-row-mt", "1", "-deadline", "good", "-cpu-used", "2"]
+    elif vcodec == "libsvtav1":
+        common_v += ["-preset", str(SVT_PRESET.get(preset or "medium", 6))]
+    elif vcodec == "libaom-av1":
+        common_v += ["-cpu-used", "6", "-row-mt", "1"]
+    elif vcodec == "prores_ks":
+        common_v += ["-profile:v", str(opts.get("prores_profile") or 3), "-vendor", "apl0"]
+    elif vcodec == "dnxhd":
+        common_v = ["-c:v", "dnxhd", "-profile:v", "dnxhr_hq", "-pix_fmt", "yuv422p"]
+    tail = (["-movflags", "+faststart"] if fmt in ("mp4", "mov", "m4v") else []) + VIDEO_EXTRA.get(fmt, [])
+    if fps and "-r" in tail:
+        i = tail.index("-r")
+        tail = tail[:i] + tail[i + 2:]
+
+    def audio_args(kbps: int | None) -> list[str]:
+        if not keep_audio:
+            return ["-an"]
+        if acodec == "copy":
+            return ["-c:a", "copy"]
+        out = ["-c:a", acodec]
+        if acodec not in ("flac", "alac", "pcm_s16le", "pcm_s24le"):
+            if opts.get("audio_bitrate"):
+                out += ["-b:a", f"{int(_num(opts['audio_bitrate']))}k"]
+            elif kbps:
+                out += ["-b:a", f"{kbps}k"]
+            elif acodec == "libvorbis":
+                out += ["-q:a", str(VORBIS_Q[quality])]
+            else:
+                out += ["-b:a", f"{AUDIO_KBPS[quality]}k"]
+        extra = audio_extra(opts)
+        return out + (extra if extra else info.get("fix_layout", []))
+
+    vf = ["-vf", ",".join(filters)] if filters else []
+    if not target:
+        crf = CRF.get(vcodec) or CRF_EXTRA.get(vcodec)
+        if opts.get("video_bitrate"):
+            vb = int(_num(opts["video_bitrate"]))
+            rate = ["-b:v", f"{vb}k", "-maxrate", f"{int(vb * 1.5)}k", "-bufsize", f"{vb * 2}k"]
+        elif vcodec in ("prores_ks", "dnxhd"):
+            rate = []
+        elif opts.get("crf") not in (None, "") and crf:
+            rate = ["-crf", str(int(_num(opts["crf"])))]
+        elif crf:
+            rate = ["-crf", str(crf[quality])]
+        else:
+            rate = ["-q:v", str(QSCALE.get(vcodec, QSCALE["mpeg4"])[quality])]
+        if vcodec == "libvpx-vp9" and "-crf" in rate:
+            rate += ["-b:v", "0"]
+        _run_ffmpeg([*base_in, *common_v, *rate, *vf, *audio_args(None), *subs, *meta, *tail, str(dst)],
+                    duration, progress, label="Encoding video")
+        return dst
+
+    # ---- target size: 2-pass encode with a calculated bitrate
     if duration <= 0:
-        raise ConversionError("Kan de duur niet bepalen, dus geen doelgrootte mogelijk.")
+        raise ConversionError("Cannot determine the duration, so no target size is possible.")
     total_kbps = target * 8 * CONTAINER_OVERHEAD / duration / 1000
-    a_kbps = _audio_bitrate_for(total_kbps) if keep_audio else 0
+    a_kbps = (int(_num(opts["audio_bitrate"])) if opts.get("audio_bitrate") else _audio_bitrate_for(total_kbps)) \
+        if keep_audio else 0
     v_kbps = total_kbps - a_kbps
     if v_kbps < 30:
         need = int((30 + a_kbps) * 1000 * duration / 8 / CONTAINER_OVERHEAD)
-        raise ConversionError(f"Doelgrootte te klein voor deze videolengte. Minimaal ongeveer {human_size(need)}; "
-                              "knip de video korter of verwijder de audio.")
-    if not height and info["height"]:
+        raise ConversionError(f"Target size too small for this video length. At least about {human_size(need)}; trim the video or remove the audio.")
+    if not height and not width and info["height"]:
         height = _auto_height(v_kbps, info["height"])
-    filters = _scale_filter(height)
+        if height:
+            filters.insert(0, _scale_filter(height)[0])
+    vf = ["-vf", ",".join(filters)] if filters else []
 
     src_kbps = info["bitrate"] / 1000 if info["bitrate"] else 0
     growing = src_kbps and total_kbps > src_kbps * 1.05
     v_kbps = int(v_kbps)
     rate = ["-b:v", f"{v_kbps}k"]
     if growing:
-        # Groter maken: constante bitrate afdwingen zodat het bestand echt groeit.
+        # Making it larger: force a constant bitrate so the file really grows.
         rate += ["-minrate", f"{v_kbps}k", "-maxrate", f"{v_kbps}k", "-bufsize", f"{v_kbps * 2}k"]
         if vcodec == "libx264":
             rate += ["-x264-params", "nal-hrd=cbr:force-cfr=1"]
     else:
         rate += ["-maxrate", f"{int(v_kbps * 1.5)}k", "-bufsize", f"{v_kbps * 2}k"]
+    if vcodec in ("prores_ks", "dnxhd"):
+        raise ConversionError("ProRes and DNxHD have a fixed quality; a target size is not possible. Choose H.264 or H.265.")
 
-    vf = ["-vf", ",".join(filters)] if filters else []
     passlog = str(dst.parent / f"{dst.stem}_2pass")
-    _run_ffmpeg([*base_in, *common_v, *rate, *vf, "-pass", "1", "-passlogfile", passlog, "-an", "-f", "null",
-                 "/dev/null"], duration, progress, 0.0, 0.5, "Analyse (pass 1/2)")
-    audio = ["-c:a", acodec, "-b:a", f"{a_kbps}k"] if keep_audio else ["-an"]
-    _run_ffmpeg([*base_in, *common_v, *rate, *vf, "-pass", "2", "-passlogfile", passlog, *audio, *tail, str(dst)],
-                duration, progress, 0.5, 1.0, "Coderen (pass 2/2)")
+    two_pass = vcodec in ("libx264", "libx265", "libvpx-vp9", "libvpx", "mpeg4", "mpeg2video")
+    if two_pass:
+        pass1 = ["-pass", "1", "-passlogfile", passlog] if vcodec != "libx265" else \
+            ["-x265-params", f"pass=1:stats={passlog}.log"]
+        pass2 = ["-pass", "2", "-passlogfile", passlog] if vcodec != "libx265" else \
+            ["-x265-params", f"pass=2:stats={passlog}.log"]
+        _run_ffmpeg([*base_in, *common_v, *rate, *vf, *pass1, "-an", "-f", "null", "/dev/null"],
+                    duration, progress, 0.0, 0.5, "Analysis (pass 1/2)")
+        _run_ffmpeg([*base_in, *common_v, *rate, *vf, *pass2, *audio_args(a_kbps), *subs, *meta, *tail, str(dst)],
+                    duration, progress, 0.5, 1.0, "Encoding (pass 2/2)")
+    else:
+        _run_ffmpeg([*base_in, *common_v, *rate, *vf, *audio_args(a_kbps), *subs, *meta, *tail, str(dst)],
+                    duration, progress, label="Encoding video")
     for f in dst.parent.glob(f"{dst.stem}_2pass*"):
         f.unlink(missing_ok=True)
     return dst
@@ -320,5 +561,5 @@ def _gif(src, dst, trim_args, duration, info, opts, target, progress) -> Path:
             colors = max(32, colors // 2) if width <= 200 else colors
             encode(width, fps, colors)
         if dst.stat().st_size > target:
-            raise ConversionError("GIF kon niet klein genoeg gemaakt worden. Knip de video korter.")
+            raise ConversionError("The GIF could not be made small enough. Trim the video.")
     return dst

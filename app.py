@@ -5,6 +5,7 @@ Start:  python app.py   en open http://localhost:8000
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 import tempfile
 import uuid
@@ -77,7 +78,7 @@ def quit_app():
     """Desktop-app afsluiten vanuit de interface."""
     stop = app.config.get("SHUTDOWN")
     if not DESKTOP or not stop:
-        return jsonify(error="Alleen beschikbaar in de desktop-app."), 400
+        return jsonify(error="Only available in the desktop app."), 400
     import threading
     threading.Timer(0.3, stop).start()
     return jsonify(ok=True)
@@ -87,7 +88,7 @@ def quit_app():
 def open_terminal():
     """Terminalversie openen in een nieuw terminalvenster (desktop-app)."""
     if not DESKTOP:
-        return jsonify(error="Alleen beschikbaar in de desktop-app."), 400
+        return jsonify(error="Only available in the desktop app."), 400
     from converter.terminal import open_tui
     try:
         open_tui()
@@ -101,7 +102,7 @@ def upload():
     """Eén bestand, of meerdere die bij elkaar horen (CUE + BIN's, ROM + patch)."""
     files = [f for f in request.files.getlist("file") if f and f.filename]
     if not files:
-        return jsonify(error="Geen bestand ontvangen."), 400
+        return jsonify(error="No file received."), 400
     uid = uuid.uuid4().hex
     folder = WORK / uid
     folder.mkdir(parents=True)
@@ -196,7 +197,7 @@ def fetch_url():
     data = request.get_json(force=True, silent=True) or {}
     url = str(data.get("url") or "").strip()
     if not url:
-        return jsonify(error="Plak eerst een link."), 400
+        return jsonify(error="Paste a link first."), 400
     uid = uuid.uuid4().hex
     job = jobs.submit(WORK / uid, "fetch", {"url": url, "audio_only": bool(data.get("audio_only")),
                                             "scan": data.get("scan", True) is not False}, kind="fetch")
@@ -211,7 +212,7 @@ def webshot_start():
     url = str(data.get("url") or "").strip()
     fmt = str(data.get("format") or "pdf").lower()
     if not url or fmt not in ("pdf", "png", "jpg"):
-        return jsonify(error="Geef een websiteadres en kies pdf, png of jpg."), 400
+        return jsonify(error="Enter a website address and choose pdf, png or jpg."), 400
     job = jobs.submit(WORK / uuid.uuid4().hex, "webshot", {"url": url, "format": fmt}, kind="webshot")
     return jsonify(job.public())
 
@@ -222,10 +223,115 @@ def file_hashes(uid):
     from converter.hashes import compute
     up = uploads.get(uid)
     if not up or not up["path"].exists():
-        return jsonify(error="Bestand niet gevonden."), 404
+        return jsonify(error="File not found."), 404
     path = up["path"]
     data = request.get_json(force=True, silent=True) or {}
     return jsonify(name=path.name, hashes=compute(path, str(data.get("key") or "") or None))
+
+
+# --------------------------------------------------------------------------- drives (desktop app only)
+
+def _drives_allowed():
+    """Formatting and disk health only from the desktop app on this computer, never from another machine."""
+    if not DESKTOP or request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify(error="Drives can only be managed in the desktop app on this computer."), 403
+    return None
+
+
+@app.get("/api/drives")
+def drives_list():
+    from converter import drives
+    if (deny := _drives_allowed()):
+        return deny
+    try:
+        return jsonify(drives=[d.public() for d in drives.list_drives()], filesystems=drives.filesystems_for(),
+                       platform=sys.platform)
+    except (ConversionError, OSError, ValueError, subprocess.SubprocessError) as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.get("/api/drives/health")
+def drives_health():
+    from converter import drives
+    if (deny := _drives_allowed()):
+        return deny
+    try:
+        return jsonify(drives.health(request.args.get("id", "")))
+    except (ConversionError, OSError, ValueError, subprocess.SubprocessError) as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.post("/api/drives/plan")
+def drives_plan():
+    from converter import drives
+    if (deny := _drives_allowed()):
+        return deny
+    data = request.get_json(force=True, silent=True) or {}
+    try:
+        d = drives.find(str(data.get("id", "")))
+        ok, why = drives.formattable(d, bool(data.get("allow_internal")))
+        cmds = drives.plan_format(d, str(data.get("fs", "exfat")), str(data.get("label", "")), bool(data.get("full")))
+        return jsonify(drive=d.public(), allowed=ok, why=why, commands=[" ".join(c) for c in cmds])
+    except ConversionError as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.post("/api/drives/format")
+def drives_format():
+    from converter import drives
+    if (deny := _drives_allowed()):
+        return deny
+    data = request.get_json(force=True, silent=True) or {}
+    opts = {"id": str(data.get("id", "")), "fs": str(data.get("fs", "exfat")), "label": str(data.get("label", "")),
+            "confirm": str(data.get("confirm", "")), "full": bool(data.get("full")),
+            "allow_internal": bool(data.get("allow_internal"))}
+    try:  # check before starting, so mistakes are reported straight away
+        d = drives.find(opts["id"])
+        ok, why = drives.formattable(d, opts["allow_internal"])
+        if not ok:
+            raise ConversionError(f"Not formatted: {why}.")
+        drives.check_confirm(d, opts["confirm"])
+    except ConversionError as e:
+        return jsonify(error=str(e)), 400
+    job = jobs.submit(WORK / uuid.uuid4().hex, "format", opts, kind="format")
+    return jsonify(job.public())
+
+
+@app.get("/api/samples")
+def sample_list():
+    """Test files to choose from, grouped like the format list."""
+    from converter.catalog import catalog
+    from converter.samples import SAMPLE_EXTS
+    cat = catalog()
+    groups: dict[str, list] = {}
+    for ext in SAMPLE_EXTS:
+        group, desc = (cat.get(ext) or [("Other", "")])[0]
+        groups.setdefault(group, []).append({"ext": ext, "desc": desc})
+    return jsonify(groups=[{"group": g, "items": v} for g, v in groups.items()])
+
+
+@app.post("/api/sample/<ext>")
+def sample_make(ext):
+    """Make a small test file of this type and load it as if it was uploaded."""
+    from converter.samples import make
+    try:
+        path = make(ext, WORK)
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+    return jsonify(register_upload(uuid.uuid4().hex, path))
+
+
+@app.get("/api/media/<uid>")
+def media_details(uid):
+    """Everything behind a video/audio file: container, codecs, frame rate, bitrates, tracks and tags."""
+    from converter.media import media_info
+    up = uploads.get(uid)
+    if not up or not up["path"].exists():
+        return jsonify(error="File not found."), 404
+    try:
+        return jsonify(media_info(up["path"]))
+    except (ConversionError, ValueError) as e:
+        return jsonify(error=str(e)), 400
 
 
 @app.post("/api/ocr/screen")
@@ -246,7 +352,7 @@ def ocr_pasted():
     from converter import ocr
     f = request.files.get("file")
     if not f:
-        return jsonify(error="Geen afbeelding ontvangen."), 400
+        return jsonify(error="No image received."), 400
     try:
         text = ocr.image_bytes(f.read(), Path(f.filename or "x.png").suffix or ".png")
     except ConversionError as e:
@@ -285,13 +391,13 @@ def torrent_start():
     if f and f.filename:
         source = f.read()
         if len(source) > 20 * 1024 * 1024:
-            return jsonify(error="Dit .torrent-bestand is te groot."), 400
+            return jsonify(error="This .torrent file is too large."), 400
     else:
         data = request.get_json(force=True, silent=True) or {}
         source = str(data.get("magnet") or "").strip()
         scan = data.get("scan", True) is not False
         if not source.lower().startswith("magnet:?"):
-            return jsonify(error="Plak een magnet-link (begint met magnet:?) of kies een .torrent-bestand."), 400
+            return jsonify(error="Paste a magnet link (starts with magnet:?) or choose a .torrent file."), 400
     uid = uuid.uuid4().hex
     job = jobs.submit(WORK / uid, "torrent", {"source": source, "scan": scan}, kind="torrent")
     job.extra["uid"] = uid
@@ -302,7 +408,7 @@ def torrent_start():
 def job_cancel(job_id):
     job = jobs.get(job_id)
     if not job:
-        return jsonify(error="Taak niet gevonden."), 404
+        return jsonify(error="Task not found."), 404
     job.extra["cancel"] = True
     return jsonify(ok=True)
 
@@ -342,7 +448,7 @@ def job_delete(job_id):
     import shutil
     job = jobs.get(job_id)
     if not job or job.kind not in ("fetch", "torrent"):
-        return jsonify(error="Taak niet gevonden."), 404
+        return jsonify(error="Task not found."), 404
     target = job.src if job.src.is_dir() else job.src.parent
     if WORK.resolve() in target.resolve().parents:
         shutil.rmtree(target, ignore_errors=True)
@@ -356,7 +462,7 @@ def scan_upload(uid):
     """Een geopend bestand op verzoek controleren op virussen."""
     up = uploads.get(uid)
     if not up or not up["path"].exists():
-        return jsonify(error="Bestand niet gevonden."), 404
+        return jsonify(error="File not found."), 404
     return jsonify(virus.check(up["path"], user_settings.load().get("vt_key")))
 
 
@@ -373,7 +479,7 @@ def set_settings():
     if "vt_key" in data:
         key = str(data["vt_key"] or "").strip()
         if key and (len(key) != 64 or not all(c in "0123456789abcdefABCDEF" for c in key)):
-            return jsonify(error="Een VirusTotal-sleutel bestaat uit 64 tekens (0-9, a-f)."), 400
+            return jsonify(error="A VirusTotal key is 64 characters long (0-9, a-f)."), 400
         s["vt_key"] = key
     user_settings.save(s)
     return jsonify(vt_key_set=bool(s.get("vt_key")))
@@ -396,9 +502,9 @@ def text_get(uid):
     from converter.textfmt import read_text
     up = uploads.get(uid)
     if not up or not up["path"].exists():
-        return jsonify(error="Bestand niet gevonden."), 404
+        return jsonify(error="File not found."), 404
     if up["path"].stat().st_size > 5 * 1024 * 1024:
-        return jsonify(error="Te groot om hier te bewerken (max. 5 MB)."), 400
+        return jsonify(error="Too large to edit here (max. 5 MB)."), 400
     return jsonify(text=read_text(up["path"]), ext=extension(up["path"]), name=up["path"].name)
 
 
@@ -408,11 +514,11 @@ def text_save(uid):
     from converter.dbtool import validate
     up = uploads.get(uid)
     if not up or not up["path"].exists():
-        return jsonify(error="Bestand niet gevonden."), 404
+        return jsonify(error="File not found."), 404
     data = request.get_json(force=True, silent=True) or {}
     text = data.get("text")
     if not isinstance(text, str):
-        return jsonify(error="Geen tekst ontvangen."), 400
+        return jsonify(error="No text received."), 400
     problem = validate(text, extension(up["path"]))
     if data.get("check"):
         return jsonify(ok=problem is None, error=problem)
@@ -426,7 +532,7 @@ def text_save(uid):
 def text_new():
     """Nieuw leeg tekstbestand (voor de editor), met de gekozen extensie."""
     data = request.get_json(force=True, silent=True) or {}
-    name = safe_name(str(data.get("name") or "nieuw.txt"))
+    name = safe_name(str(data.get("name") or "new.txt"))
     if "." not in name:
         name += ".txt"
     uid = uuid.uuid4().hex
@@ -443,7 +549,7 @@ def _db_for(uid):
     from converter import dbtool
     up = uploads.get(uid)
     if not up or not up["path"].exists():
-        raise ConversionError("Bestand niet gevonden.")
+        raise ConversionError("File not found.")
     return dbtool.prepare(up["path"], up["path"].parent), up
 
 
@@ -499,7 +605,7 @@ def db_export(uid):
     from converter import dbtool
     fmt = request.args.get("fmt", "sqlite")
     if fmt not in ("sqlite", "sql", "xlsx", "json", "csv", "html"):
-        return jsonify(error="Onbekend formaat."), 400
+        return jsonify(error="Unknown format."), 400
     try:
         db, up = _db_for(uid)
         out_dir = Path(tempfile.mkdtemp(prefix="db-export-", dir=WORK))
@@ -514,7 +620,7 @@ def convert():
     data = request.get_json(force=True, silent=True) or {}
     up = uploads.get(data.get("id", ""))
     if not up or not up["path"].exists():
-        return jsonify(error="Upload niet gevonden of verlopen. Upload het bestand opnieuw."), 404
+        return jsonify(error="Upload not found or expired. Upload the file again."), 404
     opts = {k: v for k, v in (data.get("options") or {}).items() if v not in (None, "", False)}
     try:
         if opts.get("target_size"):
@@ -523,7 +629,7 @@ def convert():
     except ConversionError as exc:
         return jsonify(error=str(exc)), 400
     if opts.get("format") and opts["format"] not in up.get("targets", TARGETS.get(up["category"], [])):
-        return jsonify(error=f"Formaat .{opts['format']} is niet mogelijk voor dit bestand."), 400
+        return jsonify(error=f"Format .{opts['format']} is not possible for this file."), 400
     job = jobs.submit(up["path"], up["category"], opts)
     return jsonify(job.public())
 
@@ -532,7 +638,7 @@ def convert():
 def job_status(job_id):
     job = jobs.get(job_id)
     if not job:
-        return jsonify(error="Taak niet gevonden."), 404
+        return jsonify(error="Task not found."), 404
     data = job.public()
     infected = job.extra.get("virus", {}).get("status") == "infected"
     if job.kind == "fetch" and job.status == "done" and job.result and not infected:
@@ -552,11 +658,11 @@ def download(job_id):
 
 @app.errorhandler(413)
 def too_large(_):
-    return jsonify(error=f"Bestand is te groot (max {MAX_UPLOAD_MB} MB)."), 413
+    return jsonify(error=f"File is too large (max {MAX_UPLOAD_MB} MB)."), 413
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8000"))
     host = os.environ.get("HOST", "127.0.0.1")
-    print(f"The Anything Converter draait op http://{'localhost' if host in ('127.0.0.1', '0.0.0.0') else host}:{port}")
+    print(f"The Anything Converter is running at http://{'localhost' if host in ('127.0.0.1', '0.0.0.0') else host}:{port}")
     app.run(host=host, port=port, threaded=True)

@@ -26,6 +26,21 @@ MAN = {str(i) for i in range(1, 10)} | {"man"}
 WEB = {"html", "htm", "xhtml", "shtml", "mhtml", "mht", "webarchive"}
 
 
+_PANDOC_IN: set[str] | None = None
+
+
+def pandoc_inputs() -> set[str]:
+    global _PANDOC_IN
+    if _PANDOC_IN is None:
+        try:
+            r = subprocess.run(["pandoc", "--list-input-formats"], capture_output=True, text=True, timeout=20,
+                               **NO_WINDOW)
+            _PANDOC_IN = set(r.stdout.split())
+        except Exception:  # noqa: BLE001
+            _PANDOC_IN = set()
+    return _PANDOC_IN
+
+
 def read_text(path: Path) -> str:
     data = path.read_bytes()
     ext = path.suffix.lower().lstrip(".")
@@ -50,7 +65,7 @@ def targets(ext: str) -> list[str]:
         return ["pdf", "png", "txt", "md", "html"] if ext in ("mhtml", "mht", "webarchive") else ["pdf", "png", "txt", "md"]
     if ext in MARKUP:
         out = ["html", "pdf", "docx", "txt"]
-        if have("pandoc"):
+        if have("pandoc") and PANDOC_FROM.get(ext) in pandoc_inputs():
             out += ["epub", "odt", "rtf", "md", "rst", "tex"]
         return [t for t in out if t != ext]
     return ["pdf", "html", "png", "txt", "md"]
@@ -125,7 +140,7 @@ def markdown_html(md: str) -> str:
         t = re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
         t = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", t)
         t = re.sub(r"(?<!\*)\*(?!\*)(.+?)\*", r"<i>\1</i>", t)
-        t = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", r"[afbeelding: \1]", t)
+        t = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", "[image: \\1]", t)
         return re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', t)
 
     def flush_table():
@@ -210,7 +225,7 @@ def web_html(path: Path) -> str:
         msg = email.message_from_bytes(path.read_bytes(), policy=policy.default)
         part = next((p for p in msg.walk() if p.get_content_type() == "text/html"), None)
         if not part:
-            raise ConversionError("Geen webpagina gevonden in dit MHTML-bestand.")
+            raise ConversionError("No web page found in this MHTML file.")
         return part.get_content()
     if ext == "webarchive":
         import plistlib
@@ -239,18 +254,18 @@ def html_markdown(page: str) -> str:
 
 
 def chrome_pdf(src_html: Path, dst: Path, fmt: str = "pdf") -> bool:
-    from .webshot import chromium
+    from .webshot import chromium, no_sandbox
     exe = chromium()
     if not exe:
         return False
     import tempfile
     prof = tempfile.mkdtemp(prefix="ac-chrome-")
     try:
-        args = [exe, "--headless=new", "--disable-gpu", "--no-first-run", f"--user-data-dir={prof}",
+        args = [exe, "--headless=new", "--disable-gpu", *no_sandbox(), "--no-first-run", f"--user-data-dir={prof}",
                 "--allow-file-access-from-files"]
         args += ([f"--print-to-pdf={dst}", "--no-pdf-header-footer"] if fmt == "pdf" else
                  [f"--screenshot={dst}", "--window-size=1280,2000", "--hide-scrollbars"])
-        subprocess.run([*args, src_html.resolve().as_uri()], capture_output=True, timeout=120, **NO_WINDOW)
+        subprocess.run([*args, src_html.resolve().as_uri()], capture_output=True, timeout=45, **NO_WINDOW)
     except Exception:  # noqa: BLE001
         return False
     finally:
@@ -262,7 +277,7 @@ def chrome_pdf(src_html: Path, dst: Path, fmt: str = "pdf") -> bool:
 
 def convert(src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
     ext = src.suffix.lower().lstrip(".")
-    dst = out_dir / f"{src.stem}{'_bewerkt' if fmt == ext else ''}.{fmt}"
+    dst = out_dir / f"{src.stem}{'_edited' if fmt == ext else ''}.{fmt}"
     from .pdftools import html_to_pdf, text_to_document
 
     if ext in WEB:
@@ -274,16 +289,16 @@ def convert(src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
         elif fmt == "md":
             dst.write_text(html_markdown(page) + "\n", encoding="utf-8")
         elif fmt in ("pdf", "png"):
-            tmp = out_dir / "_pagina.html"
+            tmp = out_dir / "_page.html"
             tmp.write_text(page, encoding="utf-8")
             if not chrome_pdf(tmp if ext in ("mhtml", "mht", "webarchive") else src, dst, fmt):
                 if fmt == "png":
-                    raise ConversionError("Een afbeelding van een webpagina maken vraagt Chrome of Edge.")
+                    raise ConversionError("Making an image of a web page needs Chrome or Edge.")
                 body = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", "", page)
                 html_to_pdf(body, dst)
             tmp.unlink(missing_ok=True)
         else:
-            raise ConversionError(f"Webpagina naar .{fmt} wordt niet ondersteund.")
+            raise ConversionError(f"Web page to .{fmt} is not supported.")
         return dst
 
     if ext in MAN:
@@ -336,7 +351,7 @@ def convert(src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
         return html_to_pdf(highlight_html(text[:400000], src.name, full=False), dst)
     if fmt == "docx":
         return text_to_document(text, dst, "docx")
-    raise ConversionError(f".{ext} naar .{fmt} wordt niet ondersteund.")
+    raise ConversionError(f".{ext} to .{fmt} is not supported.")
 
 
 def _html_docx(body: str, dst: Path) -> Path:

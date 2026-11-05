@@ -31,14 +31,14 @@ def calibre() -> Optional[str]:
 
 def convert(src: Path, out_dir: Path, fmt: str, opts: dict, progress: Optional[ProgressFn] = None) -> Path:
     ext = src.suffix.lower().lstrip(".")
-    dst = out_dir / f"{src.stem}{'_bewerkt' if fmt == ext else ''}.{fmt}"
+    dst = out_dir / f"{src.stem}{'_edited' if fmt == ext else ''}.{fmt}"
     tool = calibre()
     if tool:
         if progress:
-            progress(0.2, "omzetten met Calibre")
+            progress(0.2, "converting with Calibre")
         run([tool, str(src), str(dst)], timeout=1800)
         if not dst.exists():
-            raise ConversionError("Calibre kon dit e-book niet omzetten.")
+            raise ConversionError("Calibre could not convert this e-book.")
         return dst
     # Zonder Calibre
     if ext in ("epub", "fb2") and fmt in ("txt", "html", "pdf", "docx", "rtf"):
@@ -76,8 +76,7 @@ def convert(src: Path, out_dir: Path, fmt: str, opts: dict, progress: Optional[P
         if have("pandoc"):
             run(["pandoc", str(docx), "-o", str(dst), "--standalone"], timeout=600)
             return dst
-    raise ConversionError(f".{ext} naar .{fmt} heeft Calibre nodig (gratis, calibre-ebook.com). "
-                          "Na installeren werkt het vanzelf.")
+    raise ConversionError(f".{ext} to .{fmt} needs Calibre (free, calibre-ebook.com). Once installed it works automatically.")
 
 
 def html_to_text(body: str) -> str:
@@ -164,7 +163,7 @@ def write_epub(src: Path, dst: Path) -> Path:
                    f'<?xml version="1.0" encoding="utf-8"?><package xmlns="http://www.idpf.org/2007/opf" '
                    f'version="3.0" unique-identifier="id"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/">'
                    f'<dc:identifier id="id">anything-converter-{abs(hash(src.name))}</dc:identifier>'
-                   f'<dc:title>{title}</dc:title><dc:language>nl</dc:language>'
+                   f'<dc:title>{title}</dc:title><dc:language>en</dc:language>'
                    f'<meta property="dcterms:modified">2026-01-01T00:00:00Z</meta></metadata>'
                    f'<manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>'
                    f'<item id="c1" href="tekst.xhtml" media-type="application/xhtml+xml"/></manifest>'

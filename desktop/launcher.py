@@ -118,7 +118,7 @@ def native_window(url: str, base: Path, closers: list) -> bool:
         import window
         engine = window.check()
     except Exception as e:  # noqa: BLE001
-        print("eigen venster in dit proces lukt niet:", repr(e))
+        print("own window in this process failed:", repr(e))
         engine = None
     storage = str(data_dir() / "webview")
     icon = str(base / "icon-512.png")
@@ -140,7 +140,7 @@ def native_window(url: str, base: Path, closers: list) -> bool:
             print(py, "faalde:", repr(e))
             continue
         if ok.returncode != 0:
-            print(py, "heeft geen GTK/WebKit:", (ok.stderr or "").strip()[-300:])
+            print(py, "has no GTK/WebKit:", (ok.stderr or "").strip()[-300:])
             continue
         print("venster: gtk via", py)
         proc = subprocess.Popen([py, "-I", str(helper), url, storage, icon], env=env)
@@ -169,13 +169,40 @@ def browser_app_window(url: str, closers: list) -> bool:
     profile = data_dir() / "app-venster"
     args = [exe, f"--app={url}", f"--user-data-dir={profile}", "--window-size=1280,860", "--no-first-run",
             "--no-default-browser-check"]
-    print("venster: app-modus van", exe)
+    print("window: app mode of", exe)
     t0 = time.time()
     proc = subprocess.Popen(args)
     closers.append(proc.terminate)
     proc.wait()
     # Binnen een paar seconden terug: overgedragen aan een al draaiend exemplaar of mislukt.
     return time.time() - t0 > 5
+
+
+def ensure_on_path(base: Path) -> None:
+    """Windows: put the install folder in the user's PATH so 'anything-converter-tui' works in every
+    new terminal, also when the installer's PATH entry got lost (or the app was copied by hand)."""
+    if sys.platform != "win32" or not getattr(sys, "frozen", False):
+        return
+    if not (base / "anything-converter-tui.exe").exists():
+        return
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0,
+                            winreg.KEY_READ | winreg.KEY_WRITE) as key:
+            try:
+                value, kind = winreg.QueryValueEx(key, "Path")
+            except FileNotFoundError:
+                value, kind = "", winreg.REG_EXPAND_SZ
+            parts = [x for x in value.split(";") if x]
+            if any(os.path.normcase(os.path.expandvars(x)).rstrip("\\") == os.path.normcase(str(base)).rstrip("\\")
+                   for x in parts):
+                return
+            winreg.SetValueEx(key, "Path", 0, kind, ";".join(parts + [str(base)]))
+        import ctypes  # tell running programs (Explorer) that the environment changed
+        ctypes.windll.user32.SendMessageTimeoutW(0xFFFF, 0x001A, 0, "Environment", 2, 2000, None)
+        print("added to PATH:", base)
+    except Exception as e:  # noqa: BLE001
+        print("could not add to PATH:", e)
 
 
 def main() -> None:
@@ -187,6 +214,7 @@ def main() -> None:
     print(f"\n--- start {time.strftime('%Y-%m-%d %H:%M:%S')} vanuit {base}")
 
     prepare_environment(base)
+    ensure_on_path(base)
     sys.path.insert(0, str(base))
     from werkzeug.serving import make_server
 
@@ -195,7 +223,7 @@ def main() -> None:
     port = pick_port()
     server = make_server(HOST, port, app, threaded=True)
     url = f"http://{HOST}:{port}/"
-    print(f"draait op {url}")
+    print(f"running at {url}")
     threading.Thread(target=server.serve_forever, daemon=True).start()
 
     closers: list = []
@@ -220,7 +248,7 @@ def main() -> None:
             try:
                 shown = attempt()
             except Exception as e:  # noqa: BLE001
-                print(f"{name}-venster mislukt:", repr(e))
+                print(f"{name} window failed:", repr(e))
             if shown or stopped.is_set():
                 break
             closers.clear()

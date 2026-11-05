@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -42,12 +43,10 @@ def available() -> bool:
 
 def missing_message() -> str:
     if sys.platform.startswith("linux"):
-        return ("Geen OCR gevonden. Installeer Tesseract: sudo apt install tesseract-ocr tesseract-ocr-nld "
-                "(Fedora: sudo dnf install tesseract tesseract-langpack-nld).")
+        return ("No OCR found. Install Tesseract: sudo apt install tesseract-ocr tesseract-ocr-eng (Fedora: sudo dnf install tesseract tesseract-langpack-eng).")
     if sys.platform == "win32":
-        return ("Windows-tekstherkenning is niet beschikbaar. Voeg een taal met 'Optische tekenherkenning' toe "
-                "via Instellingen → Tijd en taal → Taal, of installeer Tesseract.")
-    return "Geen OCR beschikbaar op dit systeem."
+        return ("Windows text recognition is not available. Add a language with 'Optical character recognition' via Settings → Time & language → Language, or install Tesseract.")
+    return "No OCR available on this system."
 
 
 def image(path: Path) -> str:
@@ -72,9 +71,10 @@ def image_bytes(data: bytes, suffix: str = ".png") -> str:
 
 def _normalise(path: Path) -> Path:
     """HEIC, WebP, enz. eerst naar PNG; heel grote beelden verkleinen (Windows-OCR heeft een maximum)."""
-    from PIL import Image, ImageOps
+    from PIL import ImageOps
+    from .image import _open_any
     try:
-        with Image.open(path) as im:
+        with _open_any(path, Path(tempfile.mkdtemp(prefix="ocr-"))) as im:
             im = ImageOps.exif_transpose(im)
             limit = 4000 if engine() == "windows" else 8000
             change = path.suffix.lower() not in (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp") \
@@ -87,7 +87,7 @@ def _normalise(path: Path) -> Path:
             im.convert("RGB").save(out)
             return out
     except Exception as e:  # noqa: BLE001
-        raise ConversionError(f"Afbeelding kan niet gelezen worden: {e}") from e
+        raise ConversionError(f"Image cannot be read: {e}") from e
 
 
 def _vision(path: Path) -> str:
@@ -102,7 +102,7 @@ def _vision(path: Path) -> str:
         req.setAutomaticallyDetectsLanguage_(True)
     ok, err = handler.performRequests_error_([req], None)
     if not ok:
-        raise ConversionError(f"Tekstherkenning mislukt: {err}")
+        raise ConversionError(f"Text recognition failed: {err}")
     lines = []
     for obs in req.results() or []:
         cand = obs.topCandidates_(1)
@@ -173,13 +173,17 @@ def searchable_pdf_text(path: Path, progress=None) -> str:
     for i, page in enumerate(doc):
         parts.append(page_text(page).rstrip())
         if progress:
-            progress(0.1 + 0.85 * (i + 1) / len(doc), f"pagina {i + 1}/{len(doc)}")
+            progress(0.1 + 0.85 * (i + 1) / len(doc), f"page {i + 1}/{len(doc)}")
     return "\n\n".join(parts).strip()
 
 
 def capture_screen() -> Path:
     """Laat de gebruiker een stuk van het scherm kiezen; geeft het pad naar de schermafbeelding."""
-    out = Path(tempfile.mkdtemp(prefix="screenshot-")) / "scherm.png"
+    if (os.environ.get("SSH_CONNECTION") or os.path.exists("/.dockerenv")) and sys.platform.startswith("linux") \
+            and not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
+        raise ConversionError("A screenshot is not possible over SSH or in Docker (no screen here). Save a "
+                              "screenshot as an image file and recognise the text from that file.")
+    out = Path(tempfile.mkdtemp(prefix="screenshot-")) / "screen.png"
     if sys.platform == "darwin":
         subprocess.run(["screencapture", "-i", "-x", str(out)], timeout=300)
     elif sys.platform == "win32":
@@ -197,10 +201,9 @@ def capture_screen() -> Path:
                 if region:
                     subprocess.run(["grim", "-g", region, str(out)], timeout=60)
             else:
-                raise ConversionError("Geen schermafbeeldingsprogramma gevonden (bijv. gnome-screenshot). "
-                                      "Maak zelf een schermafbeelding en plak die met Ctrl+V.")
+                raise ConversionError("No screenshot program found (e.g. gnome-screenshot). Take a screenshot yourself and paste it with Ctrl+V.")
     if not out.exists() or out.stat().st_size == 0:
-        raise ConversionError("Geen schermafbeelding gemaakt (geannuleerd).")
+        raise ConversionError("No screenshot taken (cancelled).")
     return out
 
 
@@ -220,5 +223,5 @@ def _capture_windows(out: Path) -> Path:
         if isinstance(im, Image.Image) and im.tobytes()[:4096] != before_sig:
             im.save(out)
             return out
-    raise ConversionError("Geen schermafbeelding ontvangen (binnen 2 minuten).")
+    raise ConversionError("No screenshot received (within 2 minutes).")
 

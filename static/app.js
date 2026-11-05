@@ -3,34 +3,34 @@ const $ = (id) => document.getElementById(id);
 const AUDIO_OUT = ["mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "aiff", "wma", "m4r", "mmf"];
 const LOSSLESS_AUDIO = ["wav", "flac", "aiff", "mmf"];
 const TEXT_OUT = ["txt", "srt", "vtt"];
-let presetFormat = null; // gekozen via het gereedschap (bijv. "PDF naar Word")
+let presetFormat = null; // gekozen via het gereedschap (bijv. "PDF to Word")
 // Uitleg achter het formaat in de keuzelijst
 const FMT_LABEL = {
-  docx: "Word", doc: "Word 97-2003", odt: "OpenDocument-tekst", xlsx: "Excel", xls: "Excel 97-2003",
-  ods: "OpenDocument-rekenblad", iso: "ISO (datatrack)", cue: "één BIN + CUE (samengevoegd)", wav: "WAV",
-  chd: "CHD (compact, voor RetroArch/MAME/DuckStation)", cso: "CSO (PSP, gecomprimeerd)", z64: "N64 big-endian",
-  v64: "N64 byteswapped", n64: "N64 little-endian", sfc: "SNES zonder kopieerheader", smc: "SNES met kopieerheader",
-  nds: "ingekort (trim)", patch: "patch toepassen (IPS/UPS/BPS)", zip: "zip", bin: "Mega Drive (gewoon)", pptx: "PowerPoint", ppt: "PowerPoint 97-2003", odp: "OpenDocument-presentatie",
-  rtf: "Rich Text", txt: "platte tekst", html: "webpagina", xml: "XML", md: "Markdown", csv: "CSV",
-  epub: "e-book", mobi: "Kindle (oud)", azw3: "Kindle", fb2: "FictionBook", lit: "Microsoft Reader",
-  lrf: "Sony Reader", pdb: "Palm", tcr: "Psion", pdf: "PDF", svg: "SVG (vector-verpakking)", eps: "PostScript",
-  tga: "Targa", wbmp: "WAP-bitmap", exr: "OpenEXR (HDR)", hdr: "Radiance HDR", ico: "pictogram / favicon",
-  m4r: "iPhone-beltoon", mmf: "beltoon (SMAF)", wma: "Windows Media Audio", aiff: "Apple-audio",
-  wmv: "Windows Media Video", flv: "Flash-video", mpg: "MPEG-2", ogv: "Ogg-video", "3gp": "oude telefoons",
-  "3g2": "oude telefoons", srt: "ondertitels", vtt: "ondertitels (web)", "7z": "7-Zip",
-  "uitpakken": "uitpakken (origineel bestand)", "json-mooi": "JSON netjes ingesprongen", "yaml-mooi": "YAML netjes", "xml-mooi": "XML netjes ingesprongen", "sql": "SQL-dump", "py": "Python", "plist": "macOS-plist", "lrc": "songtekst", "sbv": "YouTube-ondertitels", "ttml": "XML-ondertitels", "ass": "opgemaakte ondertitels", "m3u8": "afspeellijst (UTF-8)", "pls": "afspeellijst", "xspf": "afspeellijst (XML)", "wpl": "Windows-afspeellijst", "kml": "Google Earth", "kmz": "Google Earth (zip)", "gpx": "GPS-route", "geojson": "geodata", "tcx": "Garmin", "stl": "3D-printen", "obj": "3D-model", "ply": "3D-model / scan", "glb": "3D voor web/AR", "off": "3D-model", "3mf": "3D-printproject", "woff": "weblettertype", "woff2": "weblettertype (klein)", "ttf": "TrueType", "otf": "OpenType", "pem": "tekst (PEM)", "der": "binair (DER)", "eml": "e-mailbericht", "qcow2": "QEMU/Proxmox", "vmdk": "VMware", "vdi": "VirtualBox", "vhdx": "Hyper-V", "vhd": "Hyper-V (oud)", "raw": "ruwe schijf", "cbz": "stripboek", "yaml": "YAML", "toml": "TOML", "json": "JSON", "eac3": "Dolby Digital Plus", "ac3": "Dolby Digital", "wv": "WavPack (verliesvrij)", "tta": "True Audio (verliesvrij)", "au": "Unix-audio", "caf": "Apple Core Audio", "mka": "Matroska-audio", "m4b": "audioboek", "spx": "Speex-spraak", "alac": "Apple Lossless (.m4a)", "m4v": "Apple-video", "asf": "Windows Media", "ts": "MPEG-transportstream", "m2ts": "Blu-ray/AVCHD", "mxf": "broadcast", "divx": "DivX", "rapport": "inforapport",
+  docx: "Word", doc: "Word 97-2003", odt: "OpenDocument text", xlsx: "Excel", xls: "Excel 97-2003",
+  ods: "OpenDocument spreadsheet", iso: "ISO (datatrack)", cue: "one BIN + CUE (merged)", wav: "WAV",
+  chd: "CHD (compact, for RetroArch/MAME/DuckStation)", cso: "CSO (PSP, compressed)", z64: "N64 big-endian",
+  v64: "N64 byteswapped", n64: "N64 little-endian", sfc: "SNES without copier header", smc: "SNES with copier header",
+  nds: "trimmed", patch: "apply patch (IPS/UPS/BPS)", zip: "zip", bin: "Mega Drive (plain)", pptx: "PowerPoint", ppt: "PowerPoint 97-2003", odp: "OpenDocument presentation",
+  rtf: "Rich Text", txt: "plain text", html: "web page", xml: "XML", md: "Markdown", csv: "CSV",
+  epub: "e-book", mobi: "Kindle (old)", azw3: "Kindle", fb2: "FictionBook", lit: "Microsoft Reader",
+  lrf: "Sony Reader", pdb: "Palm", tcr: "Psion", pdf: "PDF", svg: "SVG (vector wrapper)", eps: "PostScript",
+  tga: "Targa", wbmp: "WAP bitmap", exr: "OpenEXR (HDR)", hdr: "Radiance HDR", ico: "icon / favicon",
+  m4r: "iPhone ringtone", mmf: "ringtone (SMAF)", wma: "Windows Media Audio", aiff: "Apple audio",
+  wmv: "Windows Media Video", flv: "Flash video", mpg: "MPEG-2", ogv: "Ogg video", "3gp": "old phones",
+  "3g2": "old phones", srt: "subtitles", vtt: "subtitles (web)", "7z": "7-Zip",
+  "uitpakken": "extract (original file)", "json-mooi": "JSON, neatly indented", "yaml-mooi": "YAML, tidy", "xml-mooi": "XML, neatly indented", "sql": "SQL dump", "py": "Python", "plist": "macOS plist", "lrc": "lyrics", "sbv": "YouTube subtitles", "ttml": "XML subtitles", "ass": "styled subtitles", "m3u8": "playlist (UTF-8)", "pls": "playlist", "xspf": "playlist (XML)", "wpl": "Windows playlist", "kml": "Google Earth", "kmz": "Google Earth (zip)", "gpx": "GPS route", "geojson": "geodata", "tcx": "Garmin", "stl": "3D printing", "obj": "3D model", "ply": "3D model / scan", "glb": "3D for web/AR", "off": "3D model", "3mf": "3D print project", "woff": "web font", "woff2": "web font (small)", "ttf": "TrueType", "otf": "OpenType", "pem": "text (PEM)", "der": "binary (DER)", "eml": "e-mail message", "qcow2": "QEMU/Proxmox", "vmdk": "VMware", "vdi": "VirtualBox", "vhdx": "Hyper-V", "vhd": "Hyper-V (old)", "raw": "raw disk", "cbz": "comic book", "yaml": "YAML", "toml": "TOML", "json": "JSON", "eac3": "Dolby Digital Plus", "ac3": "Dolby Digital", "wv": "WavPack (lossless)", "tta": "True Audio (lossless)", "au": "Unix audio", "caf": "Apple Core Audio", "mka": "Matroska audio", "m4b": "audiobook", "spx": "Speex speech", "alac": "Apple Lossless (.m4a)", "m4v": "Apple video", "asf": "Windows Media", "ts": "MPEG transport stream", "m2ts": "Blu-ray/AVCHD", "mxf": "broadcast", "divx": "DivX", "rapport": "info report",
 };
 function fmtLabel(cat, t) {
-  if (TEXT_OUT.includes(t) && (cat === "video" || cat === "audio")) return t === "txt" ? "spraak naar tekst" : "spraak naar ondertitels";
-  if (cat === "image" && ["txt", "docx", "rtf", "xlsx"].includes(t)) return "tekst herkennen (OCR) → " + (FMT_LABEL[t] || t);
-  if (cat === "pdf" && t === "pdf") return "PDF comprimeren / verkleinen";
-  if (cat === "disc" && t === "wav") return "audiosporen als WAV";
-  if (cat === "rom" && t === "md") return "Mega Drive (gewoon)";
-  if (cat === "info" && t === "txt") return "inforapport (wat is het, details, checksums)";
-  if (["archive2", "compressed", "vmdisk"].includes(cat) && t === "txt") return "lijst met de inhoud";
-  if (cat === "text" && t === "png") return "als afbeelding (bijv. NFO-art)";
-  if (cat === "text" && t === "html") return "webpagina met kleuren";
-  if (cat === "pdf" && ["png", "jpg"].includes(t)) return "elke pagina als afbeelding";
+  if (TEXT_OUT.includes(t) && (cat === "video" || cat === "audio")) return t === "txt" ? "speech to text" : "speech to subtitles";
+  if (cat === "image" && ["txt", "docx", "rtf", "xlsx"].includes(t)) return "recognise text (OCR) → " + (FMT_LABEL[t] || t);
+  if (cat === "pdf" && t === "pdf") return "compress / shrink PDF";
+  if (cat === "disc" && t === "wav") return "audio tracks as WAV";
+  if (cat === "rom" && t === "md") return "Mega Drive (plain)";
+  if (cat === "info" && t === "txt") return "info report (what it is, details, checksums)";
+  if (["archive2", "compressed", "vmdisk"].includes(cat) && t === "txt") return "list of contents";
+  if (cat === "text" && t === "png") return "as an image (e.g. NFO art)";
+  if (cat === "text" && t === "html") return "web page with colours";
+  if (cat === "pdf" && ["png", "jpg"].includes(t)) return "every page as an image";
   return FMT_LABEL[t] || "";
 }
 let current = null;   // upload-info van de server
@@ -110,11 +110,11 @@ function uploadFiles(files, file) {
   xhr.onload = () => {
     show(bar, false);
     let data;
-    try { data = JSON.parse(xhr.responseText); } catch { data = { error: "Upload mislukt." }; }
-    if (xhr.status !== 200) { status("FOUT: " + (data.error || "upload mislukt")); alert(data.error || "Upload mislukt."); return; }
+    try { data = JSON.parse(xhr.responseText); } catch { data = { error: "Upload failed." }; }
+    if (xhr.status !== 200) { status("ERROR: " + (data.error || "upload failed")); alert(data.error || "Upload failed."); return; }
     setup(data);
   };
-  xhr.onerror = () => { show(bar, false); alert("Upload mislukt (verbinding)."); };
+  xhr.onerror = () => { show(bar, false); alert("Upload failed (connection)."); };
   xhr.send(fd);
 }
 
@@ -148,12 +148,12 @@ $("urlStop").addEventListener("click", () => { if (activeJob) fetch(`/api/job/${
 // ---------- viruscontrole
 function virusText(v) {
   if (!v) return "";
-  const eng = v.local && v.local.engine ? v.local.engine : "geen lokale scanner";
+  const eng = v.local && v.local.engine ? v.local.engine : "no local scanner";
   const vt = (v.files || []).find((f) => f.vt);
   const vtTxt = vt ? ` · virustotal: ${vt.vt.detail}` : "";
-  if (v.status === "infected") return `!! VIRUS GEVONDEN (${eng}): ${v.local.status === "infected" ? v.local.detail : vt ? vt.vt.detail : ""}`;
-  if (v.status === "clean") return `✓ geen virus gevonden (${eng})${vtTxt}`;
-  return `? niet zeker: ${v.local.detail}${vtTxt}`;
+  if (v.status === "infected") return `!! VIRUS FOUND (${eng}): ${v.local.status === "infected" ? v.local.detail : vt ? vt.vt.detail : ""}`;
+  if (v.status === "clean") return `✓ no virus found (${eng})${vtTxt}`;
+  return `? not sure: ${v.local.detail}${vtTxt}`;
 }
 function virusNode(v, jobId) {
   const p = document.createElement("p");
@@ -167,10 +167,10 @@ function virusNode(v, jobId) {
   }
   if (v.status === "infected" && jobId) {
     const del = document.createElement("button");
-    del.className = "btn small"; del.type = "button"; del.textContent = "[ VERWIJDEREN ]";
+    del.className = "btn small"; del.type = "button"; del.textContent = "[ DELETE ]";
     del.addEventListener("click", async () => {
       await fetch(`/api/job/${jobId}/delete`, { method: "POST" });
-      p.textContent = "// verwijderd van de schijf.";
+      p.textContent = "// deleted from the disk.";
       show($("torrentFiles"), false);
     });
     p.append(del);
@@ -187,26 +187,26 @@ $("scanBtn").addEventListener("click", async () => {
   try {
     const r = await fetch("/api/scan/" + current.id, { method: "POST" });
     const v = await r.json();
-    if (!r.ok) throw new Error(v.error || "Scan mislukt.");
+    if (!r.ok) throw new Error(v.error || "Scan failed.");
     showScan(v);
   } catch (err) {
     const m = $("scanMsg"); m.className = "scan-msg bad"; m.textContent = "!! " + err.message;
   } finally {
-    $("scanBtn").disabled = false; $("scanBtn").textContent = "[ VIRUSSCAN ]";
+    $("scanBtn").disabled = false; $("scanBtn").textContent = "[ VIRUS SCAN ]";
   }
 });
 fetch("/api/settings").then((r) => r.json()).then((s) => {
   $("scannerInfo").textContent = s.scanner
-    ? `// gevonden scanner op deze computer: ${s.scanner}.`
-    : "// geen virusscanner gevonden. windows: microsoft defender staat er standaard op. mac/linux: installeer clamav (brew install clamav / sudo apt install clamav).";
-  if (s.vt_key_set) $("vtKey").placeholder = "sleutel opgeslagen ✓ (leeg laten = houden)";
+    ? `// scanner found on this computer: ${s.scanner}.`
+    : "// no virus scanner found. windows: microsoft defender is built in. mac/linux: install clamav (brew install clamav / sudo apt install clamav).";
+  if (s.vt_key_set) $("vtKey").placeholder = "key saved ✓ (leave empty = keep)";
 }).catch(() => {});
 $("vtSave").addEventListener("click", async () => {
   const r = await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ vt_key: $("vtKey").value.trim() }) });
   const j = await r.json();
   $("vtKey").value = "";
-  $("vtKey").placeholder = r.ok ? (j.vt_key_set ? "sleutel opgeslagen ✓" : "sleutel verwijderd") : j.error;
+  $("vtKey").placeholder = r.ok ? (j.vt_key_set ? "key saved ✓" : "key removed") : j.error;
 });
 
 // ---------- torrents (magnet-link of .torrent-bestand)
@@ -221,7 +221,7 @@ async function startTorrent(body) {
     const r = await fetch("/api/torrent", body instanceof FormData ? { method: "POST", body }
       : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const j0 = await r.json();
-    if (!r.ok) throw new Error(j0.error || "Torrent starten mislukt.");
+    if (!r.ok) throw new Error(j0.error || "Starting the torrent failed.");
     const j = await followJob(j0.id, bar);
     show(bar, false);
     $("urlInput").value = "";
@@ -233,7 +233,7 @@ async function startTorrent(body) {
     msg.textContent = "!! " + err.message;
     msg.classList.add("err");
     show(msg, true);
-    status("torrent mislukt");
+    status("torrent failed");
   } finally {
     $("urlBtn").disabled = false; $("torrentBtn").disabled = false;
   }
@@ -244,7 +244,7 @@ function showTorrentFiles(j) {
   const head = document.createElement("p");
   head.className = "tor-head";
   const total = j.files.reduce((a, f) => a + f.size, 0);
-  head.textContent = `TORRENT KLAAR: ${j.name} · ${j.files.length} bestanden · ${human(total)}`;
+  head.textContent = `TORRENT DONE: ${j.name} · ${j.files.length} files · ${human(total)}`;
   box.append(head);
   const infected = j.virus && j.virus.status === "infected";
   if (j.virus) box.append(virusNode(j.virus, j.id));
@@ -253,7 +253,7 @@ function showTorrentFiles(j) {
     row.className = "tor-row";
     const last = i === j.files.length - 1;
     row.innerHTML = `<span class="tor-pre">${last ? "└─" : "├─"}</span><span class="tor-name"></span><span class="tor-size"></span>` +
-      `<button type="button" class="btn small" data-open>[ OPENEN ]</button><a class="btn small" data-dl>[↓]</a>`;
+      `<button type="button" class="btn small" data-open>[ OPEN ]</button><a class="btn small" data-dl>[↓]</a>`;
     row.querySelector(".tor-name").textContent = f.path;
     row.querySelector(".tor-name").title = f.path;
     row.querySelector(".tor-size").textContent = human(f.size);
@@ -263,12 +263,12 @@ function showTorrentFiles(j) {
     box.append(row);
   });
   show(box, true);
-  $("urlMsg").textContent = "// [ OPENEN ] zet een bestand in de converter; [↓] slaat het op.";
-  status("torrent klaar");
+  $("urlMsg").textContent = "// [ OPEN ] puts a file in the converter; [↓] saves it.";
+  status("torrent done");
 }
 async function openTorrentFile(jobId, idx, v) {
   const r = await fetch(`/api/torrent/${jobId}/open/${idx}`, { method: "POST" });
-  const data = r.ok ? await r.json() : { error: r.status === 403 ? "Geblokkeerd: er is een virus gevonden." : "Openen mislukt." };
+  const data = r.ok ? await r.json() : { error: r.status === 403 ? "Blocked: a virus was found." : "Opening failed." };
   if (!r.ok) { $("urlMsg").textContent = "!! " + data.error; return; }
   localFile = null;
   setup(data);
@@ -289,21 +289,21 @@ $("urlForm").addEventListener("submit", async (e) => {
   const bar = $("urlBar"), msg = $("urlMsg");
   if (!url) { $("urlInput").focus(); return; }
   if (/^magnet:\?/i.test(url)) return startTorrent({ magnet: url });
-  $("urlBtn").disabled = true; $("urlBtn").textContent = "[ BEZIG... ]";
+  $("urlBtn").disabled = true; $("urlBtn").textContent = "[ BUSY... ]";
   show(msg, false); show(bar, true);
   bar.textContent = txtBar(0, barWidth());
-  status("link ophalen...");
+  status("fetching link...");
   try {
     const r = await fetch("/api/fetch", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url, audio_only: $("urlAudio").checked, scan: $("urlScan").checked }) });
     const j0 = await r.json();
-    if (!r.ok) throw new Error(j0.error || "Ophalen mislukt.");
+    if (!r.ok) throw new Error(j0.error || "Download failed.");
     const j = await followJob(j0.id, bar);
     if (j.virus && j.virus.status === "infected") {
       show(bar, false);
       msg.replaceChildren(virusNode(j.virus, j.id));
       msg.classList.add("err");
-      status("virus gevonden - niet geopend");
+      status("virus found - not opened");
       return;
     }
     localFile = null;
@@ -316,9 +316,9 @@ $("urlForm").addEventListener("submit", async (e) => {
     msg.textContent = "!! " + err.message;
     msg.classList.add("err");
     show(msg, true);
-    status("ophalen mislukt");
+    status("download failed");
   } finally {
-    $("urlBtn").disabled = false; $("urlBtn").textContent = "[ OPHALEN ]";
+    $("urlBtn").disabled = false; $("urlBtn").textContent = "[ DOWNLOAD ]";
   }
 });
 
@@ -327,7 +327,7 @@ function setup(data) {
   current = data;
   $("scanMsg").className = "scan-msg hidden"; $("scanMsg").textContent = "";
   show(drop, false);
-  show($("urlForm"), false);
+  show($("urlForm"), false); show($("sampleBox"), false);
   show($("tools"), false);
   show($("hashBox"), false);
   // opgehaald via een link: origineel ook los op te slaan
@@ -337,7 +337,7 @@ function setup(data) {
   show($("result"), false);
   show($("progress"), false);
   step(2);
-  status(`geladen: ${data.name} [${data.label.toLowerCase()}]`);
+  status(`loaded: ${data.name} [${data.label.toLowerCase()}]`);
 
   $("fName").textContent = data.name;
   const meta = [data.label, human(data.size)];
@@ -346,7 +346,7 @@ function setup(data) {
   if (i.duration && data.category !== "image") meta.push(fmtTime(i.duration));
   if (i.files && i.files.length) meta.push("+ " + i.files.join(", "));
   if (i.kind) meta.push(i.kind);
-  if (i.real_ext) meta.push("eigenlijk ." + i.real_ext);
+  if (i.real_ext) meta.push("actually ." + i.real_ext);
   $("fMeta").textContent = meta.join(" · ");
   duration = i.duration || 0;
 
@@ -356,7 +356,7 @@ function setup(data) {
     const o = document.createElement("option");
     o.value = t;
     const lbl = fmtLabel(data.category, t);
-    o.textContent = "." + t + (lbl ? "  · " + lbl : "") + (t === data.ext || (t === "jpg" && data.ext === "jpeg") ? "  (zelfde formaat)" : "");
+    o.textContent = "." + t + (lbl ? "  · " + lbl : "") + (t === data.ext || (t === "jpg" && data.ext === "jpeg") ? "  (same format)" : "");
     sel.appendChild(o);
   }
   const same = data.targets.find((t) => t === data.ext || (t === "jpg" && data.ext === "jpeg"));
@@ -366,6 +366,8 @@ function setup(data) {
   // reset velden
   for (const id of ["targetSize", "scalePct", "imgW", "imgH", "gifWidth", "gifFps", "trimStart", "trimEnd"]) $(id).value = "";
   $("removeAudio").checked = false; $("fastTrim").checked = false; $("height").value = ""; $("device").value = "";
+  document.querySelectorAll("#avBox input, #avBox select").forEach((el) => (el.value = ""));
+  $("avSource").textContent = ""; mediaInfoFor = null;
   document.querySelector("input[name=sizeMode][value=quality]").checked = true;
 
   setupPreview(data);
@@ -416,16 +418,20 @@ function refresh() {
   show($("targetBox"), t);
   show($("qualityBox"), !t && !(cat === "audio" && LOSSLESS_AUDIO.includes(fmt)));
   show($("videoBox"), toVideo);
+  const avOn = (toVideo || (isMedia && AUDIO_OUT.includes(fmt))) && !speech;
+  show($("avBox"), avOn);
+  document.querySelectorAll("#avBox .av-video").forEach((el) => show(el, toVideo));
+  if (avOn) loadMediaInfo();
   show($("gifBox"), cat === "video" && fmt === "gif");
   show($("imageBox"), cat === "image" && !textual);
   show($("trimBox"), isMedia);
   $("fastTrim").parentElement.classList.toggle("hidden", fmt !== current.ext);
 
   let hint = "";
-  if (cat === "video" && fmt !== "gif") hint = "Groter dan het origineel kan ook: dan wordt de bitrate verhoogd.";
-  if (cat === "image") hint = "Kleiner: lagere kwaliteit en/of resolutie. Groter: hogere kwaliteit en resolutie.";
-  if (["archive", "other"].includes(cat)) hint = "Verliesvrij inpakken; al gecomprimeerde bestanden worden nauwelijks kleiner.";
-  if (cat === "pdf" || fmt === "pdf") hint = "PDF's worden kleiner door afbeeldingen te herschalen en te comprimeren.";
+  if (cat === "video" && fmt !== "gif") hint = "Larger than the original works too: the bitrate is raised.";
+  if (cat === "image") hint = "Smaller: lower quality and/or resolution. Larger: higher quality and resolution.";
+  if (["archive", "other"].includes(cat)) hint = "Lossless packing; already compressed files barely get smaller.";
+  if (cat === "pdf" || fmt === "pdf") hint = "PDFs get smaller by rescaling and compressing their images.";
   $("targetHint").textContent = hint;
 }
 $("format").addEventListener("change", refresh);
@@ -459,7 +465,7 @@ function syncSel() {
   $("trimSel").style.left = a / 10 + "%";
   $("trimSel").style.width = Math.max(0, b - a) / 10 + "%";
   const sel = selection();
-  $("trimLen").textContent = sel ? fmtTime(sel.len) + (duration ? ` van ${fmtTime(duration)}` : "") : "ongeldig";
+  $("trimLen").textContent = sel ? fmtTime(sel.len) + (duration ? ` of ${fmtTime(duration)}` : "") : "ongeldig";
 }
 function syncSliders() {
   if (!duration) return syncSel();
@@ -489,8 +495,8 @@ $("setEnd").addEventListener("click", () => { $("trimEnd").value = fmtTime(playe
 $("resetBtn").addEventListener("click", () => {
   current = null; fileInput.value = "";
   const p = $("preview"); p.pause && p.pause();
-  show($("panel"), false); show(drop, true); show($("urlForm"), true); show($("tools"), true);
-  step(1); status("gereed");
+  show($("panel"), false); show(drop, true); show($("urlForm"), true); show($("tools"), true); show($("sampleBox"), true);
+  step(1); status("ready");
 });
 
 $("goBtn").addEventListener("click", async () => {
@@ -498,7 +504,7 @@ $("goBtn").addEventListener("click", async () => {
   const fmt = $("format").value;
   const opts = { format: fmt };
   if (radio("sizeMode") === "target") {
-    if (!(+$("targetSize").value > 0)) { alert("Vul een doelgrootte in."); return; }
+    if (!(+$("targetSize").value > 0)) { alert("Enter a target size."); return; }
     opts.target_size = $("targetSize").value;
     opts.target_unit = $("targetUnit").value;
   } else {
@@ -512,6 +518,18 @@ $("goBtn").addEventListener("click", async () => {
     opts.gif_width = $("gifWidth").value;
     opts.gif_fps = $("gifFps").value;
   }
+  if ((cat === "video" || cat === "audio") && !$("avBox").classList.contains("hidden")) {
+    Object.assign(opts, {
+      vcodec: $("avVcodec").value, fps: $("avFps").value, video_bitrate: $("avVbr").value, crf: $("avCrf").value,
+      preset: $("avPreset").value, pix_fmt: $("avPix").value, streams: $("avStreams").value,
+      acodec: $("avAcodec").value, audio_bitrate: $("avAbr").value, sample_rate: $("avRate").value,
+      channels: $("avCh").value, volume: $("avVol").value, metadata: $("avMeta").value,
+      meta_title: $("metaTitle").value, meta_artist: $("metaArtist").value, meta_album: $("metaAlbum").value,
+      meta_date: $("metaDate").value, meta_comment: $("metaComment").value,
+    });
+    if (cat === "video" && $("avW").value) opts.width = $("avW").value;
+    if (cat === "video" && $("avH").value) opts.height = $("avH").value;
+  }
   if (cat === "image") {
     opts.scale_percent = $("scalePct").value;
     opts.width = $("imgW").value;
@@ -519,7 +537,7 @@ $("goBtn").addEventListener("click", async () => {
   }
   if (cat === "video" || cat === "audio") {
     const s = parseTime($("trimStart").value), e = parseTime($("trimEnd").value);
-    if (Number.isNaN(s) || Number.isNaN(e) || (s != null && e != null && e <= s)) { alert("Controleer de knip-tijden."); return; }
+    if (Number.isNaN(s) || Number.isNaN(e) || (s != null && e != null && e <= s)) { alert("Check the trim times."); return; }
     opts.trim_start = s; opts.trim_end = e;
     if (TEXT_OUT.includes(fmt)) {
       opts.language = $("speechLang").value;
@@ -530,7 +548,7 @@ $("goBtn").addEventListener("click", async () => {
   }
 
   $("goBtn").disabled = true;
-  $("goBtn").textContent = "[ BEZIG... ]";
+  $("goBtn").textContent = "[ BUSY... ]";
   step(4);
   show($("result"), false);
   show($("progress"), true);
@@ -538,7 +556,7 @@ $("goBtn").addEventListener("click", async () => {
   try {
     const r = await fetch("/api/convert", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: current.id, options: opts }) });
     const job = await r.json();
-    if (!r.ok) throw new Error(job.error || "Mislukt");
+    if (!r.ok) throw new Error(job.error || "Failed");
     await poll(job.id);
   } catch (err) {
     showError(err.message);
@@ -576,10 +594,10 @@ function showResult(j) {
   const bar = (n) => { const k = Math.max(1, Math.round(n / max * w)); return "█".repeat(k) + "░".repeat(w - k); };
   const arrow = diff <= 0 ? "▼" : "▲";
   res.innerHTML = `<span class="head">STATUS: OK</span>
-<div class="cmp"><span class="lbl">BESTAND   </span><span class="fn"></span>
-<span class="lbl">ORIGINEEL </span>${bar(j.original_size)} ${human(j.original_size)}
-<span class="lbl">NIEUW     </span>${bar(j.size)} ${human(j.size)}
-<span class="lbl">VERSCHIL  </span><span class="down">${arrow} ${Math.abs(diff).toFixed(1)}% ${diff <= 0 ? "kleiner" : "groter"}</span></div>`;
+<div class="cmp"><span class="lbl">FILE      </span><span class="fn"></span>
+<span class="lbl">ORIGINAL  </span>${bar(j.original_size)} ${human(j.original_size)}
+<span class="lbl">NEW       </span>${bar(j.size)} ${human(j.size)}
+<span class="lbl">CHANGE    </span><span class="down">${arrow} ${Math.abs(diff).toFixed(1)}% ${diff <= 0 ? "smaller" : "larger"}</span></div>`;
   res.querySelector(".fn").textContent = j.filename;
   const a = document.createElement("a");
   a.className = "download";
@@ -596,16 +614,16 @@ function showResult(j) {
     }).catch(() => {});
   }
   show(res, true);
-  status(`klaar: ${j.filename} (${human(j.size)})`);
+  status(`done: ${j.filename} (${human(j.size)})`);
 }
 
 function showError(msg) {
   show($("progress"), false);
   const res = $("result");
   res.className = "result error";
-  res.innerHTML = '<span class="head">!! FOUT</span>\n';
+  res.innerHTML = '<span class="head">!! ERROR</span>\n';
   res.append(document.createTextNode(msg));
-  status("fout - zie melding");
+  status("error - see message");
   step(2);
   show(res, true);
 }
@@ -616,21 +634,22 @@ fetch("/api/ping").then((r) => r.json()).then((p) => {
   if (!p.desktop) return;
   $("modeLabel").textContent = "DESKTOP-APP";
   show($("termBtn"), true);
+  document.querySelectorAll('.tool[data-fmt="drives"]').forEach((b) => b.classList.remove("hidden"));
   // In een eigen venster sluit je het programma gewoon met het venster.
   show($("quitBtn"), !p.window || p.window === "browser");
 }).catch(() => {});
 $("quitBtn").addEventListener("click", async () => {
   try { await fetch("/api/quit", { method: "POST" }); } catch {}
   document.querySelector("main").innerHTML =
-    '<pre class="logo-off">\n  ┌──────────────────────────────────────┐\n  │  ANYTHING CONVERTER IS AFGESLOTEN.   │\n  │  je kunt dit tabblad nu sluiten.     │\n  └──────────────────────────────────────┘</pre>';
+    '<pre class="logo-off">\n  ┌──────────────────────────────────────┐\n  │  ANYTHING CONVERTER HAS BEEN CLOSED. │\n  │  you can close this tab now.         │\n  └──────────────────────────────────────┘</pre>';
 });
 $("termBtn").addEventListener("click", async () => {
-  status("terminalversie openen…");
+  status("opening the terminal version…");
   try {
     const r = await fetch("/api/terminal", { method: "POST" });
     const j = await r.json();
-    status(j.ok ? "terminalversie geopend in een nieuw venster" : j.error);
-  } catch { status("terminalversie openen lukte niet"); }
+    status(j.ok ? "terminal version opened in a new window" : j.error);
+  } catch { status("could not open the terminal version"); }
 });
 
 // Eigen programmavenster (pywebview): downloads via een "Bewaar als"-venster, links naar buiten
@@ -646,9 +665,9 @@ document.addEventListener("click", async (e) => {
   if (u.pathname.startsWith("/web/")) { e.preventDefault(); api.open_window(u.pathname + u.search); return; }
   if (a.hasAttribute("download") || /^\/api\/(download|file|torrent)\//.test(u.pathname)) {
     e.preventDefault();
-    status("opslaan…");
+    status("saving…");
     const r = await api.save_url(u.pathname + u.search);
-    status(r.path ? "opgeslagen: " + r.path : r.cancelled ? "opslaan geannuleerd" : "opslaan mislukt: " + r.error);
+    status(r.path ? "opgeslagen: " + r.path : r.cancelled ? "saving cancelled" : "saving failed: " + r.error);
   }
 }, true);
 
@@ -665,34 +684,34 @@ try { savedTheme = localStorage.getItem("ac-theme") || "groen"; } catch {}
 setTheme(savedTheme);
 
 
-// ---------- gereedschap: snelle keuzes (zoals "PDF naar Word")
+// ---------- gereedschap: snelle keuzes (zoals "PDF to Word")
 const OFFICE = ".doc,.docx,.odt", SHEET = ".xls,.xlsx,.ods,.csv", SLIDES = ".ppt,.pptx,.odp";
 const MEDIA = "audio/*,video/*,.mkv,.flac,.opus,.m4a,.wma,.amr";
 const TOOLS = [
-  ["PDF", "DOC", "PDF naar Word", ".pdf", "docx"], ["PDF", "XLS", "PDF naar Excel", ".pdf", "xlsx"],
-  ["PDF", "PPT", "PDF naar PPT", ".pdf", "pptx"], ["PDF", "PNG", "PDF naar PNG", ".pdf", "png"],
-  ["PDF", "JPG", "PDF naar JPEG", ".pdf", "jpg"], ["PDF", "RTF", "PDF naar RTF", ".pdf", "rtf"],
-  ["PDF", "TXT", "PDF naar TXT", ".pdf", "txt"], ["PDF", "HTM", "PDF naar HTML", ".pdf", "html"],
-  ["PDF", "XML", "PDF naar XML", ".pdf", "xml"], ["DOC", "PDF", "Word naar PDF", OFFICE, "pdf"],
-  ["XLS", "PDF", "Excel naar PDF", SHEET, "pdf"], ["PPT", "PDF", "PPT naar PDF", SLIDES, "pdf"],
-  ["IMG", "PDF", "Afbeelding naar PDF", "image/*,.heic,.heif", "pdf"], ["RTF", "PDF", "RTF naar PDF", ".rtf", "pdf"],
-  ["TXT", "PDF", "TXT naar PDF", ".txt,.md", "pdf"], ["PDF", "+", "PDF samenvoegen", null, "web:pdf"],
-  ["PDF", "÷", "PDF splitsen", null, "web:pdf"], ["PDF", "▼", "PDF comprimeren", ".pdf", "pdf"],
-  ["IMG", "TXT", "Bestands-OCR", "image/*,.pdf", "txt"], ["[▢]", "TXT", "Screenshot-OCR", null, "screen"],
-  ["♪", "TXT", "Audio/video naar tekst", MEDIA, "txt"], ["▶", "SRT", "Ondertitels maken", MEDIA, "srt"],
-  ["DOC", "EPUB", "E-book maken", ".doc,.docx,.odt,.txt,.md,.html,.pdf,.epub", "epub"],
-  ["EPUB", "AZW", "E-book voor Kindle", ".epub,.mobi,.fb2,.pdf,.docx", "azw3"],
-  ["♪", "M4R", "iPhone-beltoon", MEDIA, "m4r"], ["WWW", "PDF", "Website naar PDF", null, "web"],
-  ["BIN", "ISO", "CUE/BIN naar ISO", ".cue,.bin,.img,.ccd,.mdf,.mds,.nrg,.zip,.7z", "iso"],
-  ["BIN", "1×", "BIN-sporen samenvoegen", ".cue,.bin,.zip,.7z", "cue"],
-  ["ISO", "CHD", "Naar CHD (RetroArch)", ".cue,.bin,.iso,.gdi,.zip,.7z", "chd"],
-  ["ISO", "CSO", "PSP ISO naar CSO", ".iso,.cso", "cso"],
-  ["ROM", "IPS", "ROM patchen", "*", "patch"],
-  ["N64", "Z64", "N64-ROM omzetten", ".n64,.v64,.z64", "z64"],
+  ["PDF", "DOC", "PDF to Word", ".pdf", "docx"], ["PDF", "XLS", "PDF to Excel", ".pdf", "xlsx"],
+  ["PDF", "PPT", "PDF to PPT", ".pdf", "pptx"], ["PDF", "PNG", "PDF to PNG", ".pdf", "png"],
+  ["PDF", "JPG", "PDF to JPEG", ".pdf", "jpg"], ["PDF", "RTF", "PDF to RTF", ".pdf", "rtf"],
+  ["PDF", "TXT", "PDF to TXT", ".pdf", "txt"], ["PDF", "HTM", "PDF to HTML", ".pdf", "html"],
+  ["PDF", "XML", "PDF to XML", ".pdf", "xml"], ["DOC", "PDF", "Word to PDF", OFFICE, "pdf"],
+  ["XLS", "PDF", "Excel to PDF", SHEET, "pdf"], ["PPT", "PDF", "PPT to PDF", SLIDES, "pdf"],
+  ["IMG", "PDF", "Image to PDF", "image/*,.heic,.heif", "pdf"], ["RTF", "PDF", "RTF to PDF", ".rtf", "pdf"],
+  ["TXT", "PDF", "TXT to PDF", ".txt,.md", "pdf"], ["PDF", "+", "Merge PDFs", null, "web:pdf"],
+  ["PDF", "÷", "Split PDF", null, "web:pdf"], ["PDF", "▼", "Compress PDF", ".pdf", "pdf"],
+  ["IMG", "TXT", "File OCR", "image/*,.pdf", "txt"], ["[▢]", "TXT", "Screenshot-OCR", null, "screen"],
+  ["♪", "TXT", "Audio/video to text", MEDIA, "txt"], ["▶", "SRT", "Make subtitles", MEDIA, "srt"],
+  ["DOC", "EPUB", "Make e-book", ".doc,.docx,.odt,.txt,.md,.html,.pdf,.epub", "epub"],
+  ["EPUB", "AZW", "E-book for Kindle", ".epub,.mobi,.fb2,.pdf,.docx", "azw3"],
+  ["♪", "M4R", "iPhone ringtone", MEDIA, "m4r"], ["WWW", "PDF", "Website to PDF", null, "web"],
+  ["BIN", "ISO", "CUE/BIN to ISO", ".cue,.bin,.img,.ccd,.mdf,.mds,.nrg,.zip,.7z", "iso"],
+  ["BIN", "1×", "Merge BIN tracks", ".cue,.bin,.zip,.7z", "cue"],
+  ["ISO", "CHD", "To CHD (RetroArch)", ".cue,.bin,.iso,.gdi,.zip,.7z", "chd"],
+  ["ISO", "CSO", "PSP ISO to CSO", ".iso,.cso", "cso"],
+  ["ROM", "IPS", "Patch ROM", "*", "patch"],
+  ["N64", "Z64", "Convert N64 ROM", ".n64,.v64,.z64", "z64"],
   ["#", "SHA", "Checksum / hash", "*", "hash"],
-  ["TXT", "✎", "Tekst bewerken", "*", "edit"], ["+", "TXT", "Nieuw tekstbestand", null, "newtext"],
-  ["SQL", "▦", "Database openen", ".sqlite,.sqlite3,.db,.db3,.sql,.csv,.tsv,.xlsx,.dbf,.json", "db"],
-  ["+", "DB", "Nieuwe database", null, "newdb"], ["*", "ZIP", "Inpakken (zip, 7z)", "*", "zip"],
+  ["TXT", "✎", "Edit text", "*", "edit"], ["+", "TXT", "New text file", null, "newtext"],
+  ["SQL", "▦", "Open database", ".sqlite,.sqlite3,.db,.db3,.sql,.csv,.tsv,.xlsx,.dbf,.json", "db"],
+  ["USB", "HDD", "Drives: health / format", null, "drives"], ["+", "DB", "New database", null, "newdb"], ["*", "ZIP", "Pack (zip, 7z)", "*", "zip"],
 ];
 (function buildTools() {
   const grid = $("toolGrid");
@@ -704,6 +723,8 @@ const TOOLS = [
     btn.querySelector(".t1").textContent = a;
     btn.querySelector(".t2").textContent = b;
     btn.querySelector(".tlabel").textContent = label;
+    btn.dataset.fmt = fmt;
+    if (fmt === "drives") btn.classList.add("hidden");
     btn.addEventListener("click", () => runTool(accept, fmt, label));
     grid.append(btn);
   }
@@ -717,18 +738,19 @@ function runTool(accept, fmt, label) {
   if (fmt === "web") { show($("webForm"), true); $("webUrl").focus(); return; }
   if (fmt === "newtext") return newText();
   if (fmt === "newdb") return newDb();
+  if (fmt === "drives") return openDrives();
   if (fmt === "edit" || fmt === "db") {
     afterUpload = fmt; presetFormat = null;
     fileInput.accept = accept === "*" ? "" : accept;
-    status("kies een bestand om " + (fmt === "edit" ? "te bewerken" : "als database te openen"));
+    status("choose a file to " + (fmt === "edit" ? "edit" : "open as a database"));
     fileInput.click();
     setTimeout(() => { fileInput.accept = ""; }, 1000);
     return;
   }
   presetFormat = fmt === "hash" ? null : fmt;
-  status("kies een bestand voor: " + label.toLowerCase());
-  if (fmt === "patch") status("kies de ROM en de patch (.ips/.ups/.bps) samen");
-  if (["iso", "cue", "chd"].includes(fmt) && accept && accept.includes(".cue")) status("kies de .cue met alle .bin-bestanden samen (of één zip)");
+  status("choose a file for: " + label.toLowerCase());
+  if (fmt === "patch") status("choose the ROM and the patch (.ips/.ups/.bps) together");
+  if (["iso", "cue", "chd"].includes(fmt) && accept && accept.includes(".cue")) status("choose the .cue together with all .bin files (or one zip)");
   hashAfterUpload = fmt === "hash";
   fileInput.accept = accept === "*" ? "" : accept;
   fileInput.click();
@@ -744,33 +766,33 @@ function showText(text, title) {
 }
 $("textClose").addEventListener("click", () => show($("textOut"), false));
 $("textCopy").addEventListener("click", async () => {
-  try { await navigator.clipboard.writeText($("textOutBox").value); status("tekst gekopieerd"); }
-  catch { $("textOutBox").select(); document.execCommand("copy"); status("tekst gekopieerd"); }
+  try { await navigator.clipboard.writeText($("textOutBox").value); status("text copied"); }
+  catch { $("textOutBox").select(); document.execCommand("copy"); status("text copied"); }
 });
 $("textSave").addEventListener("click", async () => {
   const blob = new Blob([$("textOutBox").value], { type: "text/plain" });
   const api = nativeApi();
   if (api) {
-    const r = await api.save_begin("tekst.txt");
+    const r = await api.save_begin("text.txt");
     if (r.path) {
       const b64 = btoa(unescape(encodeURIComponent($("textOutBox").value)));
       await api.save_chunk(b64); const d = await api.save_end(); status("opgeslagen: " + d.path);
     }
     return;
   }
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "tekst.txt";
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "text.txt";
   document.body.append(a); a.click(); a.remove();
 });
 
 async function screenOcr() {
-  status("kies een gebied op je scherm…");
+  status("select an area of your screen…");
   try {
     const r = await fetch("/api/ocr/screen", { method: "POST" });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error);
-    showText(j.text || "(geen tekst gevonden)", "tekst uit schermafbeelding");
-    status("tekst herkend");
-  } catch (err) { status("FOUT: " + err.message); alert(err.message); }
+    showText(j.text || "(no text found)", "text from screenshot");
+    status("text recognised");
+  } catch (err) { status("ERROR: " + err.message); alert(err.message); }
 }
 
 // Plakken (ctrl+v / cmd+v) van een schermafbeelding: direct tekst herkennen
@@ -781,14 +803,14 @@ document.addEventListener("paste", async (e) => {
   e.preventDefault();
   const fd = new FormData();
   fd.append("file", item.getAsFile(), "plakken.png");
-  status("tekst herkennen in geplakte afbeelding…");
+  status("recognising text in the pasted image…");
   try {
     const r = await fetch("/api/ocr/image", { method: "POST", body: fd });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error);
-    showText(j.text || "(geen tekst gevonden)", "tekst uit geplakte afbeelding");
-    status("tekst herkend");
-  } catch (err) { status("FOUT: " + err.message); }
+    showText(j.text || "(no text found)", "text from the pasted image");
+    status("text recognised");
+  } catch (err) { status("ERROR: " + err.message); }
 });
 
 // ---------- checksum
@@ -827,7 +849,7 @@ $("webGo").addEventListener("click", async () => {
     const a = document.createElement("a"); a.href = "/api/download/" + j.id; a.setAttribute("download", "");
     document.body.append(a); a.click(); a.remove();
     status("website opgeslagen: " + j.filename);
-  } catch (err) { status("FOUT: " + err.message); alert(err.message); }
+  } catch (err) { status("ERROR: " + err.message); alert(err.message); }
   finally { $("webGo").disabled = false; }
 });
 
@@ -842,19 +864,19 @@ function edLines() {
   $("edLines").textContent = out;
   $("edLines").scrollTop = edText.scrollTop;
   const pos = edText.value.slice(0, edText.selectionStart).split("\n");
-  $("edInfo").textContent = `${current ? current.name : ""} · ${n} regels · regel ${pos.length}, kolom ${pos[pos.length - 1].length + 1}` + (edDirty ? " · niet opgeslagen" : "");
+  $("edInfo").textContent = `${current ? current.name : ""} · ${n} lines · line ${pos.length}, column ${pos[pos.length - 1].length + 1}` + (edDirty ? " · not saved" : "");
 }
 async function openEditor() {
   if (!current) return;
   const r = await fetch("/api/text/" + current.id);
   const j = await r.json();
-  if (!r.ok) { status("FOUT: " + j.error); return; }
+  if (!r.ok) { status("ERROR: " + j.error); return; }
   edText.value = j.text; edDirty = false;
   $("edDownload").href = "/api/file/" + current.id + "?download=1";
   $("edDownload").setAttribute("download", j.name);
   show($("dbBox"), false); show($("editBox"), true);
   edLines(); edText.focus(); edText.setSelectionRange(0, 0);
-  $("edMsg").textContent = "// opslaan bewaart de werkkopie (daarna kun je hem ook omzetten). je origineel verandert niet.";
+  $("edMsg").textContent = "// save keeps the working copy (you can convert it afterwards). your original does not change.";
   $("edMsg").className = "dim small";
   $("editBox").scrollIntoView({ block: "start" });
 }
@@ -879,29 +901,29 @@ $("edCheck").addEventListener("click", async () => {
   const r = await fetch("/api/text/" + current.id, { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text: edText.value, check: true }) });
   const j = await r.json();
-  edNote(j.ok ? "geen fouten gevonden ✓" : "fout: " + j.error, j.ok ? "ok" : "err");
+  edNote(j.ok ? "no errors found ✓" : "error: " + j.error, j.ok ? "ok" : "err");
 });
 async function edSave() {
   const r = await fetch("/api/text/" + current.id, { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text: edText.value }) });
   const j = await r.json();
-  if (!r.ok) { edNote("opslaan mislukt: " + j.error, "err"); return; }
+  if (!r.ok) { edNote("saving failed: " + j.error, "err"); return; }
   edDirty = false; edLines();
   current = j.upload; $("fMeta").textContent = current.label + " · " + human(j.size);
-  edNote("opgeslagen ✓ (" + human(j.size) + ")" + (j.warning ? " — let op: " + j.warning : ""), j.warning ? "err" : "ok");
+  edNote("opgeslagen ✓ (" + human(j.size) + ")" + (j.warning ? " — note: " + j.warning : ""), j.warning ? "err" : "ok");
 }
 $("edSave").addEventListener("click", edSave);
 $("edClose").addEventListener("click", () => {
-  if (edDirty && !confirm("Niet opgeslagen wijzigingen weggooien?")) return;
+  if (edDirty && !confirm("Discard unsaved changes?")) return;
   show($("editBox"), false);
 });
 $("editBtn").addEventListener("click", openEditor);
 async function newText() {
-  const name = prompt("Naam van het nieuwe bestand (met extensie, bijv. notities.md of data.json):", "notities.txt");
+  const name = prompt("Name of the new file (with extension, e.g. notes.md or data.json):", "notities.txt");
   if (!name) return;
   const r = await fetch("/api/text/new", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
   const j = await r.json();
-  if (!r.ok) { status("FOUT: " + j.error); return; }
+  if (!r.ok) { status("ERROR: " + j.error); return; }
   localFile = null; setup(j); openEditor();
 }
 
@@ -909,7 +931,7 @@ async function newText() {
 let dbTable = null, dbOffset = 0, dbTotal = 0;
 function grid(el, cols, rows) {
   el.innerHTML = "";
-  if (!cols.length) { el.textContent = "(geen kolommen)"; return; }
+  if (!cols.length) { el.textContent = "(no columns)"; return; }
   const t = document.createElement("table");
   const head = t.insertRow();
   for (const c of cols) { const th = document.createElement("th"); th.textContent = c; head.append(th); }
@@ -923,7 +945,7 @@ function dbNote(msg, kind) { $("dbMsg").textContent = "// " + msg; $("dbMsg").cl
 function dbTablesList(tables) {
   const ul = $("dbTables");
   ul.innerHTML = "";
-  if (!tables.length) { const li = document.createElement("li"); li.className = "dim"; li.textContent = "(nog geen tabellen — maak er een met SQL)"; ul.append(li); }
+  if (!tables.length) { const li = document.createElement("li"); li.className = "dim"; li.textContent = "(no tables yet — create one with SQL)"; ul.append(li); }
   for (const t of tables) {
     const li = document.createElement("li");
     const b = document.createElement("button");
@@ -943,7 +965,7 @@ async function openDb() {
   if (!r.ok) { dbNote(j.error, "err"); return; }
   dbTable = j.tables.length ? j.tables[0].naam : null; dbOffset = 0;
   dbTablesList(j.tables);
-  dbNote("je werkt op een kopie: het originele bestand verandert niet. exporteer om je wijzigingen te bewaren.");
+  dbNote("you are working on a copy: the original file does not change. export to keep your changes.");
   if (dbTable) { $("dbSql").value = `SELECT * FROM "${dbTable}" LIMIT 50;`; dbShow(); } else { $("dbRows").innerHTML = ""; $("dbTitle").textContent = ""; }
   $("dbBox").scrollIntoView({ block: "start" });
 }
@@ -953,22 +975,22 @@ async function dbShow() {
   const j = await r.json();
   if (!r.ok) { dbNote(j.error, "err"); return; }
   dbTotal = j.totaal;
-  $("dbTitle").textContent = `// ${dbTable}: ${j.totaal} rijen`;
+  $("dbTitle").textContent = `// ${dbTable}: ${j.totaal} rows`;
   grid($("dbRows"), j.kolommen, j.rijen);
-  $("dbPage").textContent = j.totaal ? `${dbOffset + 1}–${Math.min(dbOffset + j.rijen.length, j.totaal)} van ${j.totaal}` : "leeg";
+  $("dbPage").textContent = j.totaal ? `${dbOffset + 1}–${Math.min(dbOffset + j.rijen.length, j.totaal)} of ${j.totaal}` : "empty";
 }
 $("dbPrev").addEventListener("click", () => { dbOffset = Math.max(0, dbOffset - 200); dbShow(); });
 $("dbNext").addEventListener("click", () => { if (dbOffset + 200 < dbTotal) { dbOffset += 200; dbShow(); } });
 async function dbRun() {
   const sql = $("dbSql").value;
-  dbNote("bezig…");
+  dbNote("working…");
   const r = await fetch(`/api/db/${current.id}/query`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql }) });
   const j = await r.json();
   if (!r.ok) { dbNote(j.error, "err"); $("dbResult").innerHTML = ""; return; }
   const res = j.result;
   if (res.kolommen.length) grid($("dbResult"), res.kolommen, res.rijen); else $("dbResult").innerHTML = "";
-  dbNote(res.kolommen.length ? `${res.rijen.length}${res.meer ? "+" : ""} rijen` + (res.meer ? " (eerste 500 getoond)" : "")
-    : `klaar ✓ — ${res.opdrachten} opdracht(en), ${res.gewijzigd} rij(en) gewijzigd`, "ok");
+  dbNote(res.kolommen.length ? `${res.rijen.length}${res.meer ? "+" : ""} rows` + (res.meer ? " (eerste 500 getoond)" : "")
+    : `done ✓ — ${res.opdrachten} statement(s), ${res.gewijzigd} row(s) changed`, "ok");
   if (!dbTable && j.tables.length) dbTable = j.tables[0].naam;
   dbTablesList(j.tables);
   dbShow();
@@ -988,7 +1010,205 @@ $("dbBtn").addEventListener("click", openDb);
 async function newDb() {
   const r = await fetch("/api/db/new", { method: "POST" });
   const j = await r.json();
-  if (!r.ok) { status("FOUT: " + j.error); return; }
+  if (!r.ok) { status("ERROR: " + j.error); return; }
   localFile = null; setup(j); openDb();
-  $("dbSql").value = "CREATE TABLE klanten (id INTEGER PRIMARY KEY, naam TEXT NOT NULL, plaats TEXT);\nINSERT INTO klanten (naam, plaats) VALUES ('Anna', 'Utrecht'), ('Bo', 'Gent');\nSELECT * FROM klanten;";
+  $("dbSql").value = "CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT);\nINSERT INTO customers (name, city) VALUES ('Anna', 'Utrecht'), ('Bo', 'Ghent');\nSELECT * FROM customers;";
 }
+
+
+// ---------------------------------------------------------------- what is behind a media file
+let mediaInfoFor = null;
+async function loadMediaInfo() {
+  if (!current || mediaInfoFor === current.id) return;
+  mediaInfoFor = current.id;
+  const box = $("avSource");
+  box.textContent = "reading streams…";
+  try {
+    const r = await fetch(`/api/media/${current.id}`);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "?");
+    const kb = (b) => (b ? Math.round(b / 1000) + " kbps" : "");
+    const lines = [`SOURCE  ${d.container || "?"} · ${fmtTime(d.duration)} · ${kb(d.bitrate)}`];
+    for (const st of d.streams) {
+      const bits = [st.kind.toUpperCase(), (st.codec || "?").toUpperCase() + (st.profile ? ` (${st.profile})` : "")];
+      if (st.kind === "video") bits.push(`${st.width}×${st.height}`, st.fps ? st.fps + " fps" : "", st.pix_fmt || "",
+        st.cover ? "cover art" : "");
+      if (st.kind === "audio") bits.push(st.sample_rate ? st.sample_rate / 1000 + " kHz" : "", st.layout || (st.channels ? st.channels + " ch" : ""));
+      bits.push(kb(st.bitrate), st.language || "", st.title || "");
+      lines.push("  #" + st.index + " " + bits.filter(Boolean).join(" · "));
+    }
+    const tags = Object.entries(d.tags || {}).filter(([k]) => !/^(major_brand|minor_version|compatible_brands|encoder)$/i.test(k));
+    if (tags.length) lines.push("TAGS    " + tags.map(([k, v]) => `${k}=${v}`).join(" · "));
+    if (d.chapters) lines.push(`CHAPTERS ${d.chapters}`);
+    box.textContent = lines.join("\n");
+    const t = d.tags || {}, low = Object.fromEntries(Object.entries(t).map(([k, v]) => [k.toLowerCase(), v]));
+    $("metaTitle").placeholder = low.title || "keep"; $("metaArtist").placeholder = low.artist || "keep";
+    $("metaAlbum").placeholder = low.album || "keep"; $("metaDate").placeholder = low.date || low.creation_time || "keep";
+    $("metaComment").placeholder = low.comment || "keep";
+  } catch (e) {
+    box.textContent = "(could not read the streams: " + e.message + ")";
+  }
+}
+
+
+// ---------------------------------------------------------------- test files
+(async () => {
+  const sel = $("sampleSel");
+  try {
+    const r = await fetch("/api/samples");
+    const d = await r.json();
+    sel.innerHTML = "";
+    const first = document.createElement("option");
+    first.value = ""; first.textContent = "choose a file type…";
+    sel.append(first);
+    const popular = ["mp4", "mov", "mkv", "mp3", "flac", "wav", "jpg", "png", "heic", "webp", "gif", "pdf", "docx",
+      "xlsx", "pptx", "epub", "zip", "7z", "srt", "csv", "json", "sqlite", "cue", "iso", "nes", "z64", "stl", "svg", "ttf"];
+    const all = new Map(d.groups.flatMap((g) => g.items.map((it) => [it.ext, it.desc])));
+    const pg = document.createElement("optgroup");
+    pg.label = "POPULAR";
+    for (const e of popular.filter((x) => all.has(x))) pg.append(new Option(`.${e}  · ${all.get(e)}`, e));
+    sel.append(pg);
+    for (const g of d.groups) {
+      const og = document.createElement("optgroup");
+      og.label = g.group.toUpperCase();
+      for (const it of g.items) og.append(new Option(`.${it.ext}  · ${it.desc}`, it.ext));
+      sel.append(og);
+    }
+  } catch {
+    sel.innerHTML = "<option value=''>(list not available)</option>";
+  }
+})();
+async function loadSample(ext) {
+  if (!ext) return;
+  const btn = $("sampleBtn");
+  btn.disabled = true;
+  status("making test file ." + ext + "…");
+  try {
+    const r = await fetch("/api/sample/" + encodeURIComponent(ext), { method: "POST" });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "?");
+    localFile = null;
+    setup(d);
+  } catch (e) {
+    status("ERROR: " + e.message);
+    alert(e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+$("sampleBtn").addEventListener("click", () => loadSample($("sampleSel").value));
+$("sampleSel").addEventListener("change", () => loadSample($("sampleSel").value));
+
+
+// ---------------------------------------------------------------- drives: health and safe formatting
+let drvSel = null;
+function openDrives() {
+  show($("drivesBox"), true);
+  $("drivesBox").scrollIntoView({ behavior: "smooth" });
+  loadDrives();
+}
+async function loadDrives() {
+  const list = $("drvList");
+  list.textContent = "looking for drives…";
+  show($("drvForm"), false); show($("drvHealth"), false);
+  try {
+    const r = await fetch("/api/drives");
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    const fs = $("drvFs");
+    if (!fs.options.length) for (const [k, v] of d.filesystems) fs.append(new Option(v, k));
+    list.innerHTML = "";
+    for (const dr of d.drives) {
+      const row = document.createElement("div");
+      row.className = "drv-row" + (dr.system ? " drv-sys" : "");
+      const what = [dr.kind === "optical" ? "CD/DVD" : dr.bus.toUpperCase() || "DISK", dr.size_text,
+        dr.labels.join(", "), dr.filesystems.join(", "), dr.mounts.join(" ")].filter(Boolean).join(" · ");
+      row.innerHTML = '<span class="drv-name"></span><span class="drv-info dim"></span><span class="drv-btns"></span>';
+      row.querySelector(".drv-name").textContent = `${dr.id}  ${dr.name}` + (dr.system ? "  [SYSTEM]" : "");
+      row.querySelector(".drv-info").textContent = what + (dr.health ? " · health: " + dr.health : "");
+      const hb = document.createElement("button");
+      hb.className = "btn small"; hb.type = "button"; hb.textContent = "[ HEALTH ]";
+      hb.addEventListener("click", () => driveHealth(dr));
+      row.querySelector(".drv-btns").append(hb);
+      const can = dr.can_format || ($("drvInternal").checked && !dr.system && dr.size && dr.why_not.startsWith("internal"));
+      const fb = document.createElement("button");
+      fb.className = "btn small"; fb.type = "button";
+      fb.textContent = dr.kind === "optical" ? "[ ERASE DISC ]" : "[ FORMAT ]";
+      fb.disabled = !can;
+      fb.title = can ? "" : dr.why_not;
+      fb.addEventListener("click", () => formatForm(dr));
+      row.querySelector(".drv-btns").append(fb);
+      list.append(row);
+    }
+    if (!d.drives.length) list.textContent = "(no drives found)";
+  } catch (e) {
+    list.textContent = "!! " + e.message;
+  }
+}
+async function driveHealth(dr) {
+  const box = $("drvHealth");
+  show(box, true);
+  box.textContent = `checking ${dr.id}…`;
+  try {
+    const r = await fetch("/api/drives/health?id=" + encodeURIComponent(dr.id));
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    const mark = { OK: "✓ OK", WARNING: "! WARNING", FAILING: "!! FAILING — back up now", UNKNOWN: "? UNKNOWN" }[d.verdict] || d.verdict;
+    box.textContent = `HEALTH ${dr.id} ${dr.name}: ${mark}${d.source ? "  (" + d.source + ")" : ""}\n` + d.lines.map((l) => "  " + l).join("\n");
+  } catch (e) {
+    box.textContent = "!! " + e.message;
+  }
+}
+async function formatForm(dr) {
+  drvSel = dr;
+  show($("drvForm"), true);
+  $("drvTarget").textContent = `> ${dr.kind === "optical" ? "ERASE" : "FORMAT"}: ${dr.id} · ${dr.name} · ${dr.size_text}`;
+  $("drvConfirmName").textContent = dr.id;
+  $("drvConfirm").value = ""; $("drvGo").disabled = true; $("drvMsg").textContent = "";
+  for (const id of ["drvFs", "drvLabel"]) $(id).closest("label").classList.toggle("hidden", dr.kind === "optical");
+  if (dr.size > 32 * 1024 ** 3 && $("drvFs").value === "fat32") $("drvFs").value = "exfat";
+  await drvPlan();
+  $("drvConfirm").focus();
+}
+async function drvPlan() {
+  if (!drvSel) return;
+  try {
+    const r = await fetch("/api/drives/plan", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: drvSel.id, fs: $("drvFs").value, label: $("drvLabel").value, full: !!$("drvFull").value,
+        allow_internal: $("drvInternal").checked }) });
+    const d = await r.json();
+    $("drvPlan").textContent = r.ok ? "// will run:\n" + d.commands.map((c) => "   " + c).join("\n") + (d.allowed ? "" : "\n!! " + d.why) : "!! " + d.error;
+  } catch (e) { $("drvPlan").textContent = "!! " + e.message; }
+}
+["drvFs", "drvLabel", "drvFull"].forEach((id) => $(id).addEventListener("change", drvPlan));
+$("drvConfirm").addEventListener("input", () => { $("drvGo").disabled = !drvSel || $("drvConfirm").value.trim() !== drvSel.id; });
+$("drvInternal").addEventListener("change", loadDrives);
+$("drvRefresh").addEventListener("click", loadDrives);
+$("drvClose").addEventListener("click", () => show($("drivesBox"), false));
+$("drvGo").addEventListener("click", async () => {
+  if (!drvSel || $("drvConfirm").value.trim() !== drvSel.id) return;
+  if (!confirm(`Last check: delete EVERYTHING on ${drvSel.id} (${drvSel.name}, ${drvSel.size_text})?`)) return;
+  const bar = $("drvBar"), msg = $("drvMsg");
+  $("drvGo").disabled = true; show(bar, true); msg.className = "small"; msg.textContent = "formatting… (approve the permission prompt if one appears)";
+  try {
+    const r = await fetch("/api/drives/format", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: drvSel.id, fs: $("drvFs").value, label: $("drvLabel").value, full: !!$("drvFull").value,
+        allow_internal: $("drvInternal").checked, confirm: $("drvConfirm").value.trim() }) });
+    let j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    for (;;) {
+      const rr = await fetch("/api/job/" + j.id);
+      j = await rr.json();
+      bar.textContent = txtBar(j.progress, barWidth());
+      if (j.status === "error") throw new Error(j.error);
+      if (j.status === "done") break;
+      await new Promise((res) => setTimeout(res, 1000));
+    }
+    msg.textContent = "✓ " + j.text;
+    loadDrives();
+  } catch (e) {
+    msg.className = "small err"; msg.textContent = "!! " + e.message;
+  } finally {
+    show(bar, false); $("drvConfirm").value = "";
+  }
+});

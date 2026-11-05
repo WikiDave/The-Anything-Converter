@@ -41,7 +41,7 @@ def test_download_from_local_seed(tmp_path):
     assert paths == ["pakket/a.bin", "pakket/map/b.txt"]
     got = (tmp_path / "out" / "pakket" / "a.bin").read_bytes()
     assert got == (tmp_path / "seed" / "pakket" / "a.bin").read_bytes()
-    assert any(m.startswith("Downloaden") for m in seen)
+    assert any(m.startswith("Downloading") for m in seen)
     del ses
 
 
@@ -53,7 +53,7 @@ def test_rejects_bad_input(tmp_path):
 
 
 def test_cancel(tmp_path):
-    with pytest.raises(ConversionError, match="Gestopt"):
+    with pytest.raises(ConversionError, match="Stopped"):
         download("magnet:?xt=urn:btih:" + "a" * 40, tmp_path, cancelled=lambda: True)
 
 

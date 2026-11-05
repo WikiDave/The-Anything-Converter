@@ -19,7 +19,7 @@ from pathlib import Path
 from .util import ConversionError, human_size, parse_size
 
 ASCII = False
-QUALITY = {"hoog": "high", "normaal": "medium", "laag": "low", "high": "high", "medium": "medium", "low": "low"}
+QUALITY = {"hoog": "high", "normaal": "medium", "laag": "low", "normal": "medium", "high": "high", "medium": "medium", "low": "low"}
 REPL = {"█": "#", "░": "-", "▼": "v", "▲": "^", "→": "->", "·": "-", "×": "x", "…": "...", "✓": "OK", "é": "e",
         "ë": "e", "ï": "i", "├": "+", "└": "`", "─": "-", "│": "|", "┌": "+", "┐": "+", "┘": "+", "┤": "|", "▶": ">"}
 
@@ -82,8 +82,7 @@ def bars(before: int, after: int, width: int = 24) -> str:
         return "█" * k + "░" * (width - k)
 
     d = (after - before) / before * 100 if before else 0
-    return (f"  ORIGINEEL  {b(before)} {human_size(before)}\n  NIEUW      {b(after)} {human_size(after)}\n"
-            f"  VERSCHIL   {'▼' if d <= 0 else '▲'} {abs(d):.1f}% {'kleiner' if d <= 0 else 'groter'}")
+    return (f"  ORIGINAL   {b(before)} {human_size(before)}\n  NEW        {b(after)} {human_size(after)}\n  DIFFERENCE {'▼' if d <= 0 else '▲'} {abs(d):.1f}% {'smaller' if d <= 0 else 'larger'}")
 
 
 def unique(dst: Path) -> Path:
@@ -101,12 +100,11 @@ def convert_file(src: Path, out_dir: Path | None, opts: dict, progress=None, pat
     from .jobs import run_conversion
     src = src.expanduser().resolve()
     if not src.is_file():
-        raise ConversionError(f"Bestand niet gevonden: {src}")
+        raise ConversionError(f"File not found: {src}")
     info = analyse(src, patch)
     fmt = opts.get("format")
     if fmt and fmt not in info["targets"]:
-        raise ConversionError(f"{src.name} ({info['label'].lower()}) kan niet naar .{fmt}. "
-                              f"Mogelijk: {', '.join(info['targets'])}")
+        raise ConversionError(f"{src.name} ({info['label'].lower()}) cannot become .{fmt}. Possible: {', '.join(info['targets'])}")
     if patch:
         opts = dict(opts, patch=str(patch))
     tmp = Path(tempfile.mkdtemp(prefix="ac-cli-"))
@@ -130,99 +128,158 @@ def move_out(made: Path, out_dir: Path) -> Path:
 
 # ============================================================================ opdrachten
 
+PDF_ACTIONS = {"merge": "merge", "split": "split", "rotate": "rotate", "delete": "delete", "compress": "compress",
+               "samenvoegen": "merge", "splitsen": "split", "draaien": "rotate", "verwijderen": "delete",
+               "comprimeren": "compress"}
+ARCHIVE_ACTIONS = {"list": "list", "extract": "extract", "pack": "pack",
+                   "lijst": "list", "uitpakken": "extract", "inpakken": "pack"}
+
+
+def _action(table: dict):
+    def conv(s: str) -> str:
+        if s.lower() not in table:
+            raise argparse.ArgumentTypeError(f"choose from: {', '.join(sorted(set(table.values())))}")
+        return table[s.lower()]
+    return conv
+
+
 def build_parser(with_file: bool = False) -> argparse.ArgumentParser:
-    """with_file: zonder opdracht, met een optioneel bestand om in het volledige scherm te openen."""
+    """with_file: no command, with an optional file to open in full screen."""
     ap = argparse.ArgumentParser(
         prog="anything-converter-tui",
-        description="Anything Converter in de terminal. Zonder opdracht: volledig scherm (of --simpel).",
-        epilog="Voorbeelden:\n"
-               "  anything-converter-tui converteer video.mov --naar mp4 --doel 25MB\n"
-               "  anything-converter-tui converteer *.heic --naar jpg --uit ~/Foto's\n"
-               "  anything-converter-tui converteer rapport.pdf --naar docx\n"
-               "  anything-converter-tui converteer interview.mp3 --naar srt --taal nl\n"
-               "  anything-converter-tui pdf samenvoegen a.pdf b.pdf -o samen.pdf\n"
-               "  anything-converter-tui social vakantie.jpg --formaat ig-pano\n"
-               "  anything-converter-tui converteer spel.cue --naar chd\n"
-               "  anything-converter-tui --simpel",
+        description="Anything Converter in the terminal. Without a command: full screen (or --simple).",
+        epilog="Examples:\n"
+               "  anything-converter-tui convert video.mov --to mp4 --target 25MB\n"
+               "  anything-converter-tui convert *.heic --to jpg --out ~/Pictures\n"
+               "  anything-converter-tui convert report.pdf --to docx\n"
+               "  anything-converter-tui convert interview.mp3 --to srt --lang en\n"
+               "  anything-converter-tui pdf merge a.pdf b.pdf -o together.pdf\n"
+               "  anything-converter-tui social holiday.jpg --size ig-pano\n"
+               "  anything-converter-tui convert game.cue --to chd\n"
+               "  anything-converter-tui --simple\n\n"
+               "Dutch command names (converteer, --naar, --simpel, ...) still work.",
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--version", action="store_true", help="versie tonen")
-    ap.add_argument("--simpel", action="store_true", help="eenvoudige modus met menu's (werkt in elke terminal)")
-    ap.add_argument("--ascii", action="store_true", help="alleen ASCII-tekens (oude of beperkte terminals)")
+    ap.add_argument("--version", action="store_true", help="show the version")
+    ap.add_argument("--simple", "--simpel", dest="simpel", action="store_true",
+                    help="simple mode with numbered menus (works in any terminal)")
+    ap.add_argument("--ascii", action="store_true", help="ASCII characters only (old or limited terminals)")
+    ap.add_argument("--theme", help="colour theme: green-phosphor, amber, cyan, white, matrix, red-alert, pink, "
+                                    "purple, ice, gold, dos, c64, solarized, gruvbox, nord, dracula, high-contrast, "
+                                    "paper, sepia, green-on-white (ctrl+t switches)")
+    ap.add_argument("--colours", "--colors", dest="colours", metavar="TEXT,BACKGROUND",
+                    help='your own colours, e.g. "#ffcc00,#101010"')
+    ap.add_argument("--ui-lang", "--taal-ui", dest="ui_lang", choices=["en", "nl"],
+                    help="language of the terminal texts (default: en; or set ANYTHING_LANG=nl)")
     if with_file:
-        ap.add_argument("bestand", nargs="?", help="bestand om direct te openen")
+        ap.add_argument("bestand", nargs="?", metavar="file", help="file to open straight away")
         ap.set_defaults(cmd=None)
-        ap.epilog = ("Opdrachten (meer uitleg: anything-converter-tui <opdracht> --help):\n"
-                     "  converteer, formaten, hash, pdf, archief, social, ocr, web, ophalen, scan, sql\n\n" + ap.epilog)
+        ap.epilog = ("Commands (more help: anything-converter-tui <command> --help):\n"
+                     "  convert, formats, hash, pdf, archive, social, ocr, web, fetch, scan, sql, drives, serve\n\n" + ap.epilog)
         return ap
-    sub = ap.add_subparsers(dest="cmd", metavar="opdracht")
+    sub = ap.add_subparsers(dest="cmd", metavar="command")
 
-    c = sub.add_parser("converteer", aliases=["convert"], help="bestanden omzetten")
-    c.add_argument("bestanden", nargs="+", type=Path)
-    c.add_argument("--naar", "--to", required=True, help="uitvoerformaat, bijv. mp4, jpg, docx, iso")
-    c.add_argument("--uit", "--out", type=Path, help="uitvoermap (standaard: naast het bestand)")
-    c.add_argument("--kwaliteit", default="normaal", choices=list(QUALITY))
-    c.add_argument("--doel", help="doelgrootte, bijv. 8MB of 500KB")
-    c.add_argument("--van", help="knippen vanaf (bijv. 0:10)")
-    c.add_argument("--tot", help="knippen tot (bijv. 1:30)")
-    c.add_argument("--hoogte", type=int, help="videohoogte in pixels, bijv. 720")
-    c.add_argument("--zonder-geluid", action="store_true")
-    c.add_argument("--apparaat", help="video-preset: iphone, android, psp, xbox, ...")
-    c.add_argument("--schaal", type=float, help="afbeelding schalen in procent")
-    c.add_argument("--breedte", type=int)
-    c.add_argument("--taal", default="auto", help="spraak naar tekst: auto, nl, en, de, ...")
+    c = sub.add_parser("convert", aliases=["converteer"], help="convert files")
+    c.add_argument("bestanden", nargs="+", type=Path, metavar="file")
+    c.add_argument("--to", "--naar", dest="naar", required=True, help="output format, e.g. mp4, jpg, docx, iso")
+    c.add_argument("--out", "--uit", dest="uit", type=Path, help="output folder (default: next to the file)")
+    c.add_argument("--quality", "--kwaliteit", dest="kwaliteit", default="medium", choices=list(QUALITY))
+    c.add_argument("--target", "--doel", dest="doel", help="target size, e.g. 8MB or 500KB")
+    c.add_argument("--from", "--van", dest="van", help="trim from (e.g. 0:10)")
+    c.add_argument("--until", "--tot", dest="tot", help="trim until (e.g. 1:30)")
+    c.add_argument("--height", "--hoogte", dest="hoogte", type=int, help="video height in pixels, e.g. 720")
+    c.add_argument("--no-audio", "--zonder-geluid", dest="zonder_geluid", action="store_true")
+    c.add_argument("--device", "--apparaat", dest="apparaat", help="video preset: iphone, android, psp, xbox, ...")
+    c.add_argument("--scale", "--schaal", dest="schaal", type=float, help="scale an image in percent")
+    c.add_argument("--width", "--breedte", dest="breedte", type=int)
+    c.add_argument("--lang", "--taal", dest="taal", default="auto", help="speech to text: auto, en, nl, de, ...")
     c.add_argument("--model", default="base", choices=["tiny", "base", "small", "medium"])
-    c.add_argument("--vertaal", action="store_true", help="spraak vertalen naar Engels")
-    c.add_argument("--patch", type=Path, help="IPS/UPS/BPS-patch voor --naar patch")
+    c.add_argument("--translate", "--vertaal", dest="vertaal", action="store_true", help="translate speech to English")
+    c.add_argument("--patch", type=Path, help="IPS/UPS/BPS patch for --to patch")
+    m = c.add_argument_group("video/audio: codecs, frame rate and metadata")
+    m.add_argument("--vcodec", choices=["h264", "h265", "av1", "vp9", "vp8", "prores", "dnxhd", "mpeg4", "mpeg2",
+                                        "mjpeg", "theora", "copy"])
+    m.add_argument("--fps", help="frame rate, e.g. 25, 29.97, 30, 60")
+    m.add_argument("--vbitrate", help="video bitrate in kbps, e.g. 4000")
+    m.add_argument("--crf", type=int, help="constant quality (lower = better), e.g. 23")
+    m.add_argument("--preset", choices=["ultrafast", "veryfast", "fast", "medium", "slow", "veryslow"])
+    m.add_argument("--10bit", dest="tenbit", action="store_true", help="10-bit colour (H.265/AV1/VP9)")
+    m.add_argument("--all-streams", action="store_true", help="keep all audio tracks and subtitles")
+    m.add_argument("--acodec", choices=["aac", "mp3", "opus", "vorbis", "flac", "alac", "ac3", "eac3", "pcm",
+                                        "pcm24", "copy"])
+    m.add_argument("--abitrate", help="audio bitrate in kbps, e.g. 192")
+    m.add_argument("--sample-rate", help="e.g. 44100 or 48000")
+    m.add_argument("--channels", help="mono, stereo, 5.1 or a number")
+    m.add_argument("--volume", help="change the volume in dB, e.g. -3 or 6")
+    m.add_argument("--strip-metadata", action="store_true", help="remove all tags and chapters (privacy)")
+    for k in ("title", "artist", "album", "date", "genre", "comment"):
+        m.add_argument(f"--{k}", dest=f"meta_{k}", help=f"set the {k} tag")
 
-    f = sub.add_parser("formaten", aliases=["formats", "info"], help="wat kan dit bestand worden?")
-    f.add_argument("bestand", type=Path)
+    f = sub.add_parser("formats", aliases=["formaten", "info"], help="what can this file become?")
+    f.add_argument("bestand", type=Path, metavar="file")
 
     h = sub.add_parser("hash", aliases=["checksum"], help="checksums (MD5, SHA-256, CRC-32, ...)")
-    h.add_argument("bestanden", nargs="+", type=Path)
-    h.add_argument("--hmac", help="sleutel voor HMAC")
+    h.add_argument("bestanden", nargs="+", type=Path, metavar="file")
+    h.add_argument("--hmac", help="key for HMAC")
 
-    p = sub.add_parser("pdf", help="PDF-werkbank")
-    p.add_argument("actie", choices=["samenvoegen", "splitsen", "draaien", "verwijderen", "comprimeren"])
-    p.add_argument("bestanden", nargs="+", type=Path)
-    p.add_argument("-o", "--uitvoer", type=Path)
-    p.add_argument("--paginas", default="", help="bijv. 1-3,5")
-    p.add_argument("--hoek", type=int, default=90, choices=[90, 180, 270])
-    p.add_argument("--doel", help="comprimeren tot bijv. 2MB")
+    p = sub.add_parser("pdf", help="PDF workbench: merge, split, rotate, delete, compress")
+    p.add_argument("actie", type=_action(PDF_ACTIONS), metavar="{merge,split,rotate,delete,compress}")
+    p.add_argument("bestanden", nargs="+", type=Path, metavar="file")
+    p.add_argument("-o", "--output", "--uitvoer", dest="uitvoer", type=Path)
+    p.add_argument("--pages", "--paginas", dest="paginas", default="", help="e.g. 1-3,5")
+    p.add_argument("--angle", "--hoek", dest="hoek", type=int, default=90, choices=[90, 180, 270])
+    p.add_argument("--target", "--doel", dest="doel", help="compress to e.g. 2MB")
 
-    a = sub.add_parser("archief", aliases=["archive"], help="zip/7z/tar bekijken, uitpakken of maken")
-    a.add_argument("actie", choices=["lijst", "uitpakken", "inpakken"])
-    a.add_argument("paden", nargs="+", type=Path)
-    a.add_argument("-o", "--uitvoer", type=Path)
-    a.add_argument("--formaat", default="zip", choices=["zip", "7z", "tar.gz", "tar.xz", "tar.bz2", "tar"])
+    a = sub.add_parser("archive", aliases=["archief"], help="view, extract or create zip/7z/tar")
+    a.add_argument("actie", type=_action(ARCHIVE_ACTIONS), metavar="{list,extract,pack}")
+    a.add_argument("paden", nargs="+", type=Path, metavar="path")
+    a.add_argument("-o", "--output", "--uitvoer", dest="uitvoer", type=Path)
+    a.add_argument("--format", "--formaat", dest="formaat", default="zip",
+                   choices=["zip", "7z", "tar.gz", "tar.xz", "tar.bz2", "tar"])
 
-    s = sub.add_parser("social", help="foto/video op het formaat van een platform")
-    s.add_argument("bestand", nargs="?", type=Path)
-    s.add_argument("--formaat", help="bijv. ig-story, ig-pano, yt-thumb (zonder: lijst tonen)")
-    s.add_argument("--passend", action="store_true", help="niet bijsnijden maar passend maken (vage achtergrond)")
-    s.add_argument("--uit", type=Path)
+    s = sub.add_parser("social", help="photo/video at the exact size for a platform")
+    s.add_argument("bestand", nargs="?", type=Path, metavar="file")
+    s.add_argument("--size", "--formaat", dest="formaat", help="e.g. ig-story, ig-pano, yt-thumb (without: show the list)")
+    s.add_argument("--fit", "--passend", dest="passend", action="store_true",
+                   help="do not crop but fit (blurred background)")
+    s.add_argument("--out", "--uit", dest="uit", type=Path)
 
-    o = sub.add_parser("ocr", help="tekst herkennen in een afbeelding, scan of schermafbeelding")
-    o.add_argument("bestand", nargs="?", type=Path)
-    o.add_argument("--scherm", action="store_true", help="een gebied van je scherm kiezen")
+    o = sub.add_parser("ocr", help="recognise text in an image, scan or screenshot")
+    o.add_argument("bestand", nargs="?", type=Path, metavar="file")
+    o.add_argument("--screen", "--scherm", dest="scherm", action="store_true", help="select an area of your screen")
 
-    w = sub.add_parser("web", help="website opslaan als pdf/png/jpg")
+    w = sub.add_parser("web", help="save a website as pdf/png/jpg")
     w.add_argument("url")
-    w.add_argument("--naar", default="pdf", choices=["pdf", "png", "jpg"])
-    w.add_argument("--uit", type=Path, default=Path.cwd())
+    w.add_argument("--to", "--naar", dest="naar", default="pdf", choices=["pdf", "png", "jpg"])
+    w.add_argument("--out", "--uit", dest="uit", type=Path, default=Path.cwd())
 
-    g = sub.add_parser("ophalen", aliases=["fetch"], help="video via een link, of torrent (magnet / .torrent)")
-    g.add_argument("bron")
-    g.add_argument("--uit", type=Path, default=Path.home() / "Downloads")
-    g.add_argument("--audio", action="store_true", help="alleen geluid")
-    g.add_argument("--geen-scan", action="store_true")
+    g = sub.add_parser("fetch", aliases=["ophalen"], help="video from a link, or a torrent (magnet / .torrent)")
+    g.add_argument("bron", metavar="source")
+    g.add_argument("--out", "--uit", dest="uit", type=Path, default=Path.home() / "Downloads")
+    g.add_argument("--audio", action="store_true", help="audio only")
+    g.add_argument("--no-scan", "--geen-scan", dest="geen_scan", action="store_true")
 
-    q = sub.add_parser("sql", help="SQL uitvoeren op een SQLite-, .sql-, CSV- of Excel-bestand (op een kopie)")
-    q.add_argument("bestand", type=Path)
-    q.add_argument("opdracht", nargs="?", help="bijv. \"SELECT * FROM tabel\" (zonder: tabellen tonen)")
-    q.add_argument("--opslaan", type=Path, help="wijzigingen bewaren als nieuwe .sqlite")
+    q = sub.add_parser("sql", help="run SQL on a SQLite, .sql, CSV or Excel file (on a copy)")
+    q.add_argument("bestand", type=Path, metavar="file")
+    q.add_argument("opdracht", nargs="?", metavar="query", help="e.g. \"SELECT * FROM table\" (without: list the tables)")
+    q.add_argument("--save", "--opslaan", dest="opslaan", type=Path, help="keep the changes as a new .sqlite")
 
-    v = sub.add_parser("scan", help="bestand of map controleren op virussen")
-    v.add_argument("pad", type=Path)
+    dr = sub.add_parser("drives", aliases=["schijven"], help="USB sticks, disks, CD/DVD: list, health, format")
+    dr.add_argument("actie", choices=["list", "health", "format"], metavar="{list,health,format}")
+    dr.add_argument("drive", nargs="?", help="device as shown by 'drives list', e.g. /dev/sdb, disk4 or 2")
+    dr.add_argument("--fs", default="exfat", help="exfat (default), fat32, ntfs, ext4, apfs, hfs+")
+    dr.add_argument("--label", default="USB", help="name of the new volume")
+    dr.add_argument("--full", action="store_true", help="overwrite everything with zeros first (slow)")
+    dr.add_argument("--internal", action="store_true", help="also allow internal (non-system) disks")
+    dr.add_argument("--yes", metavar="DEVICE", help="confirm without asking by repeating the device name")
+
+    w2 = sub.add_parser("serve", aliases=["server"], help="the full app interface in a web browser (also over SSH "
+                                                         "or in Docker)")
+    w2.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"),
+                    help="127.0.0.1 = only this computer (default); 0.0.0.0 = the whole network")
+    w2.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
+
+    v = sub.add_parser("scan", help="check a file or folder for viruses")
+    v.add_argument("pad", type=Path, metavar="path")
     return ap
 
 
@@ -230,10 +287,10 @@ def run_command(args) -> int:
     try:
         return COMMANDS[args.cmd](args)
     except ConversionError as e:
-        say("!! FOUT:", e)
+        say("!! ERROR:", e)
         return 1
     except KeyboardInterrupt:
-        say("\n!! gestopt")
+        say("\n!! stopped")
         return 130
 
 
@@ -248,6 +305,19 @@ def cmd_convert(a) -> int:
     if a.zonder_geluid:
         opts["remove_audio"] = True
     opts.update(language=a.taal, speech_model=a.model, translate=a.vertaal)
+    for k, v in (("vcodec", a.vcodec), ("fps", a.fps), ("video_bitrate", a.vbitrate), ("crf", a.crf),
+                 ("preset", a.preset), ("acodec", a.acodec), ("audio_bitrate", a.abitrate),
+                 ("sample_rate", a.sample_rate), ("channels", a.channels), ("volume", a.volume),
+                 *((f"meta_{k}", getattr(a, f"meta_{k}")) for k in ("title", "artist", "album", "date", "genre",
+                                                                     "comment"))):
+        if v not in (None, ""):
+            opts[k] = v
+    if a.tenbit:
+        opts["pix_fmt"] = "10bit"
+    if a.all_streams:
+        opts["streams"] = "all"
+    if a.strip_metadata:
+        opts["metadata"] = "strip"
     fails = 0
     for src in a.bestanden:
         say(f"> {src.name} -> .{opts['format']}")
@@ -268,6 +338,25 @@ def cmd_formats(a) -> int:
     from .formats import analyse, fmt_label
     info = analyse(a.bestand)
     say(f"{a.bestand.name}: {info['label']}, {human_size(a.bestand.stat().st_size)}")
+    if info["category"] in ("video", "audio"):
+        try:
+            from .media import media_info
+            d = media_info(a.bestand)
+            say(f"  container: {d['container']}, {d['duration']:.1f} s, {d['bitrate'] // 1000} kbps")
+            for st in d["streams"]:
+                bits = [st["kind"], (st["codec"] or "?") + (f" ({st['profile']})" if st.get("profile") else "")]
+                if st["kind"] == "video":
+                    bits += [f"{st['width']}x{st['height']}", f"{st['fps']} fps", st.get("pix_fmt") or ""]
+                if st["kind"] == "audio":
+                    bits += [f"{st['sample_rate']} Hz", st.get("layout") or f"{st.get('channels')} ch"]
+                if st.get("bitrate"):
+                    bits.append(f"{st['bitrate'] // 1000} kbps")
+                say("  #" + str(st["index"]) + " " + ", ".join(b for b in bits if b))
+            for k, v in d["tags"].items():
+                say(f"  tag {k}: {v}")
+        except ConversionError:
+            pass
+    say("can become:")
     for x in info["targets"]:
         lbl = fmt_label(info["category"], x)
         say(f"  .{x:<8} {lbl}")
@@ -288,17 +377,17 @@ def cmd_hash(a) -> int:
 def cmd_pdf(a) -> int:
     from . import pdftools
     src = a.bestanden[0]
-    if a.actie == "samenvoegen":
+    if a.actie == "merge":
         dst = unique(a.uitvoer or src.with_name(f"{src.stem}_samengevoegd.pdf"))
         pdftools.merge(a.bestanden, dst)
-    elif a.actie == "splitsen":
+    elif a.actie == "split":
         out_dir = a.uitvoer or src.parent
         out_dir.mkdir(parents=True, exist_ok=True)
         dst = pdftools.split(src, out_dir, a.paginas)
-    elif a.actie in ("draaien", "verwijderen"):
-        dst = unique(a.uitvoer or src.with_name(f"{src.stem}_bewerkt.pdf"))
-        pdftools.edit_pages(src, dst, delete=a.paginas if a.actie == "verwijderen" else "",
-                            rotate=(a.paginas or "1-") if a.actie == "draaien" else "", angle=a.hoek)
+    elif a.actie in ("rotate", "delete"):
+        dst = unique(a.uitvoer or src.with_name(f"{src.stem}_edited.pdf"))
+        pdftools.edit_pages(src, dst, delete=a.paginas if a.actie == "delete" else "",
+                            rotate=(a.paginas or "1-") if a.actie == "rotate" else "", angle=a.hoek)
     else:
         opts = {"format": "pdf", "quality": "low" if not a.doel else "medium"}
         if a.doel:
@@ -310,7 +399,7 @@ def cmd_pdf(a) -> int:
 
 def cmd_archive(a) -> int:
     from .archive import _is_7z, _pack, _safe_extract
-    if a.actie == "lijst":
+    if a.actie == "list":
         import tarfile
         import zipfile
         src = a.paden[0]
@@ -324,17 +413,17 @@ def cmd_archive(a) -> int:
             with tarfile.open(src) as tf:
                 rows = [(m.name, m.size) for m in tf.getmembers() if m.isfile()]
         else:
-            raise ConversionError("Dit is geen zip-, 7z- of tar-archief.")
+            raise ConversionError("This is not a zip, 7z or tar archive.")
         for name, size in rows:
             say(f"  {human_size(size):>10}  {name}")
-        say(f"{len(rows)} bestanden, {human_size(sum(s for _, s in rows))} uitgepakt")
+        say(f"{len(rows)} files, {human_size(sum(s for _, s in rows))} unpacked")
         return 0
-    if a.actie == "uitpakken":
+    if a.actie == "extract":
         src = a.paden[0]
         dest = a.uitvoer or src.with_name(src.name.split(".")[0])
         dest.mkdir(parents=True, exist_ok=True)
         _safe_extract(src, dest)
-        say(f"OK: uitgepakt in {dest}")
+        say(f"OK: extracted to {dest}")
         return 0
     first = a.paden[0]
     dst = unique(a.uitvoer or first.with_name(f"{first.stem if first.is_file() else first.name}.{a.formaat}"))
@@ -364,7 +453,7 @@ def cmd_social(a) -> int:
         elif cat == "video":
             made = social.video(a.bestand, tmp, a.formaat, fit, Progress())
         else:
-            raise ConversionError("Kies een foto of video.")
+            raise ConversionError("Choose a photo or video.")
         dst = move_out(made, a.uit or a.bestand.parent)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -379,7 +468,7 @@ def cmd_ocr(a) -> int:
     elif a.bestand:
         path = a.bestand
     else:
-        raise ConversionError("Geef een afbeelding of PDF, of gebruik --scherm.")
+        raise ConversionError("Give an image or PDF, or use --screen.")
     text = ocr.searchable_pdf_text(path) if path.suffix.lower() == ".pdf" else ocr.image(path)
     print(text)
     return 0
@@ -422,10 +511,10 @@ def virus_line(v: dict) -> str:
     vt = next((f["vt"]["detail"] for f in v.get("files", []) if f.get("vt")), None)
     extra = f" - virustotal: {vt}" if vt else ""
     if v["status"] == "infected":
-        return f"!! VIRUS GEVONDEN ({loc.get('engine')}): {loc.get('detail')}{extra}"
+        return f"!! VIRUS FOUND ({loc.get('engine')}): {loc.get('detail')}{extra}"
     if v["status"] == "clean":
-        return f"✓ geen virus gevonden ({loc.get('engine')}){extra}"
-    return f"? niet zeker: {loc.get('detail')}{extra}"
+        return f"✓ no virus found ({loc.get('engine')}){extra}"
+    return f"? not sure: {loc.get('detail')}{extra}"
 
 
 def cmd_scan(a) -> int:
@@ -436,6 +525,60 @@ def cmd_scan(a) -> int:
     for f in v["files"][:10]:
         say(f"  sha-256 {f['sha256']}  {f['name']}")
     return 2 if v["status"] == "infected" else 0
+
+
+def cmd_serve(a) -> int:
+    root = Path(__file__).resolve().parent.parent
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from app import app  # noqa: PLC0415 - Flask only when needed
+    say(f"Anything Converter web interface: http://{'localhost' if a.host in ('127.0.0.1', '::1') else a.host}:{a.port}")
+    if a.host in ("127.0.0.1", "localhost"):
+        say(f"  over SSH: on your own computer run  ssh -L {a.port}:localhost:{a.port} user@this-machine")
+        say(f"  then open http://localhost:{a.port} there. ctrl+c = stop")
+    else:
+        say("  !! reachable by everyone on the network; only do this on a trusted network. ctrl+c = stop")
+    from werkzeug.serving import run_simple
+    run_simple(a.host, a.port, app, threaded=True, use_reloader=False)
+    return 0
+
+
+def cmd_drives(a) -> int:
+    from . import drives
+    if a.actie == "list":
+        for d in drives.list_drives():
+            ok, why = drives.formattable(d, a.internal)
+            say(f"{d.id:<14} {d.name[:28]:<28} {human_size(d.size) if d.size else 'no medium':>10}  "
+                f"{(d.bus or d.kind).upper():<8} {', '.join(d.labels + d.mounts)[:40]}")
+            say(f"{'':14} {'can be formatted' if ok else 'not formattable: ' + why}")
+        return 0
+    if not a.drive:
+        raise ConversionError("Give the drive, e.g. 'drives health /dev/sdb'. See 'drives list'.")
+    if a.actie == "health":
+        r = drives.health(a.drive)
+        say(f"{a.drive}: {r['verdict']}" + (f" ({r['source']})" if r["source"] else ""))
+        for line in r["lines"]:
+            say("  " + line)
+        return 0 if r["verdict"] in ("OK", "UNKNOWN", "N/A") else 2
+    d = drives.find(a.drive)
+    ok, why = drives.formattable(d, a.internal)
+    if not ok:
+        raise ConversionError(f"Not formatted: {why}.")
+    say(f"FORMAT {d.id} · {d.name} · {human_size(d.size)} · {', '.join(d.labels + d.mounts)}")
+    for c in drives.plan_format(d, a.fs, a.label, a.full):
+        say("  will run: " + " ".join(c))
+    confirm = a.yes
+    if confirm is None:
+        say("!! EVERYTHING on this drive will be deleted.")
+        confirm = ask(f"type {d.id} to confirm (empty = cancel)")
+    if not confirm:
+        say("cancelled")
+        return 1
+    bar = Progress()
+    msg = drives.format_drive(d.id, a.fs, a.label, confirm, a.full, a.internal, bar)
+    bar.done()
+    say("OK: " + msg)
+    return 0
 
 
 def parse(argv: list[str]) -> argparse.Namespace:
@@ -451,7 +594,7 @@ def cmd_sql(a) -> int:
         if not a.opdracht:
             for t in dbtool.overview(db):
                 cols = ", ".join(c["naam"] + (f" {c['type']}" if c["type"] else "") for c in t["kolommen"])
-                say(f"{t['soort']} {t['naam']} ({t['rijen']} rijen): {cols}")
+                say(f"{t['soort']} {t['naam']} ({t['rijen']} rows): {cols}")
             return 0
         res = dbtool.query(db, a.opdracht)
         if res["kolommen"]:
@@ -459,13 +602,13 @@ def cmd_sql(a) -> int:
             out = work / "uit.txt"
             write([dict(zip(res["kolommen"], r)) for r in res["rijen"]], out, "txt")
             print(out.read_text(encoding="utf-8"), end="")
-            say(f"({len(res['rijen'])}{'+' if res['meer'] else ''} rijen)")
+            say(f"({len(res['rijen'])}{'+' if res['meer'] else ''} rows)")
         else:
-            say(f"klaar: {res['opdrachten']} opdracht(en), {res['gewijzigd']} rij(en) gewijzigd")
+            say(f"done: {res['opdrachten']} statement(s), {res['gewijzigd']} row(s) changed")
         if a.opslaan:
             dst = dbtool.export(db, "sqlite", work, a.opslaan.name)
             shutil.move(str(dst), a.opslaan)
-            say(f"opgeslagen: {a.opslaan}")
+            say(f"saved: {a.opslaan}")
         return 0
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -474,7 +617,8 @@ def cmd_sql(a) -> int:
 COMMANDS = {"converteer": cmd_convert, "convert": cmd_convert, "formaten": cmd_formats, "formats": cmd_formats,
             "info": cmd_formats, "hash": cmd_hash, "checksum": cmd_hash, "pdf": cmd_pdf, "archief": cmd_archive,
             "archive": cmd_archive, "social": cmd_social, "ocr": cmd_ocr, "web": cmd_web, "ophalen": cmd_fetch,
-            "fetch": cmd_fetch, "scan": cmd_scan, "sql": cmd_sql}
+            "fetch": cmd_fetch, "scan": cmd_scan, "sql": cmd_sql,
+            "drives": cmd_drives, "schijven": cmd_drives, "serve": cmd_serve, "server": cmd_serve}
 
 
 # ============================================================================ eenvoudige modus
@@ -494,38 +638,38 @@ def choose(title: str, options: list[str], allow_back: bool = True) -> int:
     for i, o in enumerate(options, 1):
         say(f"  {i:>2}) {o}")
     if allow_back:
-        say("   0) terug")
+        say("   0) back")
     while True:
-        raw = ask("keuze")
+        raw = ask("choice")
         if raw.lower() in ("q", "stop", "exit", "quit"):
             raise SystemExit(0)
         if raw == "0" and allow_back:
             return -1
         if raw.isdigit() and 1 <= int(raw) <= len(options):
             return int(raw) - 1
-        say("  kies een nummer uit de lijst")
+        say("  choose a number from the list")
 
 
 def ask_path(prompt: str, must_exist: bool = True) -> Path | None:
     while True:
-        raw = ask(prompt + " (leeg = terug)")
+        raw = ask(prompt + " (empty = back)")
         if not raw:
             return None
         p = Path(raw).expanduser()
         if not must_exist or p.exists():
             return p
-        say(f"  bestaat niet: {p}")
+        say(f"  does not exist: {p}")
 
 
 def simple(version: str) -> int:
     say(f"ANYTHING CONVERTER {version} - eenvoudige modus")
-    say("werkt in elke terminal. q = afsluiten. tip: sleep een bestand in dit venster om het pad te plakken.")
-    menu = ["bestand converteren", "pdf: samenvoegen / splitsen / pagina's draaien of verwijderen",
-            "social media formaat", "tekst herkennen (ocr)", "video-link of torrent ophalen",
-            "virusscan of checksum", "archief: bekijken / uitpakken / inpakken", "website opslaan als pdf/png/jpg"]
+    say("works in any terminal. q = quit. tip: drag a file into this window to paste its path.")
+    menu = ["convert a file", "pdf: merge / split / rotate or delete pages",
+            "social media size", "recognise text (ocr)", "download a video link or torrent",
+            "virus scan or checksum", "archive: view / extract / pack", "save a website as pdf/png/jpg"]
     while True:
         try:
-            k = choose("WAT WIL JE DOEN?", menu + ["afsluiten"], allow_back=False)
+            k = choose("WHAT DO YOU WANT TO DO?", menu + ["quit"], allow_back=False)
             if k == len(menu):
                 return 0
             [simple_convert, simple_pdf, simple_social, simple_ocr, simple_fetch, simple_scan, simple_archive,
@@ -545,32 +689,32 @@ def simple_convert() -> None:
     info = analyse(src)
     say(f"{src.name}: {info['label']}, {human_size(src.stat().st_size)}")
     if info["category"] == "rom":
-        pp = ask("patch (.ips/.ups/.bps) toepassen? pad of leeg")
+        pp = ask("apply a patch (.ips/.ups/.bps)? path or empty")
         if pp:
             patch = Path(pp).expanduser()
             info = analyse(src, patch)
-    k = choose("NAAR WELK FORMAAT?", [f".{x}  {fmt_label(info['category'], x)}" for x in info["targets"]])
+    k = choose("TO WHICH FORMAT?", [f".{x}  {fmt_label(info['category'], x)}" for x in info["targets"]])
     if k < 0:
         return
     fmt = info["targets"][k]
     opts: dict = {"format": fmt}
     cat = info["category"]
     if cat in ("video", "audio", "image", "pdf") and fmt not in ("txt", "srt", "vtt", "docx", "rtf", "xlsx"):
-        g = choose("GROOTTE", ["kwaliteit hoog", "kwaliteit normaal", "kwaliteit laag", "doelgrootte (bijv. 8 MB)"])
+        g = choose("SIZE", ["quality high", "quality normal", "quality low", "target size (e.g. 8 MB)"])
         if g == 3:
-            opts["target_bytes"] = parse_size(ask("doelgrootte", "8 MB"), "mb")
+            opts["target_bytes"] = parse_size(ask("target size", "8 MB"), "mb")
         elif g >= 0:
             opts["quality"] = ["high", "medium", "low"][g]
     if cat in ("video", "audio"):
-        s, e = ask("knippen vanaf (leeg = begin)"), ask("knippen tot (leeg = einde)")
+        s, e = ask("trim from (empty = start)"), ask("trim to (empty = end)")
         if s:
             opts["trim_start"] = s
         if e:
             opts["trim_end"] = e
         if fmt in ("txt", "srt", "vtt"):
-            opts["language"] = ask("taal (auto, nl, en, de, fr, ...)", "auto")
-            opts["speech_model"] = ask("model (base = snel, small = nauwkeurig)", "base")
-    out = ask("uitvoermap (leeg = naast het bestand)")
+            opts["language"] = ask("language (auto, en, nl, de, fr, ...)", "auto")
+            opts["speech_model"] = ask("model (base = fast, small = accurate)", "base")
+    out = ask("output folder (empty = next to the file)")
     bar = Progress()
     dst = convert_file(src, Path(out).expanduser() if out else None, opts, bar, patch)
     bar.done()
@@ -579,21 +723,21 @@ def simple_convert() -> None:
 
 
 def simple_pdf() -> None:
-    k = choose("PDF", ["samenvoegen (pdf's en/of foto's)", "splitsen", "pagina's draaien", "pagina's verwijderen",
-                       "comprimeren"])
+    k = choose("PDF", ["merge (pdfs and/or photos)", "split", "rotate pages", "delete pages",
+                       "compress"])
     if k < 0:
         return
-    args = argparse.Namespace(actie=["samenvoegen", "splitsen", "draaien", "verwijderen", "comprimeren"][k],
+    args = argparse.Namespace(actie=["merge", "split", "rotate", "delete", "compress"][k],
                               uitvoer=None, paginas="", hoek=90, doel=None, bestanden=[])
     if k == 0:
-        say("geef de bestanden in volgorde; leeg = klaar")
+        say("enter the files in order; empty = done")
         while True:
-            p = ask_path(f"bestand {len(args.bestanden) + 1}")
+            p = ask_path(f"file {len(args.bestanden) + 1}")
             if not p:
                 break
             args.bestanden.append(p)
         if len(args.bestanden) < 2:
-            say("  minstens twee bestanden nodig")
+            say("  at least two files needed")
             return
     else:
         p = ask_path("pdf")
@@ -601,19 +745,19 @@ def simple_pdf() -> None:
             return
         args.bestanden = [p]
         if k == 1:
-            args.paginas = ask("alleen deze pagina's als één pdf (bijv. 1-3,5; leeg = elke pagina apart)")
+            args.paginas = ask("only these pages as one pdf (e.g. 1-3,5; empty = every page separately)")
         elif k in (2, 3):
-            args.paginas = ask("welke pagina's (bijv. 1-3,5)", "1-" if k == 2 else "")
+            args.paginas = ask("which pages (e.g. 1-3,5)", "1-" if k == 2 else "")
             if k == 2:
-                args.hoek = int(ask("hoek (90, 180, 270)", "90"))
+                args.hoek = int(ask("angle (90, 180, 270)", "90"))
         elif k == 4:
-            args.doel = ask("doelgrootte (leeg = zo klein mogelijk)") or None
+            args.doel = ask("target size (empty = as small as possible)") or None
     cmd_pdf(args)
 
 
 def simple_social() -> None:
     from . import social
-    src = ask_path("foto of video")
+    src = ask_path("photo or video")
     if not src:
         return
     groups = list(dict.fromkeys(p[0] for p in social.PRESETS))
@@ -624,15 +768,15 @@ def simple_social() -> None:
     k = choose(groups[g].upper(), [f"{p[2]} ({p[3]}x{p[4]})" for p in items])
     if k < 0:
         return
-    fit = choose("BIJSNIJDEN?", ["vullen (bijsnijden vanuit het midden)", "passend (alles zichtbaar, vage rand)"])
+    fit = choose("BIJSNIJDEN?", ["fill (crop from the centre)", "passend (alles zichtbaar, vage rand)"])
     cmd_social(argparse.Namespace(bestand=src, formaat=items[k][1], passend=fit == 1, uit=None))
 
 
 def simple_ocr() -> None:
-    k = choose("TEKST HERKENNEN", ["uit een afbeelding of scan (pdf)", "uit een stuk van mijn scherm"])
+    k = choose("RECOGNISE TEXT", ["from an image or scan (pdf)", "from part of my screen"])
     if k < 0:
         return
-    p = None if k == 1 else ask_path("afbeelding of pdf")
+    p = None if k == 1 else ask_path("image or pdf")
     if k == 0 and not p:
         return
     say("-" * 40)
@@ -641,40 +785,40 @@ def simple_ocr() -> None:
 
 
 def simple_fetch() -> None:
-    src = ask("link, magnet:?... of pad naar .torrent (leeg = terug)")
+    src = ask("link, magnet:?... or path to .torrent (empty = back)")
     if not src:
         return
-    audio = ask("alleen geluid? (j/n)", "n").lower().startswith("j")
-    out = Path(ask("opslaan in", str(Path.home() / "Downloads"))).expanduser()
+    audio = ask("audio only? (y/n)", "n").lower().startswith("j")
+    out = Path(ask("save to", str(Path.home() / "Downloads"))).expanduser()
     cmd_fetch(argparse.Namespace(bron=src, uit=out, audio=audio, geen_scan=False))
 
 
 def simple_scan() -> None:
-    k = choose("CONTROLEREN", ["virusscan", "checksum (md5, sha-256, crc-32, ...)"])
+    k = choose("CHECK", ["virusscan", "checksum (md5, sha-256, crc-32, ...)"])
     if k < 0:
         return
-    p = ask_path("bestand of map" if k == 0 else "bestand")
+    p = ask_path("file or folder" if k == 0 else "bestand")
     if not p:
         return
     if k == 0:
         cmd_scan(argparse.Namespace(pad=p))
     else:
-        cmd_hash(argparse.Namespace(bestanden=[p], hmac=ask("hmac-sleutel (leeg = geen)") or None))
+        cmd_hash(argparse.Namespace(bestanden=[p], hmac=ask("hmac key (empty = none)") or None))
 
 
 def simple_archive() -> None:
-    k = choose("ARCHIEF", ["inhoud bekijken", "uitpakken", "inpakken (zip, 7z, tar)"])
+    k = choose("ARCHIVE", ["view contents", "extract", "pack (zip, 7z, tar)"])
     if k < 0:
         return
     if k < 2:
         p = ask_path("archief")
         if not p:
             return
-        out = None if k == 0 else Path(ask("uitpakken naar", str(p.with_name(p.name.split(".")[0]))))
-        cmd_archive(argparse.Namespace(actie=["lijst", "uitpakken"][k], paden=[p], uitvoer=out, formaat="zip"))
+        out = None if k == 0 else Path(ask("extract to", str(p.with_name(p.name.split(".")[0]))))
+        cmd_archive(argparse.Namespace(actie=["list", "extract"][k], paden=[p], uitvoer=out, formaat="zip"))
         return
     paden = []
-    say("bestanden of mappen om in te pakken; leeg = klaar")
+    say("files or folders to pack; empty = done")
     while True:
         p = ask_path(f"pad {len(paden) + 1}")
         if not p:
@@ -682,16 +826,16 @@ def simple_archive() -> None:
         paden.append(p)
     if not paden:
         return
-    fmt = ["zip", "7z", "tar.gz", "tar.xz"][max(0, choose("FORMAAT", ["zip", "7z", "tar.gz", "tar.xz"]))]
-    cmd_archive(argparse.Namespace(actie="inpakken", paden=paden, uitvoer=None, formaat=fmt))
+    fmt = ["zip", "7z", "tar.gz", "tar.xz"][max(0, choose("FORMAT", ["zip", "7z", "tar.gz", "tar.xz"]))]
+    cmd_archive(argparse.Namespace(actie="pack", paden=paden, uitvoer=None, formaat=fmt))
 
 
 def simple_web() -> None:
-    url = ask("websiteadres (leeg = terug)")
+    url = ask("website address (empty = back)")
     if not url:
         return
-    k = choose("OPSLAAN ALS", ["pdf", "png", "jpg"])
+    k = choose("SAVE AS", ["pdf", "png", "jpg"])
     if k < 0:
         return
-    cmd_web(argparse.Namespace(url=url, naar=["pdf", "png", "jpg"][k], uit=Path(ask("map", str(Path.cwd())))))
+    cmd_web(argparse.Namespace(url=url, naar=["pdf", "png", "jpg"][k], uit=Path(ask("folder", str(Path.cwd())))))
 

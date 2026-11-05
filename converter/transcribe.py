@@ -35,7 +35,7 @@ def model_dir() -> Path:
 
 def ensure_model(name: str, progress: Optional[ProgressFn] = None, cancelled=lambda: False) -> Path:
     if name not in MODELS:
-        raise ConversionError(f"Onbekend spraakmodel: {name}")
+        raise ConversionError(f"Unknown speech model: {name}")
     path = model_dir() / f"ggml-{name}.bin"
     if path.exists() and path.stat().st_size > MODELS[name] * 0.9:
         return path
@@ -46,7 +46,7 @@ def ensure_model(name: str, progress: Optional[ProgressFn] = None, cancelled=lam
             done = 0
             while True:
                 if cancelled():
-                    raise ConversionError("Gestopt.")
+                    raise ConversionError("Stopped.")
                 chunk = r.read(1 << 20)
                 if not chunk:
                     break
@@ -60,7 +60,7 @@ def ensure_model(name: str, progress: Optional[ProgressFn] = None, cancelled=lam
         raise
     except Exception as e:  # noqa: BLE001
         part.unlink(missing_ok=True)
-        raise ConversionError(f"Spraakmodel downloaden mislukt (internet nodig, alleen de eerste keer): {e}") from e
+        raise ConversionError(f"Downloading the speech model failed (internet needed, only the first time): {e}") from e
     part.replace(path)
     return path
 
@@ -76,7 +76,7 @@ def _audio(src: Path, start: float = 0.0, end: Optional[float] = None):
     cmd += ["-vn", "-ac", "1", "-ar", "16000", "-f", "s16le", "-"]
     r = subprocess.run(cmd, capture_output=True, **NO_WINDOW)
     if r.returncode != 0 or not r.stdout:
-        raise ConversionError("Geen geluid gevonden in dit bestand. " + r.stderr.decode("utf-8", "replace")[-200:])
+        raise ConversionError("No audio found in this file. " + r.stderr.decode("utf-8", "replace")[-200:])
     return np.frombuffer(r.stdout, np.int16).astype(np.float32) / 32768.0
 
 
@@ -114,21 +114,21 @@ def transcribe(src: Path, dst: Path, fmt: str, opts: dict, progress: Optional[Pr
     try:
         from pywhispercpp.model import Model
     except ImportError as e:
-        raise ConversionError("Spraakherkenning ontbreekt (pip install pywhispercpp).") from e
+        raise ConversionError("Speech recognition is missing (pip install pywhispercpp).") from e
     name = opts.get("speech_model") or "base"
     model_path = ensure_model(name, progress, cancelled)
     if progress:
-        progress(0.32, "geluid voorbereiden")
+        progress(0.32, "preparing audio")
     audio = _audio(src, start, end)
     total_cs = max(1, int(len(audio) / 16000 * 100))
     lang = (opts.get("language") or "auto").lower()
 
     def on_segment(seg):
         if progress:
-            progress(0.35 + 0.6 * min(1.0, seg.t1 / total_cs), f"herkennen {_stamp(seg.t1, ',')[:8]}: {seg.text.strip()[:60]}")
+            progress(0.35 + 0.6 * min(1.0, seg.t1 / total_cs), f"recognising {_stamp(seg.t1, ',')[:8]}: {seg.text.strip()[:60]}")
 
     if progress:
-        progress(0.35, f"spraak herkennen (model {name})")
+        progress(0.35, f"recognising speech (model {name})")
     threads = max(1, min(8, (os.cpu_count() or 4)))
     try:
         model = Model(str(model_path), redirect_whispercpp_logs_to=None, print_progress=False, print_realtime=False,
@@ -141,9 +141,9 @@ def transcribe(src: Path, dst: Path, fmt: str, opts: dict, progress: Optional[Pr
     except TypeError:
         segments = model.transcribe(audio, **kw)
     if cancelled():
-        raise ConversionError("Gestopt.")
+        raise ConversionError("Stopped.")
     if not any(s.text.strip() for s in segments):
-        raise ConversionError("Er is geen spraak herkend in dit bestand.")
+        raise ConversionError("No speech was recognised in this file.")
     write(segments, dst, fmt, int(start * 100))
     return dst
 

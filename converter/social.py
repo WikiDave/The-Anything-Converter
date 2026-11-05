@@ -18,7 +18,7 @@ ProgressFn = Callable[[float, str], None]
 
 # (platform, id, omschrijving, breedte, hoogte, extra)
 PRESETS = [
-    ("Instagram", "ig-portrait", "post staand 4:5 · beste in de feed", 1080, 1350, {}),
+    ("Instagram", "ig-portrait", "portrait post 4:5 · best in the feed", 1080, 1350, {}),
     ("Instagram", "ig-square", "post vierkant 1:1", 1080, 1080, {}),
     ("Instagram", "ig-land", "post liggend 1.91:1", 1080, 566, {}),
     ("Instagram", "ig-story", "story / reels 9:16", 1080, 1920, {"vbr": 6e6}),
@@ -101,7 +101,7 @@ def _save_jpg(im, max_bytes: float) -> bytes:
 def image(src: Path, out_dir: Path, pid: str, fit: str = "cover", progress: Optional[ProgressFn] = None) -> Path:
     from PIL import Image, ImageOps
     if pid not in BY_ID:
-        raise ConversionError("Onbekend social-media-formaat.")
+        raise ConversionError("Unknown social media size.")
     g, _, name, w, h, extra = BY_ID[pid]
     im = ImageOps.exif_transpose(Image.open(src)).convert("RGB")
     max_bytes = extra.get("max", 8e6)
@@ -112,7 +112,7 @@ def image(src: Path, out_dir: Path, pid: str, fit: str = "cover", progress: Opti
         out = out_dir / f"{src.stem}_{pid}_{n}-delen.zip"
         with zipfile.ZipFile(out, "w", zipfile.ZIP_STORED) as z:
             for i in range(n):
-                z.writestr(f"{src.stem}_{i + 1:02d}-van-{n}.jpg", _save_jpg(strip.crop((i * w, 0, (i + 1) * w, h)),
+                z.writestr(f"{src.stem}_{i + 1:02d}-of-{n}.jpg", _save_jpg(strip.crop((i * w, 0, (i + 1) * w, h)),
                                                                             max_bytes))
                 if progress:
                     progress(0.2 + 0.75 * (i + 1) / n, f"deel {i + 1}/{n}")
@@ -126,10 +126,10 @@ def image(src: Path, out_dir: Path, pid: str, fit: str = "cover", progress: Opti
 def video(src: Path, out_dir: Path, pid: str, fit: str = "cover", progress: Optional[ProgressFn] = None) -> Path:
     from .media import _probe, _run_ffmpeg
     if pid not in BY_ID:
-        raise ConversionError("Onbekend social-media-formaat.")
+        raise ConversionError("Unknown social media size.")
     g, _, name, w, h, extra = BY_ID[pid]
     if extra.get("pano"):
-        raise ConversionError("Een panorama-carrousel kan alleen van een foto.")
+        raise ConversionError("A panorama carousel can only be made from a photo.")
     info = _probe(src)
     kbps = int(extra.get("vbr", 6e6) / 1000)
     if fit == "cover":

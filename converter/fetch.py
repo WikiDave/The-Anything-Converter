@@ -20,30 +20,30 @@ def _check_url(url: str) -> str:
     url = (url or "").strip()
     p = urlparse(url)
     if p.scheme not in ("http", "https") or not p.netloc:
-        raise ConversionError("Plak een volledige link die begint met https://")
+        raise ConversionError("Paste a full link starting with https://")
     return url
 
 
 def _friendly(msg: str) -> str:
     m = msg.lower()
     rules = [
-        ("private video", "Deze video is privé."),
-        ("sign in to confirm your age", "Deze video heeft een leeftijdsgrens en vereist inloggen; dat wordt niet ondersteund."),
-        ("sign in to confirm you", "YouTube vraagt om in te loggen (bot-controle). Probeer het later opnieuw of werk yt-dlp bij."),
-        ("video unavailable", "Deze video is niet beschikbaar."),
-        ("is not available in your country", "Deze video is niet beschikbaar in jouw land."),
-        ("members-only", "Deze video is alleen voor kanaalleden."),
-        ("unsupported url", "Deze link wordt niet ondersteund."),
-        ("live event", "Livestreams kunnen niet gedownload worden."),
-        ("requested format is not available", "Er is geen downloadbare versie gevonden."),
-        ("http error 403", "De site weigert de download (403). Werk yt-dlp bij: pip install -U yt-dlp"),
-        ("no supported javascript runtime", "yt-dlp heeft een JavaScript-runtime nodig voor YouTube. Installeer Deno of Node.js."),
+        ("private video", "This video is private."),
+        ("sign in to confirm your age", "This video is age-restricted and requires signing in; that is not supported."),
+        ("sign in to confirm you", "YouTube asks to sign in (bot check). Try again later or update yt-dlp."),
+        ("video unavailable", "This video is not available."),
+        ("is not available in your country", "This video is not available in your country."),
+        ("members-only", "This video is for channel members only."),
+        ("unsupported url", "This link is not supported."),
+        ("live event", "Livestreams cannot be downloaded."),
+        ("requested format is not available", "No downloadable version was found."),
+        ("http error 403", "The site refuses the download (403). Update yt-dlp: pip install -U yt-dlp"),
+        ("no supported javascript runtime", "yt-dlp needs a JavaScript runtime for YouTube. Install Deno or Node.js."),
     ]
     for key, text in rules:
         if key in m:
             return text
     tail = re.sub(r"\x1b\[[0-9;]*m", "", msg).strip().splitlines()[-1:] or [msg]
-    return "Downloaden mislukt: " + tail[0].replace("ERROR: ", "")
+    return "Download failed: " + tail[0].replace("ERROR: ", "")
 
 
 class _QuietLogger:
@@ -58,7 +58,7 @@ def download(url: str, out_dir: Path, audio_only: bool = False, progress: Option
     try:
         import yt_dlp
     except ImportError as exc:
-        raise ConversionError("yt-dlp is niet geïnstalleerd. Voer uit: pip install -U \"yt-dlp[default]\"") from exc
+        raise ConversionError("yt-dlp is not installed. Run: pip install -U \"yt-dlp[default]\"") from exc
     url = _check_url(url)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -74,7 +74,7 @@ def download(url: str, out_dir: Path, audio_only: bool = False, progress: Option
             progress(min(0.95, (part + frac) / hook.parts * 0.95), "Downloaden")
         elif d.get("status") == "finished":
             hook.part = min(hook.part + 1, hook.parts - 1)
-            progress(min(0.95, hook.part / hook.parts * 0.95), "Samenvoegen")
+            progress(min(0.95, hook.part / hook.parts * 0.95), "Merging")
     hook.part, hook.parts = 0, 1 if audio_only else 2
 
     opts = {
@@ -98,18 +98,18 @@ def download(url: str, out_dir: Path, audio_only: bool = False, progress: Option
         opts["merge_output_format"] = "mp4"
 
     if progress:
-        progress(0.01, "Link controleren")
+        progress(0.01, "Checking link")
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
             if info is None:
-                raise ConversionError("Deze link kon niet gedownload worden.")
+                raise ConversionError("This link could not be downloaded.")
             if info.get("_type") == "playlist":
-                raise ConversionError("Dit is een afspeellijst; plak de link van één video.")
+                raise ConversionError("This is a playlist; paste the link of a single video.")
             if info.get("is_live"):
-                raise ConversionError("Livestreams kunnen niet gedownload worden.")
+                raise ConversionError("Livestreams cannot be downloaded.")
             if (info.get("duration") or 0) > MAX_DURATION:
-                raise ConversionError(f"Deze video is langer dan {MAX_DURATION // 3600} uur.")
+                raise ConversionError(f"This video is longer than {MAX_DURATION // 3600} hours.")
             if progress:
                 progress(0.03, "Downloaden")
             info = ydl.process_ie_result(info, download=True)
@@ -119,8 +119,8 @@ def download(url: str, out_dir: Path, audio_only: bool = False, progress: Option
     if not path.exists():
         files = sorted((f for f in out_dir.iterdir() if f.is_file()), key=lambda f: f.stat().st_size, reverse=True)
         if not files:
-            raise ConversionError("Downloaden mislukt: geen bestand ontvangen.")
+            raise ConversionError("Download failed: no file received.")
         path = files[0]
     if progress:
-        progress(0.99, "Klaar")
+        progress(0.99, "Done")
     return path

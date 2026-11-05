@@ -87,8 +87,7 @@ def read_cues(path: Path) -> list[tuple[float, float, str]]:
             cues.append((b, e, "".join(parts).strip()))
     elif ext == "sub":
         if path.with_suffix(".idx").exists() or not re.match(r"\{\d+\}", text):
-            raise ConversionError("Dit zijn beeld-ondertitels (VobSub): plaatjes, geen tekst. Daar is OCR voor nodig "
-                                  "(bijv. Subtitle Edit).")
+            raise ConversionError("These are image subtitles (VobSub): pictures, not text. That needs OCR (e.g. Subtitle Edit).")
         fps = 25.0
         for line in text.splitlines():
             m = re.match(r"\{(\d+)\}\{(\d+)\}(.*)", line)
@@ -111,7 +110,7 @@ def read_cues(path: Path) -> list[tuple[float, float, str]]:
             if words:
                 cues.append((t, end, words))
     if not cues:
-        raise ConversionError("Geen ondertitels gevonden in dit bestand.")
+        raise ConversionError("No subtitles found in this file.")
     return cues
 
 
@@ -121,7 +120,7 @@ def _via_ffmpeg(path: Path) -> list[tuple[float, float, str]]:
     r = subprocess.run(["ffmpeg", "-hide_banner", "-y", "-nostdin", "-i", str(path), str(tmp)], capture_output=True,
                        **NO_WINDOW)
     if r.returncode != 0 or not tmp.exists():
-        raise ConversionError("Deze ondertitels kunnen niet gelezen worden: " +
+        raise ConversionError("These subtitles cannot be read: " +
                               r.stderr.decode("utf-8", "replace")[-200:])
     cues = read_cues(tmp)
     shutil.rmtree(tmp.parent, ignore_errors=True)
@@ -177,7 +176,7 @@ def write_cues(cues, dst: Path, fmt: str) -> Path:
         dst.write_text(head + "\n".join(f"Dialogue: 0,{at(a)},{at(b)},Default,,0,0,0,,{t.replace(chr(10), chr(92) + 'N')}"
                                         for a, b, t in cues) + "\n", encoding="utf-8")
     else:
-        raise ConversionError(f"Ondertitels naar .{fmt} wordt niet ondersteund.")
+        raise ConversionError(f"Subtitles to .{fmt} is not supported.")
     return dst
 
 
@@ -196,14 +195,14 @@ def read_playlist(path: Path) -> list[dict]:
             if m:
                 dur, title = m.group(1), m.group(2).strip()
             elif line and not line.startswith("#"):
-                items.append({"locatie": line, "titel": title, "duur": dur})
+                items.append({"location": line, "title": title, "duration": dur})
                 title, dur = "", ""
     elif ext == "pls":
         entries: dict = {}
         for line in text.splitlines():
             m = re.match(r"(File|Title|Length)(\d+)=(.*)", line.strip(), re.I)
             if m:
-                key = {"file": "locatie", "title": "titel", "length": "duur"}[m.group(1).lower()]
+                key = {"file": "location", "title": "title", "length": "duration"}[m.group(1).lower()]
                 entries.setdefault(int(m.group(2)), {})[key] = m.group(3)
         items = [entries[k] for k in sorted(entries)]
     else:  # xspf, wpl, asx (XML)
@@ -212,18 +211,18 @@ def read_playlist(path: Path) -> list[dict]:
             tag = el.tag.split("}")[-1].lower()
             if tag == "track":
                 get = {c.tag.split("}")[-1]: (c.text or "") for c in el}
-                items.append({"locatie": get.get("location", ""), "titel": get.get("title", ""),
-                              "duur": str(int(get["duration"]) // 1000) if get.get("duration", "").isdigit() else ""})
+                items.append({"location": get.get("location", ""), "title": get.get("title", ""),
+                              "duration": str(int(get["duration"]) // 1000) if get.get("duration", "").isdigit() else ""})
             elif tag == "media" and el.get("src"):
-                items.append({"locatie": el.get("src"), "titel": "", "duur": ""})
+                items.append({"location": el.get("src"), "title": "", "duration": ""})
             elif tag == "entry":
                 ref = next((c for c in el if c.tag.lower().endswith("ref")), None)
                 title = next((c.text for c in el if c.tag.lower().endswith("title")), "")
                 if ref is not None:
-                    items.append({"locatie": ref.get("href") or ref.get("HREF") or "", "titel": title or "",
-                                  "duur": ""})
+                    items.append({"location": ref.get("href") or ref.get("HREF") or "", "title": title or "",
+                                  "duration": ""})
     if not items:
-        raise ConversionError("Geen nummers gevonden in deze afspeellijst.")
+        raise ConversionError("No tracks found in this playlist.")
     return items
 
 
@@ -232,33 +231,33 @@ def write_playlist(items: list[dict], dst: Path, fmt: str, name: str) -> Path:
     if fmt in ("m3u", "m3u8"):
         lines = ["#EXTM3U"]
         for it in items:
-            lines.append(f"#EXTINF:{it.get('duur') or -1},{it.get('titel') or Path(it['locatie']).stem}")
-            lines.append(it["locatie"])
+            lines.append(f"#EXTINF:{it.get('duration') or -1},{it.get('title') or Path(it['location']).stem}")
+            lines.append(it["location"])
         dst.write_text("\n".join(lines) + "\n", encoding="utf-8")
     elif fmt == "pls":
         lines = ["[playlist]"]
         for i, it in enumerate(items, 1):
-            lines += [f"File{i}={it['locatie']}", f"Title{i}={it.get('titel', '')}", f"Length{i}={it.get('duur') or -1}"]
+            lines += [f"File{i}={it['location']}", f"Title{i}={it.get('title', '')}", f"Length{i}={it.get('duration') or -1}"]
         lines += [f"NumberOfEntries={len(items)}", "Version=2"]
         dst.write_text("\n".join(lines) + "\n", encoding="utf-8")
     elif fmt == "xspf":
-        tracks = "".join(f"<track><location>{e(it['locatie'])}</location><title>{e(it.get('titel', ''))}</title></track>"
+        tracks = "".join(f"<track><location>{e(it['location'])}</location><title>{e(it.get('title', ''))}</title></track>"
                          for it in items)
         dst.write_text(f'<?xml version="1.0" encoding="UTF-8"?>\n<playlist version="1" xmlns="http://xspf.org/ns/0/">'
                        f"<title>{e(name)}</title><trackList>{tracks}</trackList></playlist>\n", encoding="utf-8")
     elif fmt == "wpl":
-        media = "".join(f'<media src="{e(it["locatie"])}"/>' for it in items)
+        media = "".join(f'<media src="{e(it["location"])}"/>' for it in items)
         dst.write_text(f'<?wpl version="1.0"?>\n<smil><head><title>{e(name)}</title></head><body><seq>{media}</seq>'
                        "</body></smil>\n", encoding="utf-8")
     elif fmt == "asx":
-        entries = "".join(f'<entry><title>{e(it.get("titel", ""))}</title><ref href="{e(it["locatie"])}"/></entry>'
+        entries = "".join(f'<entry><title>{e(it.get("title", ""))}</title><ref href="{e(it["location"])}"/></entry>'
                           for it in items)
         dst.write_text(f'<asx version="3.0"><title>{e(name)}</title>{entries}</asx>\n', encoding="utf-8")
     elif fmt in ("csv", "txt"):
         from .datafmt import write
         write(items, dst, fmt, name)
     else:
-        raise ConversionError(f"Afspeellijst naar .{fmt} wordt niet ondersteund.")
+        raise ConversionError(f"Playlist to .{fmt} is not supported.")
     return dst
 
 
@@ -282,7 +281,7 @@ def soundfont() -> Path | None:
 def midi_summary(path: Path) -> str:
     data = path.read_bytes()
     if data[:4] != b"MThd":
-        raise ConversionError("Geen geldig MIDI-bestand.")
+        raise ConversionError("Not a valid MIDI file.")
     fmt, ntracks, div = int.from_bytes(data[8:10], "big"), int.from_bytes(data[10:12], "big"), \
         int.from_bytes(data[12:14], "big")
     names, pos = [], 14
@@ -294,7 +293,7 @@ def midi_summary(path: Path) -> str:
             n = m.group(1)[0]
             names.append(chunk[m.end():m.end() + n].decode("latin-1"))
         pos += 8 + size
-    return (f"MIDI-bestand, formaat {fmt}, {ntracks} sporen, {div} ticks per kwartnoot\n" +
+    return (f"MIDI file, format {fmt}, {ntracks} tracks, {div} ticks per quarter note\n" +
             "\n".join(f"  spoor {i + 1}: {n}" for i, n in enumerate(names)))
 
 
@@ -304,14 +303,12 @@ def midi_render(src: Path, dst: Path, fmt: str) -> Path:
         return dst
     sf = soundfont()
     if not have("fluidsynth") or not sf:
-        raise ConversionError("MIDI naar geluid vraagt FluidSynth en een SoundFont (.sf2). macOS: brew install "
-                              "fluid-synth · Linux: sudo apt install fluidsynth fluid-soundfont-gm · of zet het pad naar "
-                              "een .sf2 in ANYTHING_SOUNDFONT.")
+        raise ConversionError("MIDI to audio needs FluidSynth and a SoundFont (.sf2). macOS: brew install fluid-synth · Linux: sudo apt install fluidsynth fluid-soundfont-gm · or put the path to an .sf2 in ANYTHING_SOUNDFONT.")
     wav = dst.with_suffix(".wav") if fmt != "wav" else dst
     subprocess.run(["fluidsynth", "-ni", "-g", "1.0", "-F", str(wav), "-r", "44100", str(sf), str(src)],
                    capture_output=True, timeout=1800, **NO_WINDOW)
     if not wav.exists():
-        raise ConversionError("FluidSynth kon dit MIDI-bestand niet afspelen.")
+        raise ConversionError("FluidSynth could not play this MIDI file.")
     if fmt != "wav":
         from .media import process
         out = process(wav, dst.parent, {"format": fmt, "quality": "high"})
@@ -322,7 +319,7 @@ def midi_render(src: Path, dst: Path, fmt: str) -> Path:
 
 def convert(src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
     ext = src.suffix.lower().lstrip(".")
-    dst = out_dir / f"{src.stem}{'_bewerkt' if fmt == ext else ''}.{fmt}"
+    dst = out_dir / f"{src.stem}{'_edited' if fmt == ext else ''}.{fmt}"
     if ext in MIDI:
         return midi_render(src, dst, fmt)
     if ext in PLAYLISTS:

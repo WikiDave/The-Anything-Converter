@@ -57,6 +57,16 @@ def targets(fam: str, ext: str) -> list[str]:
 
 # --------------------------------------------------------------------------- lettertypes
 
+def is_cff(path: Path) -> bool:
+    """OpenType met PostScript-contouren (CFF)? Alleen dan kan .otf zonder verlies."""
+    try:
+        from fontTools.ttLib import TTFont
+        f = TTFont(str(path), lazy=True, fontNumber=0)
+        return "CFF " in f or "CFF2" in f
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def font(src: Path, out_dir: Path, fmt: str) -> Path:
     from fontTools.ttLib import TTCollection, TTFont
     ext = src.suffix.lower().lstrip(".")
@@ -79,8 +89,7 @@ def font(src: Path, out_dir: Path, fmt: str) -> Path:
         return font_specimen(f, src, dst, fmt)
     is_cff = "CFF " in f or "CFF2" in f
     if fmt == "otf" and not is_cff:
-        raise ConversionError("Dit is een TrueType-lettertype; omzetten naar OpenType-CFF wordt niet ondersteund. "
-                              "Een .ttf werkt overal waar .otf werkt.")
+        raise ConversionError("This is a TrueType font; converting to OpenType CFF is not supported. A .ttf works everywhere an .otf does.")
     if fmt == "ttf" and is_cff:
         f = _cff_to_ttf(f)
     f.flavor = {"woff": "woff", "woff2": "woff2"}.get(fmt)
@@ -132,13 +141,13 @@ def font_specimen(f, src: Path, dst: Path, fmt: str) -> Path:
     d.text((40, 24), f"{name}  ·  {src.name}  ·  {len(f.getGlyphOrder())} tekens", fill=(90, 90, 90), font=label)
     y = 80
     for size, text in ((96, "Aa Bb Cc 123"), (56, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"), (56, "abcdefghijklmnopqrstuvwxyz"),
-                       (48, "0123456789 !?&@€$%()[]"), (36, "De snelle bruine vos springt over de luie hond."),
-                       (24, "Pa's wijze lynx bezag vroom het fikse aquaduct.")):
+                       (48, "0123456789 !?&@€$%()[]"), (36, "The quick brown fox jumps over the lazy dog."),
+                       (24, "Sphinx of black quartz, judge my vow.")):
         try:
             fnt = ImageFont.truetype(str(tmp), size)
             d.text((40, y), text, fill="black", font=fnt)
         except OSError:
-            d.text((40, y), "(dit lettertype kan niet getekend worden)", fill="red", font=label)
+            d.text((40, y), "(this font cannot be drawn)", fill="red", font=label)
             break
         y += int(size * 1.35) + 10
     im = im.crop((0, 0, 1600, min(1000, y + 40)))
@@ -159,7 +168,7 @@ def _parse_mail(src: Path):
         try:
             import extract_msg
         except ImportError as e:
-            raise ConversionError("Outlook-berichten lezen vraagt extract-msg.") from e
+            raise ConversionError("Reading Outlook messages needs extract-msg.") from e
         m = extract_msg.openMsg(str(src))
         atts = []
         for a in m.attachments:
@@ -168,24 +177,24 @@ def _parse_mail(src: Path):
             if isinstance(payload, bytes):
                 atts.append((name, payload))
         body_html = m.htmlBody.decode("utf-8", "replace") if isinstance(m.htmlBody, bytes) else (m.htmlBody or "")
-        info = {"Van": m.sender or "", "Aan": m.to or "", "Cc": m.cc or "", "Datum": str(m.date or ""),
-                "Onderwerp": m.subject or ""}
+        info = {"From": m.sender or "", "To": m.to or "", "Cc": m.cc or "", "Date": str(m.date or ""),
+                "Subject": m.subject or ""}
         return info, m.body or "", body_html, atts, None
     if ext == "tnef" or data[:4] == b"\x78\x9f\x3e\x22":
         try:
             from tnefparse import TNEF
         except ImportError as e:
-            raise ConversionError("winmail.dat lezen vraagt tnefparse.") from e
+            raise ConversionError("Reading winmail.dat needs tnefparse.") from e
         t = TNEF(data)
         atts = [(a.long_filename() or a.name or "bijlage", a.data) for a in t.attachments]
         body = t.body.decode("utf-8", "replace") if isinstance(t.body, bytes) else (t.body or "")
         htmlb = t.htmlbody.decode("utf-8", "replace") if isinstance(getattr(t, "htmlbody", None), bytes) else ""
-        return {"Onderwerp": src.stem}, body, htmlb, atts, None
+        return {"Subject": src.stem}, body, htmlb, atts, None
     if ext == "p7m":
         data = _p7m_content(data)
     msg = email.message_from_bytes(data, policy=policy.default)
     info = {k: str(msg.get(k, "")) for k in ("From", "To", "Cc", "Date", "Subject")}
-    info = dict(zip(("Van", "Aan", "Cc", "Datum", "Onderwerp"), info.values()))
+    info = dict(zip(("From", "To", "Cc", "Date", "Subject"), info.values()))
     body = msg.get_body(preferencelist=("plain",))
     body_html = msg.get_body(preferencelist=("html",))
     atts = []
@@ -206,7 +215,7 @@ def _p7m_content(data: bytes) -> bytes:
         from asn1crypto import cms
         info = cms.ContentInfo.load(data)
         if info["content_type"].native == "enveloped_data":
-            raise ConversionError("Deze mail is versleuteld; openen kan alleen met de privésleutel van de ontvanger.")
+            raise ConversionError("This e-mail is encrypted; it can only be opened with the recipient's private key.")
         content = info["content"]["encap_content_info"]["content"].native
         if content:
             return content
@@ -214,7 +223,7 @@ def _p7m_content(data: bytes) -> bytes:
         raise
     except Exception:  # noqa: BLE001
         pass
-    raise ConversionError("De inhoud van dit S/MIME-bestand kon niet gelezen worden.")
+    raise ConversionError("The contents of this S/MIME file could not be read.")
 
 
 def mail(src: Path, out_dir: Path, fmt: str) -> Path:
@@ -229,15 +238,15 @@ def mail(src: Path, out_dir: Path, fmt: str) -> Path:
                     subj = re.sub(r"[^\w .-]", "_", str(m.get("Subject", "")))[:60] or "bericht"
                     z.writestr(f"{i:05d} {subj}.eml", m.as_bytes())
             return dst
-        rows = [{"datum": m.get("Date", ""), "van": m.get("From", ""), "aan": m.get("To", ""),
-                 "onderwerp": m.get("Subject", "")} for m in box]
+        rows = [{"date": m.get("Date", ""), "from": m.get("From", ""), "to": m.get("To", ""),
+                 "subject": m.get("Subject", "")} for m in box]
         from .datafmt import write
         return write(rows, out_dir / f"{src.stem}.{fmt}", fmt, src.stem)
     info, body, body_html, atts, msg = _parse_mail(src)
     dst = out_dir / f"{src.stem}.{fmt}"
     if fmt == "zip":
         if not atts:
-            raise ConversionError("Dit bericht heeft geen bijlagen.")
+            raise ConversionError("This message has no attachments.")
         with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
             used = set()
             for name, payload in atts:
@@ -253,7 +262,7 @@ def mail(src: Path, out_dir: Path, fmt: str) -> Path:
             return dst
         from email.message import EmailMessage
         em = EmailMessage()
-        for k_nl, k in (("Van", "From"), ("Aan", "To"), ("Cc", "Cc"), ("Onderwerp", "Subject")):
+        for k_nl, k in (("From", "From"), ("To", "To"), ("Cc", "Cc"), ("Subject", "Subject")):
             if info.get(k_nl):
                 em[k] = info[k_nl].replace("\n", " ")
         em.set_content(body or "")
@@ -302,13 +311,13 @@ def vcards(src: Path) -> list[dict]:
         elif cur is not None and ":" in line:
             key, val = line.split(":", 1)
             name = key.split(";")[0].upper()
-            label = {"FN": "naam", "N": "naam (delen)", "TEL": "telefoon", "EMAIL": "e-mail", "ORG": "organisatie",
-                     "TITLE": "functie", "ADR": "adres", "BDAY": "verjaardag", "URL": "website", "NOTE": "notitie"}.get(name)
+            label = {"FN": "name", "N": "name (parts)", "TEL": "phone", "EMAIL": "e-mail", "ORG": "organisation",
+                     "TITLE": "job title", "ADR": "address", "BDAY": "birthday", "URL": "website", "NOTE": "note"}.get(name)
             if label:
                 val = val.replace("\\,", ",").replace("\\n", " ").replace(";", " ").strip()
                 cur[label] = (cur[label] + "; " + val) if label in cur else val
     if not cards:
-        raise ConversionError("Geen contacten gevonden.")
+        raise ConversionError("No contacts found.")
     return cards
 
 
@@ -325,8 +334,8 @@ def events(src: Path) -> list[dict]:
         elif cur is not None and ":" in line:
             key, val = line.split(":", 1)
             name = key.split(";")[0].upper()
-            label = {"SUMMARY": "titel", "DTSTART": "begin", "DTEND": "einde", "LOCATION": "locatie",
-                     "DESCRIPTION": "omschrijving", "RRULE": "herhaling", "ORGANIZER": "organisator"}.get(name)
+            label = {"SUMMARY": "title", "DTSTART": "start", "DTEND": "end", "LOCATION": "location",
+                     "DESCRIPTION": "description", "RRULE": "repeat", "ORGANIZER": "organiser"}.get(name)
             if label:
                 if name in ("DTSTART", "DTEND"):
                     m = re.match(r"(\d{4})(\d\d)(\d\d)(?:T(\d\d)(\d\d))?", val)
@@ -335,7 +344,7 @@ def events(src: Path) -> list[dict]:
                                                                             else "")
                 cur[label] = val.replace("\\n", " ").replace("\\,", ",")
     if not evs:
-        raise ConversionError("Geen afspraken gevonden.")
+        raise ConversionError("No appointments found.")
     return evs
 
 
@@ -349,7 +358,7 @@ def read_track(src: Path) -> dict:
         try:
             import fitdecode
         except ImportError as e:
-            raise ConversionError("Garmin .fit lezen vraagt fitdecode.") from e
+            raise ConversionError("Reading Garmin .fit needs fitdecode.") from e
         with fitdecode.FitReader(str(src)) as fr:
             for frame in fr:
                 if isinstance(frame, fitdecode.FitDataMessage) and frame.name == "record":
@@ -424,29 +433,29 @@ def read_track(src: Path) -> dict:
             elif tag in ("name",) and name == src.stem and el.text:
                 name = el.text
     if not pts and not wps:
-        raise ConversionError("Geen route of punten gevonden.")
-    return {"naam": name, "punten": pts, "waypoints": wps}
+        raise ConversionError("No route or points found.")
+    return {"name": name, "points": pts, "waypoints": wps}
 
 
 def write_track(tr: dict, dst: Path, fmt: str) -> Path:
     e = html.escape
-    pts, wps = tr["punten"], tr["waypoints"]
+    pts, wps = tr["points"], tr["waypoints"]
     if fmt == "gpx":
         w = "".join(f'<wpt lat="{a}" lon="{b}"><name>{e(n)}</name></wpt>' for a, b, n in wps)
         seg = "".join(f'<trkpt lat="{a}" lon="{b}">' + (f"<ele>{h}</ele>" if h is not None else "") +
                       (f"<time>{t}</time>" if t else "") + "</trkpt>" for a, b, h, t in pts)
         dst.write_text('<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Anything Converter" '
-                       f'xmlns="http://www.topografix.com/GPX/1/1">{w}<trk><name>{e(tr["naam"])}</name><trkseg>{seg}'
+                       f'xmlns="http://www.topografix.com/GPX/1/1">{w}<trk><name>{e(tr["name"])}</name><trkseg>{seg}'
                        "</trkseg></trk></gpx>\n", encoding="utf-8")
     elif fmt in ("kml", "kmz"):
         marks = "".join(f"<Placemark><name>{e(n)}</name><Point><coordinates>{b},{a}</coordinates></Point></Placemark>"
                         for a, b, n in wps)
         if pts:
             coords = " ".join(f"{b},{a}" + (f",{h}" if h is not None else "") for a, b, h, _ in pts)
-            marks += (f"<Placemark><name>{e(tr['naam'])}</name><LineString><tessellate>1</tessellate>"
+            marks += (f"<Placemark><name>{e(tr['name'])}</name><LineString><tessellate>1</tessellate>"
                       f"<coordinates>{coords}</coordinates></LineString></Placemark>")
         kml = ('<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document>'
-               f"<name>{e(tr['naam'])}</name>{marks}</Document></kml>\n")
+               f"<name>{e(tr['name'])}</name>{marks}</Document></kml>\n")
         if fmt == "kmz":
             with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
                 z.writestr("doc.kml", kml)
@@ -456,14 +465,14 @@ def write_track(tr: dict, dst: Path, fmt: str) -> Path:
         feats = [{"type": "Feature", "properties": {"name": n}, "geometry": {"type": "Point", "coordinates": [b, a]}}
                  for a, b, n in wps]
         if pts:
-            feats.append({"type": "Feature", "properties": {"name": tr["naam"]},
+            feats.append({"type": "Feature", "properties": {"name": tr["name"]},
                           "geometry": {"type": "LineString", "coordinates": [[b, a] + ([h] if h is not None else [])
                                                                              for a, b, h, _ in pts]}})
         dst.write_text(json.dumps({"type": "FeatureCollection", "features": feats}, indent=1), encoding="utf-8")
     elif fmt == "csv":
         with open(dst, "w", newline="", encoding="utf-8-sig") as f:
             w = csv.writer(f)
-            w.writerow(["soort", "breedtegraad", "lengtegraad", "hoogte", "tijd", "naam"])
+            w.writerow(["kind", "latitude", "longitude", "elevation", "time", "name"])
             for a, b, n in wps:
                 w.writerow(["punt", a, b, "", "", n])
             for a, b, h, t in pts:
@@ -474,10 +483,10 @@ def write_track(tr: dict, dst: Path, fmt: str) -> Path:
                       f"{f'<AltitudeMeters>{h}</AltitudeMeters>' if h is not None else ''}</Trackpoint>"
                       for a, b, h, t in pts)
         dst.write_text('<?xml version="1.0" encoding="UTF-8"?>\n<TrainingCenterDatabase xmlns="http://www.garmin.com/'
-                       'xmlschemas/TrainingCenterDatabase/v2"><Courses><Course><Name>' + e(tr["naam"][:15]) +
+                       'xmlschemas/TrainingCenterDatabase/v2"><Courses><Course><Name>' + e(tr["name"][:15]) +
                        f"</Name><Track>{tps}</Track></Course></Courses></TrainingCenterDatabase>\n", encoding="utf-8")
     else:
-        raise ConversionError(f"Route naar .{fmt} wordt niet ondersteund.")
+        raise ConversionError(f"Route to .{fmt} is not supported.")
     return dst
 
 
@@ -487,18 +496,18 @@ def model3d(src: Path, out_dir: Path, fmt: str) -> Path:
     try:
         import trimesh
     except ImportError as e:
-        raise ConversionError("3D-modellen omzetten vraagt trimesh.") from e
+        raise ConversionError("Converting 3D models needs trimesh.") from e
     ext = src.suffix.lower().lstrip(".")
     try:
         mesh = trimesh.load(str(src), file_type="stl" if ext == "stl" else None, force="mesh" if fmt in (
             "stl", "off") else None)
     except Exception as e:  # noqa: BLE001
-        raise ConversionError(f"Dit 3D-model kan niet gelezen worden: {e}") from e
-    dst = out_dir / f"{src.stem}{'_bewerkt' if fmt == ext else ''}.{fmt}"
+        raise ConversionError(f"This 3D model cannot be read: {e}") from e
+    dst = out_dir / f"{src.stem}{'_edited' if fmt == ext else ''}.{fmt}"
     try:
         mesh.export(str(dst), file_type=fmt)
     except Exception as e:  # noqa: BLE001
-        raise ConversionError(f"Opslaan als .{fmt} lukte niet: {e}") from e
+        raise ConversionError(f"Saving as .{fmt} failed: {e}") from e
     return dst
 
 
@@ -508,11 +517,11 @@ def cad(src: Path, out_dir: Path, fmt: str) -> Path:
         from ezdxf.addons.drawing import Frontend, RenderContext, layout
         from ezdxf.addons.drawing import svg as svg_backend
     except ImportError as e:
-        raise ConversionError("DXF tekenen vraagt ezdxf.") from e
+        raise ConversionError("Drawing DXF needs ezdxf.") from e
     try:
         doc = ezdxf.readfile(str(src))
     except Exception as e:  # noqa: BLE001
-        raise ConversionError(f"Deze DXF-tekening kan niet gelezen worden: {e}") from e
+        raise ConversionError(f"This DXF drawing cannot be read: {e}") from e
     msp = doc.modelspace()
     backend = svg_backend.SVGBackend()
     Frontend(RenderContext(doc), backend).draw_layout(msp)
@@ -536,7 +545,7 @@ def cad(src: Path, out_dir: Path, fmt: str) -> Path:
 def vector(src: Path, out_dir: Path, fmt: str) -> Path:
     import fitz
     ext = src.suffix.lower().lstrip(".")
-    dst = out_dir / f"{src.stem}{'_bewerkt' if fmt == ext else ''}.{fmt}"
+    dst = out_dir / f"{src.stem}{'_edited' if fmt == ext else ''}.{fmt}"
     work = src
     if ext == "svgz":
         import gzip
@@ -549,14 +558,14 @@ def vector(src: Path, out_dir: Path, fmt: str) -> Path:
         from .util import run
         gs = "gswin64c" if have("gswin64c") else "gs"
         if not have(gs):
-            raise ConversionError("PostScript/EPS omzetten vraagt Ghostscript (gratis, ghostscript.com).")
+            raise ConversionError("Converting PostScript/EPS needs Ghostscript (free, ghostscript.com).")
         work = out_dir / f"_{src.stem}.pdf"
         run([gs, "-q", "-dNOPAUSE", "-dBATCH", "-dSAFER", "-dEPSCrop", "-sDEVICE=pdfwrite", f"-sOutputFile={work}",
              str(src)], timeout=600)
     if ext in ("gv", "dot-graph", "dot"):
         from .util import run
         if not have("dot"):
-            raise ConversionError("Graphviz-diagrammen tekenen vraagt Graphviz (gratis, graphviz.org).")
+            raise ConversionError("Drawing Graphviz diagrams needs Graphviz (free, graphviz.org).")
         run(["dot", f"-T{'svg' if fmt == 'svg' else 'pdf'}", str(src), "-o", str(dst if fmt in ("svg", "pdf") else
                                                                               out_dir / f"_{src.stem}.pdf")], timeout=300)
         if fmt in ("svg", "pdf"):
@@ -566,7 +575,7 @@ def vector(src: Path, out_dir: Path, fmt: str) -> Path:
         doc = fitz.open(str(work)) if work.suffix.lower() in (".pdf", ".ai", ".xps", ".oxps") else \
             fitz.open("svg", work.read_bytes())
     except Exception as e:  # noqa: BLE001
-        raise ConversionError(f"Dit bestand kan niet getekend worden: {e}") from e
+        raise ConversionError(f"This file cannot be drawn: {e}") from e
     if fmt == "pdf":
         if doc.is_pdf:
             doc.save(str(dst), garbage=3, deflate=True)
@@ -623,7 +632,7 @@ def _load_certs(data: bytes):
         return [("cert", c) for c in pkcs7.load_der_pkcs7_certificates(data)]
     except Exception:  # noqa: BLE001
         pass
-    raise ConversionError("Geen certificaat, aanvraag of intrekkingslijst herkend.")
+    raise ConversionError("No certificate, request or revocation list recognised.")
 
 
 def _key_convert(data: bytes, dst: Path, fmt: str) -> Path:
@@ -635,7 +644,7 @@ def _key_convert(data: bytes, dst: Path, fmt: str) -> Path:
         try:
             key = loader(data, None) if private else loader(data)
         except TypeError as e:
-            raise ConversionError("Deze sleutel is met een wachtwoord beveiligd; die blijft dicht.") from e
+            raise ConversionError("This key is password-protected; it stays closed.") from e
         except Exception:  # noqa: BLE001
             continue
         enc = ser.Encoding.PEM if fmt == "pem" else ser.Encoding.DER
@@ -644,7 +653,7 @@ def _key_convert(data: bytes, dst: Path, fmt: str) -> Path:
         else:
             dst.write_bytes(key.public_bytes(enc, ser.PublicFormat.SubjectPublicKeyInfo))
         return dst
-    raise ConversionError("Geen certificaat of sleutel herkend.")
+    raise ConversionError("No certificate or key recognised.")
 
 
 def cert(src: Path, out_dir: Path, fmt: str) -> Path:
@@ -653,20 +662,19 @@ def cert(src: Path, out_dir: Path, fmt: str) -> Path:
     data = src.read_bytes()
     if data.startswith((b"ssh-", b"ecdsa-")):
         if fmt != "txt":
-            raise ConversionError("Een SSH-sleutel kan alleen als tekstoverzicht.")
+            raise ConversionError("An SSH key can only be shown as a text summary.")
         parts = data.decode().split()
         import base64
         import hashlib
         fp = base64.b64encode(hashlib.sha256(base64.b64decode(parts[1])).digest()).decode().rstrip("=")
         dst = out_dir / f"{src.stem}.txt"
-        dst.write_text(f"Publieke SSH-sleutel\nType: {parts[0]}\nVingerafdruk: SHA256:{fp}\n"
-                       f"Opmerking: {' '.join(parts[2:])}\n", encoding="utf-8")
+        dst.write_text(f"Public SSH key\nType: {parts[0]}\nFingerprint: SHA256:{fp}\nComment: {' '.join(parts[2:])}\n", encoding="utf-8")
         return dst
     try:
         items = _load_certs(data)
     except ConversionError:
         items = []
-    dst = out_dir / f"{src.stem}{'_bewerkt' if fmt == src.suffix.lower().lstrip('.') else ''}.{fmt}"
+    dst = out_dir / f"{src.stem}{'_edited' if fmt == src.suffix.lower().lstrip('.') else ''}.{fmt}"
     if fmt in ("pem", "der"):
         objs = [o for k, o in items if k in ("cert", "csr", "crl")]
         if not objs:
@@ -677,7 +685,7 @@ def cert(src: Path, out_dir: Path, fmt: str) -> Path:
         dst.write_bytes(b"".join(o.public_bytes(enc) for o in objs))
         return dst
     if not items:
-        raise ConversionError("Geen certificaat, aanvraag of intrekkingslijst herkend.")
+        raise ConversionError("No certificate, request or revocation list recognised.")
     lines = []
     for kind, o in items:
         if kind == "cert":
@@ -686,22 +694,22 @@ def cert(src: Path, out_dir: Path, fmt: str) -> Path:
                 names = ", ".join(str(n.value) for n in san.value)
             except Exception:  # noqa: BLE001
                 names = ""
-            lines += ["CERTIFICAAT", f"  Voor:        {o.subject.rfc4514_string()}",
-                      f"  Uitgegeven door: {o.issuer.rfc4514_string()}",
-                      f"  Geldig van:  {o.not_valid_before_utc:%Y-%m-%d %H:%M} UTC",
-                      f"  Geldig tot:  {o.not_valid_after_utc:%Y-%m-%d %H:%M} UTC",
+            lines += ["CERTIFICATE", f"  Issued to:   {o.subject.rfc4514_string()}",
+                      f"  Issued by:   {o.issuer.rfc4514_string()}",
+                      f"  Valid from:  {o.not_valid_before_utc:%Y-%m-%d %H:%M} UTC",
+                      f"  Valid until: {o.not_valid_after_utc:%Y-%m-%d %H:%M} UTC",
                       f"  Serienummer: {o.serial_number:x}",
                       f"  SHA-256:     {o.fingerprint(hashes.SHA256()).hex(':')}"]
             if names:
                 lines.append(f"  Namen:       {names}")
             lines.append("")
         elif kind == "csr":
-            lines += ["CERTIFICAATAANVRAAG", f"  Voor: {o.subject.rfc4514_string()}", ""]
+            lines += ["CERTIFICAATAANVRAAG", f"  For: {o.subject.rfc4514_string()}", ""]
         elif kind == "crl":
             lines += ["INTREKKINGSLIJST", f"  Uitgever: {o.issuer.rfc4514_string()}",
                       f"  Ingetrokken certificaten: {len(list(o))}", ""]
         else:
-            lines += [f"SLEUTEL ({o.lower()}) - inhoud wordt niet getoond", ""]
+            lines += [f"KEY ({o.lower()}) - contents are not shown", ""]
     dst.write_text("\n".join(lines), encoding="utf-8")
     return dst
 
@@ -713,7 +721,7 @@ def dicom(src: Path, out_dir: Path, fmt: str) -> Path:
         import numpy as np
         import pydicom
     except ImportError as e:
-        raise ConversionError("Medische beelden (DICOM) lezen vraagt pydicom.") from e
+        raise ConversionError("Reading medical images (DICOM) needs pydicom.") from e
     ds = pydicom.dcmread(str(src))
     dst = out_dir / f"{src.stem}.{fmt}"
     if fmt == "txt":
@@ -725,7 +733,7 @@ def dicom(src: Path, out_dir: Path, fmt: str) -> Path:
     try:
         arr = ds.pixel_array.astype("float64")
     except Exception as e:  # noqa: BLE001
-        raise ConversionError(f"Het beeld in dit DICOM-bestand kan niet gelezen worden (compressie?): {e}") from e
+        raise ConversionError(f"The image in this DICOM file cannot be read (compression?): {e}") from e
     if arr.ndim == 3 and arr.shape[-1] not in (3, 4):
         arr = arr[arr.shape[0] // 2]
     wc, ww = getattr(ds, "WindowCenter", None), getattr(ds, "WindowWidth", None)
@@ -757,7 +765,7 @@ def convert(fam: str, src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
         return write(events(src), out_dir / f"{src.stem}.{fmt}", fmt, src.stem)
     if fam == "gps":
         ext = src.suffix.lower().lstrip(".")
-        return write_track(read_track(src), out_dir / f"{src.stem}{'_bewerkt' if fmt == ext else ''}.{fmt}", fmt)
+        return write_track(read_track(src), out_dir / f"{src.stem}{'_edited' if fmt == ext else ''}.{fmt}", fmt)
     if fam == "model3d":
         return model3d(src, out_dir, fmt)
     if fam == "cad":
@@ -768,4 +776,4 @@ def convert(fam: str, src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
         return cert(src, out_dir, fmt)
     if fam == "medical":
         return dicom(src, out_dir, fmt)
-    raise ConversionError("Onbekende soort.")
+    raise ConversionError("Unknown kind.")

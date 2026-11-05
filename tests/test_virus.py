@@ -60,7 +60,7 @@ def test_no_scanner(tmp_path, monkeypatch):
     f = tmp_path / "x.bin"
     f.write_bytes(b"123")
     r = virus.check(f)
-    assert r["status"] == "unknown" and "geen virusscanner" in r["local"]["detail"]
+    assert r["status"] == "unknown" and "no virus scanner" in r["local"]["detail"]
     assert len(r["files"][0]["sha256"]) == 64
 
 

@@ -1,0 +1,24 @@
+{
+    "version": "2.9.0",
+    "description": "Convert, shrink, enlarge and trim files: video, audio, images, PDF, Office, e-books, archives, ROMs and 1000+ other formats. Terminal version (anything-converter-tui) and desktop app.",
+    "homepage": "https://github.com/WikiDave/The-Anything-Converter",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.9.0/AnythingConverter-Windows-portable.zip",
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+    },
+    "extract_dir": "AnythingConverter",
+    "bin": "anything-converter-tui.exe",
+    "shortcuts": [
+        ["AnythingConverter.exe", "Anything Converter"]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/WikiDave/The-Anything-Converter/releases/download/v$version/AnythingConverter-Windows-portable.zip"
+            }
+        }
+    }
+}

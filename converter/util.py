@@ -29,9 +29,9 @@ def run(cmd: list[str], timeout: Optional[int] = None, cwd: Optional[Path] = Non
         proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
                               timeout=timeout, cwd=cwd, **NO_WINDOW)
     except FileNotFoundError as exc:
-        raise ConversionError(f"Programma niet gevonden: {cmd[0]}. Is het geïnstalleerd?") from exc
+        raise ConversionError(f"Program not found: {cmd[0]}. Is it installed?") from exc
     except subprocess.TimeoutExpired as exc:
-        raise ConversionError(f"{cmd[0]} duurde te lang en is gestopt.") from exc
+        raise ConversionError(f"{cmd[0]} took too long and was stopped.") from exc
     if proc.returncode != 0:
         tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-6:]
         raise ConversionError(f"{Path(cmd[0]).name} faalde:\n" + "\n".join(tail))
@@ -46,7 +46,7 @@ def parse_size(value, unit: str = "mb") -> int:
     if isinstance(value, str):
         m = re.fullmatch(r"\s*([\d.,]+)\s*([kmg]?b)?\s*", value.lower())
         if not m:
-            raise ConversionError(f"Ongeldige grootte: {value!r}")
+            raise ConversionError(f"Invalid size: {value!r}")
         value = float(m.group(1).replace(",", "."))
         unit = m.group(2) or unit
     unit = (unit or "mb").lower()
@@ -54,7 +54,7 @@ def parse_size(value, unit: str = "mb") -> int:
         raise ConversionError(f"Onbekende eenheid: {unit}")
     size = int(float(value) * _UNITS[unit])
     if size <= 0:
-        raise ConversionError("Doelgrootte moet groter dan 0 zijn.")
+        raise ConversionError("Target size must be greater than 0.")
     return size
 
 
@@ -85,10 +85,10 @@ def parse_time(value) -> Optional[float]:
     except ValueError as exc:
         raise ConversionError(f"Ongeldige tijd: {value}") from exc
     if total < 0:
-        raise ConversionError("Tijd kan niet negatief zijn.")
+        raise ConversionError("Time cannot be negative.")
     return total
 
 
 def ffprobe(path: Path) -> dict:
-    proc = run(["ffprobe", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", str(path)])
+    proc = run(["ffprobe", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", "-show_chapters", str(path)])
     return json.loads(proc.stdout or "{}")

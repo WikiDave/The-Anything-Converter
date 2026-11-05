@@ -12,12 +12,11 @@ from .util import human_size
 
 # Waarom iets niet omgezet kan worden (per soort), voor in het rapport en de interface
 WHY = {
-    "project": "Projectbestand van een ander programma: alleen dat programma kan het openen. Wel: checksums, "
-               "inpakken, en bij zip-projecten de inhoud bekijken.",
-    "program": "Programma of systeembestand: niets om te converteren. Wel: details, checksums en een virusscan.",
-    "encrypted": "Versleuteld of beveiligd (DRM): openen kan alleen met de juiste sleutel of het originele programma.",
-    "proprietary": "Gesloten formaat zonder openbare beschrijving; alleen het eigen programma kan het lezen.",
-    "model": "AI-model: details en checksums; omzetten tussen AI-formaten vraagt de bijbehorende frameworks.",
+    "project": "Project file of another program: only that program can open it. Possible: checksums, packing, and viewing the contents of zip-based projects.",
+    "program": "Program or system file: nothing to convert. Possible: details, checksums and a virus scan.",
+    "encrypted": "Encrypted or protected (DRM): it can only be opened with the right key or the original program.",
+    "proprietary": "Closed format without a public specification; only its own program can read it.",
+    "model": "AI model: details and checksums; converting between AI formats needs the matching frameworks.",
     "shortcut": "Snelkoppeling: toont waar hij naartoe wijst.",
 }
 ENCRYPTED = {"m4p", "acsm", "kfx", "kdbx", "kdb", "gpg", "pgp", "crypt14", "crypt15", "1pux", "nsp", "xci", "nsz",
@@ -35,20 +34,20 @@ def report(path: Path) -> str:
     from .hashes import compute
     ext = ext_of(path)
     real = sniff(path)
-    lines = [f"BESTAND     {path.name}", f"GROOTTE     {human_size(path.stat().st_size)} ({path.stat().st_size} bytes)"]
+    lines = [f"FILE        {path.name}", f"SIZE        {human_size(path.stat().st_size)} ({path.stat().st_size} bytes)"]
     desc = describe(path)
     if desc:
-        lines.append(f"SOORT       {desc}")
+        lines.append(f"KIND        {desc}")
     if real and real != ext:
-        lines.append(f"INHOUD      lijkt op .{real} (herkend aan de inhoud)")
+        lines.append(f"CONTENT     looks like .{real} (recognised by its content)")
     reason = ("encrypted" if ext in ENCRYPTED else "program" if ext in PROGRAM else "model" if ext in MODEL else None)
     if reason:
-        lines.append(f"LET OP      {WHY[reason]}")
+        lines.append(f"NOTE        {WHY[reason]}")
     extra = []
     try:
         extra = details(path, ext, real)
     except Exception as e:  # noqa: BLE001
-        extra = [f"(details lezen lukte niet: {e})"]
+        extra = [f"(could not read details: {e})"]
     if extra:
         lines += ["", "DETAILS"] + [f"  {x}" for x in extra]
     if path.stat().st_size <= 2 * 1024 ** 3:
@@ -64,12 +63,12 @@ def details(path: Path, ext: str, real: str | None) -> list[str]:
         return _pe(path)
     if head[:4] == b"\x7fELF":
         bits = 64 if head[4] == 2 else 32
-        etype = {1: "objectbestand", 2: "programma", 3: "gedeelde bibliotheek", 4: "core dump"}.get(head[16], "?")
+        etype = {1: "object file", 2: "program", 3: "shared library", 4: "core dump"}.get(head[16], "?")
         mach = {0x3E: "x86-64", 0xB7: "ARM64", 0x28: "ARM", 0x03: "x86", 0xF3: "RISC-V"}.get(
             struct.unpack_from("<H", head, 18)[0], "?")
         return [f"Linux/Unix ELF, {bits}-bit, {etype}, processor {mach}"]
     if head[:4] in (b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xce\xfa\xed\xfe", b"\xca\xfe\xba\xbe"):
-        return ["macOS Mach-O programma of bibliotheek" + (" (universeel: meerdere processors)"
+        return ["macOS Mach-O program or library" + (" (universeel: meerdere processors)"
                                                             if head[:4] == b"\xca\xfe\xba\xbe" else "")]
     if kind == "gguf" or head[:4] == b"GGUF":
         return _gguf(path)
@@ -82,7 +81,7 @@ def details(path: Path, ext: str, real: str | None) -> list[str]:
         return [f"{len(tensors)} tensors, {params / 1e6:.1f} miljoen parameters, types: {', '.join(dtypes)}"] + \
             [f"{k}: {v}" for k, v in list(meta.get("__metadata__", {}).items())[:10]]
     if ext in ("pkl", "pickle", "joblib"):
-        return ["Python-pickle: wordt bewust niet geopend, want een pickle kan code uitvoeren op je computer."]
+        return ["Python pickle: deliberately not opened, because a pickle can run code on your computer."]
     if ext == "torrent" or head[:11] in (b"d8:announce",) or head[:7] == b"d4:info":
         return _torrent(path.read_bytes())
     if ext in ("lnk",):
@@ -90,7 +89,7 @@ def details(path: Path, ext: str, real: str | None) -> list[str]:
     if ext in ("url", "webloc", "desktop", "gdoc", "gsheet", "gslides", "appref-ms", "flatpakref"):
         text = path.read_text(errors="replace")
         urls = re.findall(r"(https?://[^\s\"'<>]+)", text)
-        return [f"wijst naar: {u}" for u in urls[:5]] or [text[:500]]
+        return [f"points to: {u}" for u in urls[:5]] or [text[:500]]
     if head[:8] == b"bplist00" or ext in ("plist", "mobileconfig"):
         import plistlib
         try:
@@ -101,14 +100,14 @@ def details(path: Path, ext: str, real: str | None) -> list[str]:
     if zipfile.is_zipfile(path):
         with zipfile.ZipFile(path) as z:
             infos = z.infolist()
-            out = [f"zip met {len(infos)} bestanden, {human_size(sum(i.file_size for i in infos))} uitgepakt"]
+            out = [f"zip with {len(infos)} files, {human_size(sum(i.file_size for i in infos))} unpacked"]
             out += [f"{human_size(i.file_size):>10}  {i.filename}" for i in infos[:40]]
             if len(infos) > 40:
-                out.append(f"... en nog {len(infos) - 40}")
+                out.append(f"... and {len(infos) - 40} more")
             return out
     if head[:15] == b"SQLite format 3":
         from .datafmt import sqlite_tables
-        return [f"tabel {n}: {len(rows)} rijen, kolommen: {', '.join(c)}" for n, (c, rows) in sqlite_tables(path).items()]
+        return [f"table {n}: {len(rows)} rows, columns: {', '.join(c)}" for n, (c, rows) in sqlite_tables(path).items()]
     from .catalog import looks_text
     if looks_text(head):
         text = head.decode("utf-8", "replace")
@@ -129,12 +128,12 @@ def _pe(path: Path) -> list[str]:
     try:
         import pefile
     except ImportError:
-        return ["Windows-programma of -bibliotheek (PE)"]
+        return ["Windows program or library (PE)"]
     pe = pefile.PE(str(path), fast_load=True)
     pe.parse_data_directories(directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_RESOURCE"],
                                            pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_SECURITY"]])
     mach = {0x14C: "x86 (32-bit)", 0x8664: "x64", 0xAA64: "ARM64"}.get(pe.FILE_HEADER.Machine, hex(pe.FILE_HEADER.Machine))
-    kind = "DLL" if pe.is_dll() else "driver" if pe.is_driver() else "programma"
+    kind = "DLL" if pe.is_dll() else "driver" if pe.is_driver() else "program"
     out = [f"Windows {kind}, {mach}"]
     import datetime
     ts = pe.FILE_HEADER.TimeDateStamp
@@ -152,7 +151,7 @@ def _pe(path: Path) -> list[str]:
     out.append("digitaal ondertekend: " + ("ja" if sec.Size else "nee"))
     data = path.read_bytes()
     if b"Nullsoft" in data[:1 << 20]:
-        out.append("installer: NSIS (inhoud uitpakken kan met 7-Zip)")
+        out.append("installer: NSIS (contents can be extracted with 7-Zip)")
     elif b"Inno Setup" in data[:1 << 20]:
         out.append("installer: Inno Setup")
     return out
@@ -197,7 +196,7 @@ def _lnk(head: bytes) -> list[str]:
     strings = re.findall(rb"(?:[A-Za-z]:\\|\\\\)[\x20-\x7e]{3,200}", head)
     uni = re.findall(rb"(?:[A-Za-z]\x00:\x00\\\x00)(?:[\x20-\x7e]\x00){3,200}", head)
     found = [s.decode("latin-1") for s in strings] + [u.decode("utf-16-le", "ignore") for u in uni]
-    return [f"wijst naar: {x}" for x in dict.fromkeys(found)][:3] or ["Windows-snelkoppeling"]
+    return [f"points to: {x}" for x in dict.fromkeys(found)][:3] or ["Windows-snelkoppeling"]
 
 
 def _bdecode(data: bytes, i: int = 0):
@@ -229,7 +228,7 @@ def _torrent(data: bytes) -> list[str]:
     name = info.get(b"name", b"").decode("utf-8", "replace")
     files = info.get(b"files") or [{b"length": info.get(b"length", 0), b"path": [name.encode()]}]
     total = sum(f.get(b"length", 0) for f in files)
-    out = [f"torrent: {name}, {len(files)} bestanden, {human_size(total)}"]
+    out = [f"torrent: {name}, {len(files)} files, {human_size(total)}"]
     if meta.get(b"announce"):
         out.append(f"tracker: {meta[b'announce'].decode('utf-8', 'replace')}")
     for f in files[:40]:

@@ -49,10 +49,10 @@ TARGETS = {
 }
 
 LABELS = {
-    "video": "Video", "audio": "Audio", "image": "Afbeelding", "pdf": "PDF",
-    "document": "Document", "spreadsheet": "Spreadsheet", "presentation": "Presentatie", "ebook": "E-book",
-    "disc": "Schijfimage (emulator)", "rom": "ROM (emulator)",
-    "archive": "Archief", "other": "Overig bestand",
+    "video": "Video", "audio": "Audio", "image": "Image", "pdf": "PDF",
+    "document": "Document", "spreadsheet": "Spreadsheet", "presentation": "Presentation", "ebook": "E-book",
+    "disc": "Disc image (emulator)", "rom": "ROM (emulator)",
+    "archive": "Archive", "other": "Other file",
 }
 
 
@@ -143,6 +143,11 @@ def targets_for(path: Path, patches=()) -> tuple[str, str, list[str]]:
     if cat in ("disc", "rom"):
         return cat, eff, rom.targets(Path(path), cat, list(patches))
     out = list(TARGETS.get(cat, TARGETS["other"]))
+    if cat == "video":
+        info = media_info(Path(path))
+        if info and not info.get("acodec"):  # video zonder geluid: geen audio of spraak aanbieden
+            from .media import AUDIO_ONLY
+            out = [t for t in out if t not in AUDIO_ONLY and t not in ("txt", "srt", "vtt")]
     if eff in ("csv", "tsv"):
         out += ["json", "yaml", "xml", "txt"]
     return cat, eff, out

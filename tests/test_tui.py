@@ -40,7 +40,7 @@ def test_convert_image_in_terminal(tmp_path):
             await pilot.pause()
             assert ok, "geen resultaat"
             text = str(app.query_one("#result").render())
-            assert "STATUS: OK" in text and "NIEUW" in text
+            assert "STATUS: OK" in text and "NEW" in text
             app.save_screenshot(str(tmp_path / "tui.svg"))
 
     asyncio.run(run())
@@ -58,7 +58,7 @@ def test_target_size_error_shown(tmp_path):
             await pilot.pause()
             await pilot.press("ctrl+s")
             await pilot.pause()
-            assert "Vul een doelgrootte in" in str(app.query_one("#result").render())
+            assert "Enter a target size" in str(app.query_one("#result").render())
 
     asyncio.run(run())
 
