@@ -371,6 +371,12 @@ function setup(data) {
   setupPreview(data);
   refresh();
   if (hashAfterUpload) { hashAfterUpload = false; runHash(); }
+  show($("editBtn"), !!(data.info && data.info.edit));
+  show($("dbBtn"), !!(data.info && data.info.db));
+  show($("editBox"), false); show($("dbBox"), false);
+  if (afterUpload === "edit" && data.info && data.info.edit) openEditor();
+  if (afterUpload === "db" && data.info && data.info.db) openDb();
+  afterUpload = null;
 }
 
 function setupPreview(data) {
@@ -683,7 +689,10 @@ const TOOLS = [
   ["ISO", "CSO", "PSP ISO naar CSO", ".iso,.cso", "cso"],
   ["ROM", "IPS", "ROM patchen", "*", "patch"],
   ["N64", "Z64", "N64-ROM omzetten", ".n64,.v64,.z64", "z64"],
-  ["#", "SHA", "Checksum / hash", "*", "hash"], ["*", "ZIP", "Inpakken (zip, 7z)", "*", "zip"],
+  ["#", "SHA", "Checksum / hash", "*", "hash"],
+  ["TXT", "✎", "Tekst bewerken", "*", "edit"], ["+", "TXT", "Nieuw tekstbestand", null, "newtext"],
+  ["SQL", "▦", "Database openen", ".sqlite,.sqlite3,.db,.db3,.sql,.csv,.tsv,.xlsx,.dbf,.json", "db"],
+  ["+", "DB", "Nieuwe database", null, "newdb"], ["*", "ZIP", "Inpakken (zip, 7z)", "*", "zip"],
 ];
 (function buildTools() {
   const grid = $("toolGrid");
@@ -701,10 +710,21 @@ const TOOLS = [
 })();
 
 let hashAfterUpload = false;
+let afterUpload = null; // "edit" of "db": na het uploaden meteen openen
 function runTool(accept, fmt, label) {
   if (fmt === "web:pdf") { const a = document.createElement("a"); a.href = "/web/#pdf"; document.body.append(a); a.click(); a.remove(); return; }
   if (fmt === "screen") return screenOcr();
   if (fmt === "web") { show($("webForm"), true); $("webUrl").focus(); return; }
+  if (fmt === "newtext") return newText();
+  if (fmt === "newdb") return newDb();
+  if (fmt === "edit" || fmt === "db") {
+    afterUpload = fmt; presetFormat = null;
+    fileInput.accept = accept === "*" ? "" : accept;
+    status("kies een bestand om " + (fmt === "edit" ? "te bewerken" : "als database te openen"));
+    fileInput.click();
+    setTimeout(() => { fileInput.accept = ""; }, 1000);
+    return;
+  }
   presetFormat = fmt === "hash" ? null : fmt;
   status("kies een bestand voor: " + label.toLowerCase());
   if (fmt === "patch") status("kies de ROM en de patch (.ips/.ups/.bps) samen");
@@ -810,3 +830,165 @@ $("webGo").addEventListener("click", async () => {
   } catch (err) { status("FOUT: " + err.message); alert(err.message); }
   finally { $("webGo").disabled = false; }
 });
+
+
+// ---------- teksteditor
+const edText = $("edText");
+let edDirty = false;
+function edLines() {
+  const n = edText.value.split("\n").length;
+  let out = "";
+  for (let i = 1; i <= n; i++) out += i + "\n";
+  $("edLines").textContent = out;
+  $("edLines").scrollTop = edText.scrollTop;
+  const pos = edText.value.slice(0, edText.selectionStart).split("\n");
+  $("edInfo").textContent = `${current ? current.name : ""} · ${n} regels · regel ${pos.length}, kolom ${pos[pos.length - 1].length + 1}` + (edDirty ? " · niet opgeslagen" : "");
+}
+async function openEditor() {
+  if (!current) return;
+  const r = await fetch("/api/text/" + current.id);
+  const j = await r.json();
+  if (!r.ok) { status("FOUT: " + j.error); return; }
+  edText.value = j.text; edDirty = false;
+  $("edDownload").href = "/api/file/" + current.id + "?download=1";
+  $("edDownload").setAttribute("download", j.name);
+  show($("dbBox"), false); show($("editBox"), true);
+  edLines(); edText.focus(); edText.setSelectionRange(0, 0);
+  $("edMsg").textContent = "// opslaan bewaart de werkkopie (daarna kun je hem ook omzetten). je origineel verandert niet.";
+  $("edMsg").className = "dim small";
+  $("editBox").scrollIntoView({ block: "start" });
+}
+edText.addEventListener("input", () => { edDirty = true; edLines(); });
+edText.addEventListener("scroll", () => { $("edLines").scrollTop = edText.scrollTop; });
+for (const ev of ["click", "keyup"]) edText.addEventListener(ev, edLines);
+edText.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") { // tab = twee spaties, in plaats van naar het volgende veld
+    e.preventDefault();
+    const a = edText.selectionStart, b = edText.selectionEnd;
+    edText.setRangeText("  ", a, b, "end"); edDirty = true; edLines();
+  }
+});
+// ctrl+s / cmd+s = opslaan zolang de editor open is (ook als de cursor op een knop staat)
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s" && !$("editBox").classList.contains("hidden")) {
+    e.preventDefault(); edSave();
+  }
+});
+function edNote(msg, kind) { $("edMsg").textContent = "// " + msg; $("edMsg").className = "small " + (kind || "dim"); }
+$("edCheck").addEventListener("click", async () => {
+  const r = await fetch("/api/text/" + current.id, { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: edText.value, check: true }) });
+  const j = await r.json();
+  edNote(j.ok ? "geen fouten gevonden ✓" : "fout: " + j.error, j.ok ? "ok" : "err");
+});
+async function edSave() {
+  const r = await fetch("/api/text/" + current.id, { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: edText.value }) });
+  const j = await r.json();
+  if (!r.ok) { edNote("opslaan mislukt: " + j.error, "err"); return; }
+  edDirty = false; edLines();
+  current = j.upload; $("fMeta").textContent = current.label + " · " + human(j.size);
+  edNote("opgeslagen ✓ (" + human(j.size) + ")" + (j.warning ? " — let op: " + j.warning : ""), j.warning ? "err" : "ok");
+}
+$("edSave").addEventListener("click", edSave);
+$("edClose").addEventListener("click", () => {
+  if (edDirty && !confirm("Niet opgeslagen wijzigingen weggooien?")) return;
+  show($("editBox"), false);
+});
+$("editBtn").addEventListener("click", openEditor);
+async function newText() {
+  const name = prompt("Naam van het nieuwe bestand (met extensie, bijv. notities.md of data.json):", "notities.txt");
+  if (!name) return;
+  const r = await fetch("/api/text/new", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+  const j = await r.json();
+  if (!r.ok) { status("FOUT: " + j.error); return; }
+  localFile = null; setup(j); openEditor();
+}
+
+// ---------- databasetester
+let dbTable = null, dbOffset = 0, dbTotal = 0;
+function grid(el, cols, rows) {
+  el.innerHTML = "";
+  if (!cols.length) { el.textContent = "(geen kolommen)"; return; }
+  const t = document.createElement("table");
+  const head = t.insertRow();
+  for (const c of cols) { const th = document.createElement("th"); th.textContent = c; head.append(th); }
+  for (const r of rows) {
+    const tr = t.insertRow();
+    for (const v of r) { const td = tr.insertCell(); td.textContent = v === null ? "NULL" : String(v); if (v === null) td.className = "dim"; }
+  }
+  el.append(t);
+}
+function dbNote(msg, kind) { $("dbMsg").textContent = "// " + msg; $("dbMsg").className = "small " + (kind || "dim"); }
+function dbTablesList(tables) {
+  const ul = $("dbTables");
+  ul.innerHTML = "";
+  if (!tables.length) { const li = document.createElement("li"); li.className = "dim"; li.textContent = "(nog geen tabellen — maak er een met SQL)"; ul.append(li); }
+  for (const t of tables) {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn small" + (t.naam === dbTable ? " on" : "");
+    b.textContent = `${t.soort === "view" ? "◇" : "▦"} ${t.naam} (${t.rijen})`;
+    b.title = t.kolommen.map((c) => c.naam + (c.type ? " " + c.type : "") + (c.sleutel ? " 🔑" : "")).join("\n");
+    b.addEventListener("click", () => { dbTable = t.naam; dbOffset = 0; dbShow(); dbTablesList(tables); });
+    li.append(b); ul.append(li);
+  }
+}
+async function openDb() {
+  if (!current) return;
+  dbNote("database laden…");
+  const r = await fetch(`/api/db/${current.id}/open`, { method: "POST" });
+  const j = await r.json();
+  show($("editBox"), false); show($("dbBox"), true);
+  if (!r.ok) { dbNote(j.error, "err"); return; }
+  dbTable = j.tables.length ? j.tables[0].naam : null; dbOffset = 0;
+  dbTablesList(j.tables);
+  dbNote("je werkt op een kopie: het originele bestand verandert niet. exporteer om je wijzigingen te bewaren.");
+  if (dbTable) { $("dbSql").value = `SELECT * FROM "${dbTable}" LIMIT 50;`; dbShow(); } else { $("dbRows").innerHTML = ""; $("dbTitle").textContent = ""; }
+  $("dbBox").scrollIntoView({ block: "start" });
+}
+async function dbShow() {
+  if (!dbTable) return;
+  const r = await fetch(`/api/db/${current.id}/table?name=${encodeURIComponent(dbTable)}&offset=${dbOffset}`);
+  const j = await r.json();
+  if (!r.ok) { dbNote(j.error, "err"); return; }
+  dbTotal = j.totaal;
+  $("dbTitle").textContent = `// ${dbTable}: ${j.totaal} rijen`;
+  grid($("dbRows"), j.kolommen, j.rijen);
+  $("dbPage").textContent = j.totaal ? `${dbOffset + 1}–${Math.min(dbOffset + j.rijen.length, j.totaal)} van ${j.totaal}` : "leeg";
+}
+$("dbPrev").addEventListener("click", () => { dbOffset = Math.max(0, dbOffset - 200); dbShow(); });
+$("dbNext").addEventListener("click", () => { if (dbOffset + 200 < dbTotal) { dbOffset += 200; dbShow(); } });
+async function dbRun() {
+  const sql = $("dbSql").value;
+  dbNote("bezig…");
+  const r = await fetch(`/api/db/${current.id}/query`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql }) });
+  const j = await r.json();
+  if (!r.ok) { dbNote(j.error, "err"); $("dbResult").innerHTML = ""; return; }
+  const res = j.result;
+  if (res.kolommen.length) grid($("dbResult"), res.kolommen, res.rijen); else $("dbResult").innerHTML = "";
+  dbNote(res.kolommen.length ? `${res.rijen.length}${res.meer ? "+" : ""} rijen` + (res.meer ? " (eerste 500 getoond)" : "")
+    : `klaar ✓ — ${res.opdrachten} opdracht(en), ${res.gewijzigd} rij(en) gewijzigd`, "ok");
+  if (!dbTable && j.tables.length) dbTable = j.tables[0].naam;
+  dbTablesList(j.tables);
+  dbShow();
+}
+$("dbRun").addEventListener("click", dbRun);
+$("dbSql").addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); dbRun(); } });
+$("dbExamples").addEventListener("change", (e) => { if (e.target.value) { $("dbSql").value = e.target.value; e.target.value = ""; $("dbSql").focus(); } });
+$("dbExport").addEventListener("click", () => {
+  const v = $("dbExportFmt").value;
+  const q = v.startsWith("q-") ? `&sql=${encodeURIComponent($("dbSql").value)}` : "";
+  const a = document.createElement("a");
+  a.href = `/api/db/${current.id}/export?fmt=${v.replace("q-", "")}${q}`;
+  a.setAttribute("download", ""); document.body.append(a); a.click(); a.remove();
+});
+$("dbClose").addEventListener("click", () => show($("dbBox"), false));
+$("dbBtn").addEventListener("click", openDb);
+async function newDb() {
+  const r = await fetch("/api/db/new", { method: "POST" });
+  const j = await r.json();
+  if (!r.ok) { status("FOUT: " + j.error); return; }
+  localFile = null; setup(j); openDb();
+  $("dbSql").value = "CREATE TABLE klanten (id INTEGER PRIMARY KEY, naam TEXT NOT NULL, plaats TEXT);\nINSERT INTO klanten (naam, plaats) VALUES ('Anna', 'Utrecht'), ('Bo', 'Gent');\nSELECT * FROM klanten;";
+}

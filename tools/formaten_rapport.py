@@ -609,6 +609,38 @@ def try_convert(path: Path, fmt: str, work: Path, timeout: int = 120):
             return False, str(e).splitlines()[0][:160] if str(e) else type(e).__name__
 
 
+def test_one(ext: str, folder: str, snel: bool = False) -> dict:
+    d = Path(folder)
+    d.mkdir(parents=True, exist_ok=True)
+    try:
+        sample = make_sample(ext, d)
+    except Exception:  # noqa: BLE001
+        sample = None
+    if sample is None:
+        probe = d / f"leeg.{ext}"
+        probe.write_bytes(bytes(range(256)) * 4)
+        try:
+            cat, eff, targets = targets_for(probe)
+        except Exception:  # noqa: BLE001
+            cat, targets = "info", ["txt", "zip", "7z"]
+        entry = {"getest": False, "categorie": cat, "naar": targets}
+        if cat == "info":
+            good, err = try_convert(probe, "txt", d)
+            entry.update(getest=True, werkt=["txt"] if good else [], fouten={} if good else {"txt": err})
+        return entry
+    try:
+        cat, eff, targets = targets_for(sample)
+    except Exception as e:  # noqa: BLE001
+        return {"getest": True, "categorie": "?", "naar": [], "fouten": {"herkennen": str(e)}}
+    ok, bad = [], {}
+    for fmt in (targets[:4] if snel else targets):
+        if fmt in ("txt", "srt", "vtt") and cat in ("video", "audio"):
+            continue  # spraakherkenning: apart getest (modeldownload)
+        good, err = try_convert(sample, fmt, d)
+        (ok.append(fmt) if good else bad.__setitem__(fmt, err))
+    return {"getest": True, "categorie": cat, "naar": targets, "werkt": ok, "fouten": bad}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--snel", action="store_true", help="per formaat maximaal 4 omzettingen")
@@ -619,43 +651,19 @@ def main() -> None:
     results = {}
     base = Path(tempfile.mkdtemp(prefix="formaten-"))
     t0 = time.time()
-    for i, ext in enumerate(exts):
-        d = base / f"x{i}"
-        d.mkdir()
-        try:
-            sample = make_sample(ext, d)
-        except Exception as e:  # noqa: BLE001
-            sample = None
-            print(f"  voorbeeld .{ext} mislukt: {e}", file=sys.stderr)
-        if sample is None:
-            # zonder echt voorbeeld: wat biedt de app aan (bepaald aan de extensie, met willekeurige inhoud)
-            probe = d / f"leeg.{ext}"
-            probe.write_bytes(bytes(range(256)) * 4)
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+    import os
+    with ProcessPoolExecutor(max_workers=max(2, (os.cpu_count() or 4))) as pool:
+        futs = {pool.submit(test_one, ext, str(base / f"x{i}"), args.snel): ext for i, ext in enumerate(exts)}
+        for n, fut in enumerate(as_completed(futs), 1):
+            ext = futs[fut]
             try:
-                cat, eff, targets = targets_for(probe)
-            except Exception:  # noqa: BLE001
-                cat, targets = "info", ["txt", "zip", "7z"]
-            entry = {"getest": False, "categorie": cat, "naar": targets}
-            if cat == "info":  # het inforapport werkt voor elk bestand: dat kunnen we wel echt testen
-                good, err = try_convert(probe, "txt", d)
-                entry.update(getest=True, werkt=["txt"] if good else [], fouten={} if good else {"txt": err})
-            results[ext] = entry
-            print(f"[{i + 1}/{len(exts)}] .{ext:<12} {cat:<12} (geen voorbeeld)", flush=True)
-            continue
-        try:
-            cat, eff, targets = targets_for(sample)
-        except Exception as e:  # noqa: BLE001
-            results[ext] = {"getest": True, "categorie": "?", "naar": [], "fouten": {"herkennen": str(e)}}
-            continue
-        todo = targets[:4] if args.snel else targets
-        ok, bad = [], {}
-        for fmt in todo:
-            if fmt in ("txt", "srt", "vtt") and cat in ("video", "audio"):
-                continue  # spraakherkenning: apart getest (modeldownload)
-            good, err = try_convert(sample, fmt, d)
-            (ok.append(fmt) if good else bad.__setitem__(fmt, err))
-        results[ext] = {"getest": True, "categorie": cat, "naar": targets, "werkt": ok, "fouten": bad}
-        print(f"[{i + 1}/{len(exts)}] .{ext:<12} {cat:<12} ok: {len(ok)}  mis: {len(bad)}", flush=True)
+                results[ext] = fut.result()
+            except Exception as e:  # noqa: BLE001
+                results[ext] = {"getest": False, "categorie": "?", "naar": [], "fouten": {"test": str(e)}}
+            r = results[ext]
+            print(f"[{n}/{len(exts)}] .{ext:<12} {r['categorie']:<12} ok: {len(r.get('werkt', []))}  "
+                  f"mis: {len(r.get('fouten', {}))}{'' if r['getest'] else '  (geen voorbeeld)'}", flush=True)
     shutil.rmtree(base, ignore_errors=True)
     (ROOT / "docs").mkdir(exist_ok=True)
     (ROOT / "docs" / "formaten.json").write_text(json.dumps(results, indent=1, ensure_ascii=False), encoding="utf-8")

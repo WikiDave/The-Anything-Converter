@@ -78,6 +78,7 @@ TOOLS = [
     ("ROM", "IPS", "ROM patchen", "fmt", "patch"), ("N64", "Z64", "N64-ROM omzetten", "fmt", "z64"),
     ("#", "SHA", "Checksum / hash", "tab", "tab-check"), ("ZIP", "7Z", "Archief", "tab", "tab-arch"),
     ("URL", "MP4", "Video-link / torrent", "tab", "tab-fetch"), ("!", "AV", "Virusscan", "tab", "tab-check"),
+    ("TXT", "ED", "Tekst bewerken", "tab", "tab-edit"), ("SQL", "DB", "Database bekijken / SQL", "tab", "tab-db"),
 ]
 
 
@@ -90,8 +91,8 @@ def build_app(ascii_mode: bool = False):
     from textual.content import Content as E  # kale tekst: [ ... ] is geen opmaak
     from textual.screen import ModalScreen
     from textual.theme import Theme
-    from textual.widgets import (Button, Checkbox, DirectoryTree, Footer, Input, Label, ProgressBar, RadioButton,
-                                 RadioSet, Select, Static, TabbedContent, TabPane, TextArea)
+    from textual.widgets import (Button, Checkbox, DataTable, DirectoryTree, Footer, Input, Label, OptionList,
+                                 ProgressBar, RadioButton, RadioSet, Select, Static, TabbedContent, TabPane, TextArea)
 
     from converter import settings as user_settings
     from converter import social, virus
@@ -173,6 +174,10 @@ Tab.-active {{ color: $accent; text-style: bold; }}
 .result.show {{ display: block; }}
 .result.err {{ border: {line} $error; color: $error; }}
 TextArea {{ height: 12; background: #000000; border: {line} $secondary; }}
+#ed-text {{ height: 1fr; min-height: 10; }}
+#db-sql {{ height: 6; }}
+DataTable {{ height: auto; max-height: 16; background: #000000; }}
+OptionList {{ height: auto; max-height: 16; background: #000000; border: none; }}
 .cols {{ height: auto; }}
 .cols > Vertical {{ width: 1fr; height: auto; }}
 .cols.stack {{ layout: vertical; }}
@@ -206,7 +211,7 @@ TOETSEN
   ctrl+o            pad typen of plakken
   ctrl+t            kleur wisselen (groen, amber, cyaan, wit)
   f1 of ?           deze hulp          ctrl+q   afsluiten
-  1 t/m 8           naar tabblad 1-8 (als je niet in een tekstveld staat)
+  1 t/m 9, 0        naar tabblad 1-10 (als je niet in een tekstveld staat)
 
 TIPS
   · sleep een bestand in het terminalvenster om het pad te plakken
@@ -233,9 +238,9 @@ esc = sluiten"""), markup=False)
             Binding("f1", "help", "hulp"),
             Binding("question_mark", "help", "hulp", show=False),
             Binding("ctrl+q", "quit", "afsluiten"),
-        ] + [Binding(str(i), f"tab({i})", show=False) for i in range(1, 9)]
+        ] + [Binding(str(i), f"tab({i})", show=False) for i in range(1, 10)] + [Binding("0", "tab(10)", show=False)]
         TABS = ["tab-convert", "tab-tools", "tab-pdf", "tab-social", "tab-arch", "tab-fetch", "tab-check",
-                "tab-web"]
+                "tab-web", "tab-edit", "tab-db"]
 
         def __init__(self, start_file: str | None = None):
             super().__init__()
@@ -274,6 +279,10 @@ esc = sluiten"""), markup=False)
                     yield from self.compose_check()
                 with TabPane(E("8 OCR/WEB"), id="tab-web"):
                     yield from self.compose_web()
+                with TabPane(E("9 EDITOR"), id="tab-edit"):
+                    yield from self.compose_editor()
+                with TabPane(E("0 DATABASE"), id="tab-db"):
+                    yield from self.compose_db()
             yield Label("> gereed", id="status", markup=False)
             yield Footer()
 
@@ -483,6 +492,44 @@ esc = sluiten"""), markup=False)
                         yield Button(E("[ OPSLAAN ]"), id="web-go")
                     yield Static("", id="web-result", markup=False, classes="dim")
 
+        def compose_editor(self) -> ComposeResult:
+            with Vertical():
+                with self.frame("TEKSTEDITOR"):
+                    with Horizontal(classes="row"):
+                        yield Label("BESTAND>", classes="prompt")
+                        yield Input(placeholder="pad naar een tekstbestand (of een nieuwe naam)", id="ed-path")
+                        yield Button(E("[ OPENEN ]"), id="ed-open")
+                        yield Button(E("[ CONTROLEER ]"), id="ed-check")
+                        yield Button(E("[ OPSLAAN ]"), id="ed-save")
+                    yield Label(A("// ctrl+s = opslaan. bij de eerste keer opslaan blijft een kopie (.bak) van het "
+                                  "origineel bewaard."), id="ed-msg", classes="hint", markup=False)
+                yield TextArea("", id="ed-text", show_line_numbers=True, tab_behavior="indent")
+
+        def compose_db(self) -> ComposeResult:
+            with VerticalScroll():
+                with self.frame("DATABASE (SQLITE, .SQL, CSV, EXCEL)"):
+                    with Horizontal(classes="row"):
+                        yield Label("BESTAND>", classes="prompt")
+                        yield Input(placeholder="pad naar .sqlite, .db, .sql, .csv of .xlsx", id="db-path")
+                        yield Button(E("[ OPENEN ]"), id="db-open")
+                        yield Button(E("[ NIEUW ]"), id="db-new")
+                    yield Label(A("// je werkt op een kopie; met exporteren bewaar je de wijzigingen."), id="db-msg",
+                                classes="hint", markup=False)
+                with Horizontal(classes="cols", id="db-cols"):
+                    with self.frame("TABELLEN"):
+                        yield OptionList(id="db-tables")
+                    with self.frame("INHOUD"):
+                        yield DataTable(id="db-rows", zebra_stripes=True)
+                with self.frame("SQL"):
+                    yield TextArea("", id="db-sql")
+                    with Horizontal(classes="row"):
+                        yield Button(E("[ > UITVOEREN ]") if ascii_mode else E("[ ▶ UITVOEREN ]"), id="db-run")
+                        yield Select([("database (.sqlite)", "sqlite"), ("sql-dump", "sql"), ("excel", "xlsx"),
+                                      ("json", "json"), ("csv", "csv"), ("resultaat als csv", "q-csv"),
+                                      ("resultaat als excel", "q-xlsx")], value="sqlite", id="db-fmt", allow_blank=False)
+                        yield Button(E("[ EXPORT ]"), id="db-export")
+                    yield DataTable(id="db-result", zebra_stripes=True)
+
         def on_mount(self) -> None:
             for th in themes:
                 self.register_theme(th)
@@ -621,7 +668,7 @@ esc = sluiten"""), markup=False)
             sel.value = want
             self.show_options(self.cat, want)
             # handig voor de andere tabbladen
-            for wid in ("#so-path", "#ar-path", "#scan-path", "#ocr-path"):
+            for wid in ("#so-path", "#ar-path", "#scan-path", "#ocr-path", "#ed-path", "#db-path"):
                 inp = self.query_one(wid, Input)
                 if not inp.value:
                     inp.value = str(path)
@@ -1073,6 +1120,159 @@ esc = sluiten"""), markup=False)
             finally:
                 shutil.rmtree(tmp, ignore_errors=True)
             self.call_from_thread(self.query_one("#web-result", Static).update, A(msg))
+
+
+        # ------------------------------------------------------------ teksteditor
+        @on(Button.Pressed, "#ed-open")
+        @on(Input.Submitted, "#ed-path")
+        def ed_open(self) -> None:
+            from converter.textfmt import read_text
+            p = Path(self.clean(self.query_one("#ed-path", Input).value)).expanduser()
+            ta = self.query_one("#ed-text", TextArea)
+            msg = self.query_one("#ed-msg", Label)
+            if p.is_dir() or not str(p).strip():
+                msg.update("!! geef een bestand op")
+                return
+            if p.exists() and p.stat().st_size > 5 * 1024 * 1024:
+                msg.update("!! te groot om hier te bewerken (max. 5 MB)")
+                return
+            ta.text = read_text(p) if p.exists() else ""
+            self.ed_file = p
+            msg.update(A(f"// {p.name}: {ta.document.line_count} regels" + ("" if p.exists() else " (nieuw bestand)")))
+            ta.focus()
+
+        @on(Button.Pressed, "#ed-check")
+        def ed_check(self) -> None:
+            from converter.dbtool import validate
+            p = getattr(self, "ed_file", None)
+            err = validate(self.query_one("#ed-text", TextArea).text, p.suffix.lower().lstrip(".") if p else "")
+            self.query_one("#ed-msg", Label).update(A("// geen fouten gevonden ✓" if not err else f"!! {err}"))
+
+        @on(Button.Pressed, "#ed-save")
+        def ed_save(self) -> None:
+            from converter.dbtool import validate
+            p = getattr(self, "ed_file", None)
+            msg = self.query_one("#ed-msg", Label)
+            if not p:
+                msg.update("!! open eerst een bestand (of typ een nieuwe naam en druk op openen)")
+                return
+            text = self.query_one("#ed-text", TextArea).text
+            try:
+                bak = p.with_name(p.name + ".bak")
+                if p.exists() and not bak.exists():
+                    shutil.copy2(p, bak)
+                p.write_text(text, encoding="utf-8", newline="")
+            except OSError as exc:
+                msg.update(f"!! opslaan lukte niet: {exc}")
+                return
+            err = validate(text, p.suffix.lower().lstrip("."))
+            msg.update(A(f"// opgeslagen ✓ {p}" + (f" — let op: {err}" if err else "")))
+
+        def on_key(self, event) -> None:
+            if event.key == "ctrl+s" and self.query_one("#tabs", TabbedContent).active == "tab-edit":
+                event.prevent_default()
+                event.stop()
+                self.ed_save()
+
+        # ------------------------------------------------------------ databasetester
+        def db_load(self, db: Path) -> None:
+            from converter import dbtool
+            self.db_file = db
+            tables = dbtool.overview(db)
+            ol = self.query_one("#db-tables", OptionList)
+            ol.clear_options()
+            for t in tables:
+                ol.add_option(A(f"{'▦' if t['soort'] == 'tabel' else '◇'} {t['naam']} ({t['rijen']})"))
+            self.db_tables = [t["naam"] for t in tables]
+            if tables:
+                self.db_show(tables[0]["naam"])
+                sql = self.query_one("#db-sql", TextArea)
+                if not sql.text.strip():
+                    sql.text = f'SELECT * FROM "{tables[0]["naam"]}" LIMIT 50;'
+
+        def db_fill(self, wid: str, cols, rows) -> None:
+            dt = self.query_one(wid, DataTable)
+            dt.clear(columns=True)
+            if cols:
+                dt.add_columns(*[str(c) for c in cols])
+                for r in rows:
+                    dt.add_row(*["NULL" if v is None else str(v)[:200] for v in r])
+
+        def db_show(self, name: str) -> None:
+            from converter import dbtool
+            res = dbtool.rows(self.db_file, name)
+            self.db_fill("#db-rows", res["kolommen"], res["rijen"])
+            self.query_one("#db-msg", Label).update(A(f"// {name}: {res['totaal']} rijen"
+                                                      + (" (eerste 200 getoond)" if res["totaal"] > 200 else "")))
+
+        @on(Button.Pressed, "#db-open")
+        @on(Input.Submitted, "#db-path")
+        def db_open(self) -> None:
+            from converter import dbtool
+            p = Path(self.clean(self.query_one("#db-path", Input).value)).expanduser()
+            msg = self.query_one("#db-msg", Label)
+            if not p.is_file():
+                msg.update("!! bestand niet gevonden")
+                return
+            work = Path(tempfile.mkdtemp(prefix="ac-db-"))
+            try:
+                self.db_source = p
+                self.db_load(dbtool.prepare(p, work))
+            except ConversionError as exc:
+                msg.update(A(f"!! {exc}"))
+
+        @on(Button.Pressed, "#db-new")
+        def db_new(self) -> None:
+            from converter import dbtool
+            work = Path(tempfile.mkdtemp(prefix="ac-db-"))
+            self.db_source = Path.cwd() / "nieuwe-database.sqlite"
+            self.db_load(dbtool.prepare(None, work))
+            self.query_one("#db-sql", TextArea).text = (
+                "CREATE TABLE klanten (id INTEGER PRIMARY KEY, naam TEXT NOT NULL, plaats TEXT);\n"
+                "INSERT INTO klanten (naam, plaats) VALUES ('Anna', 'Utrecht'), ('Bo', 'Gent');\nSELECT * FROM klanten;")
+            self.query_one("#db-msg", Label).update(A("// nieuwe lege database. druk op uitvoeren om het voorbeeld te draaien."))
+
+        @on(Button.Pressed, "#db-run")
+        def db_run(self) -> None:
+            from converter import dbtool
+            msg = self.query_one("#db-msg", Label)
+            if not getattr(self, "db_file", None):
+                msg.update("!! open eerst een database (of kies nieuw)")
+                return
+            try:
+                res = dbtool.query(self.db_file, self.query_one("#db-sql", TextArea).text)
+            except ConversionError as exc:
+                msg.update(A(f"!! {exc}"))
+                self.db_fill("#db-result", [], [])
+                return
+            self.db_fill("#db-result", res["kolommen"], res["rijen"])
+            msg.update(A(f"// {len(res['rijen'])}{'+' if res['meer'] else ''} rijen" if res["kolommen"] else
+                         f"// klaar ✓ {res['opdrachten']} opdracht(en), {res['gewijzigd']} rij(en) gewijzigd"))
+            keep = self.query_one("#db-sql", TextArea).text
+            self.db_load(self.db_file)
+            self.query_one("#db-sql", TextArea).text = keep
+
+        @on(Button.Pressed, "#db-export")
+        def db_export(self) -> None:
+            from converter import dbtool
+            msg = self.query_one("#db-msg", Label)
+            if not getattr(self, "db_file", None):
+                msg.update("!! open eerst een database")
+                return
+            fmt = self.query_one("#db-fmt", Select).value
+            sql = self.query_one("#db-sql", TextArea).text if fmt.startswith("q-") else None
+            try:
+                tmp = Path(tempfile.mkdtemp(prefix="ac-dbx-"))
+                made = dbtool.export(self.db_file, fmt.replace("q-", ""), tmp, self.db_source.name, sql)
+                dst = cli.move_out(made, self.db_source.parent)
+                msg.update(A(f"// opgeslagen ✓ {dst}"))
+            except (ConversionError, OSError) as exc:
+                msg.update(A(f"!! {exc}"))
+
+
+        @on(OptionList.OptionSelected, "#db-tables")
+        def db_table_pick(self, event) -> None:
+            self.db_show(self.db_tables[event.option_index])
 
     return Converter
 

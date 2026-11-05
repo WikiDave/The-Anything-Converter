@@ -290,3 +290,31 @@ a.btn { text-decoration: none; display: inline-block; }
 .hash-box { margin-top: 8px; }
 .hash-box pre { margin: 6px 0 0; font-size: 12px; overflow-x: auto; color: var(--hi); user-select: all; }
 @media (max-width: 480px) { .tool-grid { grid-template-columns: 1fr 1fr; } .tool { gap: 8px; padding: 8px; } .ticon { transform: scale(.85); } }
+
+/* ---------- teksteditor */
+.ed-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.ed-wrap { display: flex; border: 1px solid var(--dim); background: var(--bg); height: min(60vh, 520px); }
+.ed-lines { margin: 0; padding: 8px 6px; min-width: 3.5em; text-align: right; color: var(--dim); border-right: 1px solid var(--faint);
+  overflow: hidden; user-select: none; font-size: 13px; line-height: 1.45; }
+#edText { flex: 1; resize: none; border: 0; outline: 0; background: transparent; color: var(--hi); padding: 8px; font-size: 13px;
+  line-height: 1.45; white-space: pre; overflow: auto; tab-size: 2; }
+.small.ok { color: var(--fg); }
+.small.err { color: var(--err); }
+
+/* ---------- databasetester */
+.db-grid { display: grid; grid-template-columns: minmax(150px, 220px) 1fr; gap: 12px; }
+@media (max-width: 720px) { .db-grid { grid-template-columns: 1fr; } }
+.db-tables { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.db-tables .btn { text-align: left; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-tables .btn.on { background: var(--fg); color: var(--bg); }
+.db-main { min-width: 0; }
+.db-rows { overflow: auto; max-height: 340px; border: 1px solid var(--faint); margin: 4px 0 8px; }
+.db-rows table { border-collapse: collapse; font-size: 12px; width: max-content; min-width: 100%; }
+.db-rows th, .db-rows td { border: 1px solid var(--faint); padding: 3px 8px; text-align: left; max-width: 360px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.db-rows th { position: sticky; top: 0; background: var(--faint); color: var(--hi); }
+.db-rows td.dim { color: var(--dim); font-style: italic; }
+#dbSql { width: 100%; box-sizing: border-box; background: var(--bg); color: var(--hi); border: 1px solid var(--dim); padding: 8px;
+  font-size: 13px; resize: vertical; }
+.db-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 6px 0; }
+.db-pager { margin: 0 0 8px; }

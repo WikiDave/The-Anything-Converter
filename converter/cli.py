@@ -152,7 +152,7 @@ def build_parser(with_file: bool = False) -> argparse.ArgumentParser:
         ap.add_argument("bestand", nargs="?", help="bestand om direct te openen")
         ap.set_defaults(cmd=None)
         ap.epilog = ("Opdrachten (meer uitleg: anything-converter-tui <opdracht> --help):\n"
-                     "  converteer, formaten, hash, pdf, archief, social, ocr, web, ophalen, scan\n\n" + ap.epilog)
+                     "  converteer, formaten, hash, pdf, archief, social, ocr, web, ophalen, scan, sql\n\n" + ap.epilog)
         return ap
     sub = ap.add_subparsers(dest="cmd", metavar="opdracht")
 
@@ -215,6 +215,11 @@ def build_parser(with_file: bool = False) -> argparse.ArgumentParser:
     g.add_argument("--uit", type=Path, default=Path.home() / "Downloads")
     g.add_argument("--audio", action="store_true", help="alleen geluid")
     g.add_argument("--geen-scan", action="store_true")
+
+    q = sub.add_parser("sql", help="SQL uitvoeren op een SQLite-, .sql-, CSV- of Excel-bestand (op een kopie)")
+    q.add_argument("bestand", type=Path)
+    q.add_argument("opdracht", nargs="?", help="bijv. \"SELECT * FROM tabel\" (zonder: tabellen tonen)")
+    q.add_argument("--opslaan", type=Path, help="wijzigingen bewaren als nieuwe .sqlite")
 
     v = sub.add_parser("scan", help="bestand of map controleren op virussen")
     v.add_argument("pad", type=Path)
@@ -438,10 +443,38 @@ def parse(argv: list[str]) -> argparse.Namespace:
     return build_parser(with_file=first not in COMMANDS).parse_args(argv)
 
 
+def cmd_sql(a) -> int:
+    from . import dbtool
+    work = Path(tempfile.mkdtemp(prefix="ac-sql-"))
+    try:
+        db = dbtool.prepare(a.bestand.expanduser(), work)
+        if not a.opdracht:
+            for t in dbtool.overview(db):
+                cols = ", ".join(c["naam"] + (f" {c['type']}" if c["type"] else "") for c in t["kolommen"])
+                say(f"{t['soort']} {t['naam']} ({t['rijen']} rijen): {cols}")
+            return 0
+        res = dbtool.query(db, a.opdracht)
+        if res["kolommen"]:
+            from .datafmt import write
+            out = work / "uit.txt"
+            write([dict(zip(res["kolommen"], r)) for r in res["rijen"]], out, "txt")
+            print(out.read_text(encoding="utf-8"), end="")
+            say(f"({len(res['rijen'])}{'+' if res['meer'] else ''} rijen)")
+        else:
+            say(f"klaar: {res['opdrachten']} opdracht(en), {res['gewijzigd']} rij(en) gewijzigd")
+        if a.opslaan:
+            dst = dbtool.export(db, "sqlite", work, a.opslaan.name)
+            shutil.move(str(dst), a.opslaan)
+            say(f"opgeslagen: {a.opslaan}")
+        return 0
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
 COMMANDS = {"converteer": cmd_convert, "convert": cmd_convert, "formaten": cmd_formats, "formats": cmd_formats,
             "info": cmd_formats, "hash": cmd_hash, "checksum": cmd_hash, "pdf": cmd_pdf, "archief": cmd_archive,
             "archive": cmd_archive, "social": cmd_social, "ocr": cmd_ocr, "web": cmd_web, "ophalen": cmd_fetch,
-            "fetch": cmd_fetch, "scan": cmd_scan}
+            "fetch": cmd_fetch, "scan": cmd_scan, "sql": cmd_sql}
 
 
 # ============================================================================ eenvoudige modus
