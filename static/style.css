@@ -323,3 +323,6 @@ a.btn { text-decoration: none; display: inline-block; }
 .pair { display: flex; gap: 6px; }
 .pair input { width: 50%; min-width: 0; }
 .avsource { white-space: pre-wrap; margin: 0 0 10px; border-left: 2px solid var(--line, currentColor); padding-left: 8px; }
+.sel.grow { flex: 1; min-width: 0; }
+.sel.grow select { width: 100%; }
+#avBox .grid + .grid { margin-top: 16px; }

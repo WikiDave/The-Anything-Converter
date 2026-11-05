@@ -228,6 +228,30 @@ def file_hashes(uid):
     return jsonify(name=path.name, hashes=compute(path, str(data.get("key") or "") or None))
 
 
+@app.get("/api/samples")
+def sample_list():
+    """Test files to choose from, grouped like the format list."""
+    from converter.catalog import catalog
+    from converter.samples import SAMPLE_EXTS
+    cat = catalog()
+    groups: dict[str, list] = {}
+    for ext in SAMPLE_EXTS:
+        group, desc = (cat.get(ext) or [("Other", "")])[0]
+        groups.setdefault(group, []).append({"ext": ext, "desc": desc})
+    return jsonify(groups=[{"group": g, "items": v} for g, v in groups.items()])
+
+
+@app.post("/api/sample/<ext>")
+def sample_make(ext):
+    """Make a small test file of this type and load it as if it was uploaded."""
+    from converter.samples import make
+    try:
+        path = make(ext, WORK)
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+    return jsonify(register_upload(uuid.uuid4().hex, path))
+
+
 @app.get("/api/media/<uid>")
 def media_details(uid):
     """Everything behind a video/audio file: container, codecs, frame rate, bitrates, tracks and tags."""

@@ -327,7 +327,7 @@ function setup(data) {
   current = data;
   $("scanMsg").className = "scan-msg hidden"; $("scanMsg").textContent = "";
   show(drop, false);
-  show($("urlForm"), false);
+  show($("urlForm"), false); show($("sampleBox"), false);
   show($("tools"), false);
   show($("hashBox"), false);
   // opgehaald via een link: origineel ook los op te slaan
@@ -495,7 +495,7 @@ $("setEnd").addEventListener("click", () => { $("trimEnd").value = fmtTime(playe
 $("resetBtn").addEventListener("click", () => {
   current = null; fileInput.value = "";
   const p = $("preview"); p.pause && p.pause();
-  show($("panel"), false); show(drop, true); show($("urlForm"), true); show($("tools"), true);
+  show($("panel"), false); show(drop, true); show($("urlForm"), true); show($("tools"), true); show($("sampleBox"), true);
   step(1); status("gereed");
 });
 
@@ -1045,3 +1045,52 @@ async function loadMediaInfo() {
     box.textContent = "(could not read the streams: " + e.message + ")";
   }
 }
+
+
+// ---------------------------------------------------------------- test files
+(async () => {
+  const sel = $("sampleSel");
+  try {
+    const r = await fetch("/api/samples");
+    const d = await r.json();
+    sel.innerHTML = "";
+    const first = document.createElement("option");
+    first.value = ""; first.textContent = "choose a file type…";
+    sel.append(first);
+    const popular = ["mp4", "mov", "mkv", "mp3", "flac", "wav", "jpg", "png", "heic", "webp", "gif", "pdf", "docx",
+      "xlsx", "pptx", "epub", "zip", "7z", "srt", "csv", "json", "sqlite", "cue", "iso", "nes", "z64", "stl", "svg", "ttf"];
+    const all = new Map(d.groups.flatMap((g) => g.items.map((it) => [it.ext, it.desc])));
+    const pg = document.createElement("optgroup");
+    pg.label = "POPULAR";
+    for (const e of popular.filter((x) => all.has(x))) pg.append(new Option(`.${e}  · ${all.get(e)}`, e));
+    sel.append(pg);
+    for (const g of d.groups) {
+      const og = document.createElement("optgroup");
+      og.label = g.group.toUpperCase();
+      for (const it of g.items) og.append(new Option(`.${it.ext}  · ${it.desc}`, it.ext));
+      sel.append(og);
+    }
+  } catch {
+    sel.innerHTML = "<option value=''>(list not available)</option>";
+  }
+})();
+async function loadSample(ext) {
+  if (!ext) return;
+  const btn = $("sampleBtn");
+  btn.disabled = true;
+  status("making test file ." + ext + "…");
+  try {
+    const r = await fetch("/api/sample/" + encodeURIComponent(ext), { method: "POST" });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "?");
+    localFile = null;
+    setup(d);
+  } catch (e) {
+    status("ERROR: " + e.message);
+    alert(e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+$("sampleBtn").addEventListener("click", () => loadSample($("sampleSel").value));
+$("sampleSel").addEventListener("change", () => loadSample($("sampleSel").value));
