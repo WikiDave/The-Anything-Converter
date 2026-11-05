@@ -63,7 +63,7 @@ class Api:
     def save_url(self, path: str):
         """Bestand van de lokale server opslaan (resultaat, origineel, torrent-bestand)."""
         if not isinstance(path, str) or not path.startswith("/"):
-            return {"error": "ongeldig pad"}
+            return {"error": "invalid path"}
         try:
             with urllib.request.urlopen(self._base + path, timeout=60) as r:
                 name = _filename(r.headers, Path(urllib.parse.urlparse(path).path).name or "bestand")
@@ -126,7 +126,7 @@ class Api:
         import webview
         if not isinstance(path, str) or not path.startswith("/"):
             return False
-        title = TITLE + (" - PDF & archief" if path.startswith("/web/") else "")
+        title = TITLE + (" - PDF & archive" if path.startswith("/web/") else "")
         webview.create_window(title, self._base + path, js_api=self, width=SIZE[0], height=SIZE[1],
                               min_size=MIN_SIZE, background_color="#000000", text_select=True)
         return True

@@ -42,6 +42,8 @@ class Job:
             d["error"] = self.error
         if "virus" in self.extra:
             d["virus"] = self.extra["virus"]
+        if "text" in self.extra:
+            d["text"] = self.extra["text"]
         return d
 
 
@@ -115,7 +117,7 @@ class JobManager:
 
     def _run(self, job: Job) -> None:
         with self.sem:
-            job.status, job.message = "running", "Starten"
+            job.status, job.message = "running", "Starting"
             # fetch: src is de (lege) uploadmap waar de download in komt
             out_dir = job.src if job.kind in ("fetch", "torrent") else job.src.parent / f"out_{job.id[:8]}"
             out_dir.mkdir(parents=True, exist_ok=True)
@@ -130,6 +132,11 @@ class JobManager:
                     job.extra.update(name=res["name"], files=res["files"])
                     job.result = res["root"]
                     self._scan(job, res["root"], progress)
+                elif job.kind == "format":
+                    from . import drives
+                    o = job.opts
+                    job.extra["text"] = drives.format_drive(o["id"], o["fs"], o["label"], o["confirm"], o["full"],
+                                                            o["allow_internal"], progress)
                 elif job.kind == "webshot":
                     from . import webshot
                     job.result = webshot.capture(job.opts["url"], out_dir, job.opts["format"], progress)

@@ -53,7 +53,7 @@ def test_rejects_bad_input(tmp_path):
 
 
 def test_cancel(tmp_path):
-    with pytest.raises(ConversionError, match="Gestopt"):
+    with pytest.raises(ConversionError, match="Stopped"):
         download("magnet:?xt=urn:btih:" + "a" * 40, tmp_path, cancelled=lambda: True)
 
 

@@ -35,7 +35,7 @@ def model_dir() -> Path:
 
 def ensure_model(name: str, progress: Optional[ProgressFn] = None, cancelled=lambda: False) -> Path:
     if name not in MODELS:
-        raise ConversionError(f"Onbekend spraakmodel: {name}")
+        raise ConversionError(f"Unknown speech model: {name}")
     path = model_dir() / f"ggml-{name}.bin"
     if path.exists() and path.stat().st_size > MODELS[name] * 0.9:
         return path
@@ -46,7 +46,7 @@ def ensure_model(name: str, progress: Optional[ProgressFn] = None, cancelled=lam
             done = 0
             while True:
                 if cancelled():
-                    raise ConversionError("Gestopt.")
+                    raise ConversionError("Stopped.")
                 chunk = r.read(1 << 20)
                 if not chunk:
                     break
@@ -141,7 +141,7 @@ def transcribe(src: Path, dst: Path, fmt: str, opts: dict, progress: Optional[Pr
     except TypeError:
         segments = model.transcribe(audio, **kw)
     if cancelled():
-        raise ConversionError("Gestopt.")
+        raise ConversionError("Stopped.")
     if not any(s.text.strip() for s in segments):
         raise ConversionError("No speech was recognised in this file.")
     write(segments, dst, fmt, int(start * 100))

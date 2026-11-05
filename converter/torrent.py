@@ -69,7 +69,7 @@ def download(source: str | bytes, out_dir: Path, progress: Optional[ProgressFn] 
         start = time.time()
         while not h.status().has_metadata:
             if cancelled():
-                raise ConversionError("Gestopt.")
+                raise ConversionError("Stopped.")
             if time.time() - start > METADATA_TIMEOUT:
                 raise ConversionError("No data found for this magnet link (no peers reachable). Try again later or use a .torrent file.")
             if progress:
@@ -86,7 +86,7 @@ def download(source: str | bytes, out_dir: Path, progress: Optional[ProgressFn] 
         while True:
             st = h.status()
             if cancelled():
-                raise ConversionError("Gestopt.")
+                raise ConversionError("Stopped.")
             if st.is_finished or st.is_seeding or st.progress >= 1.0:
                 break
             if st.total_done != last_bytes:

@@ -277,7 +277,7 @@ def chrome_pdf(src_html: Path, dst: Path, fmt: str = "pdf") -> bool:
 
 def convert(src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
     ext = src.suffix.lower().lstrip(".")
-    dst = out_dir / f"{src.stem}{'_bewerkt' if fmt == ext else ''}.{fmt}"
+    dst = out_dir / f"{src.stem}{'_edited' if fmt == ext else ''}.{fmt}"
     from .pdftools import html_to_pdf, text_to_document
 
     if ext in WEB:
@@ -289,7 +289,7 @@ def convert(src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
         elif fmt == "md":
             dst.write_text(html_markdown(page) + "\n", encoding="utf-8")
         elif fmt in ("pdf", "png"):
-            tmp = out_dir / "_pagina.html"
+            tmp = out_dir / "_page.html"
             tmp.write_text(page, encoding="utf-8")
             if not chrome_pdf(tmp if ext in ("mhtml", "mht", "webarchive") else src, dst, fmt):
                 if fmt == "png":

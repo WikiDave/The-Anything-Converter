@@ -503,7 +503,7 @@ def model3d(src: Path, out_dir: Path, fmt: str) -> Path:
             "stl", "off") else None)
     except Exception as e:  # noqa: BLE001
         raise ConversionError(f"This 3D model cannot be read: {e}") from e
-    dst = out_dir / f"{src.stem}{'_bewerkt' if fmt == ext else ''}.{fmt}"
+    dst = out_dir / f"{src.stem}{'_edited' if fmt == ext else ''}.{fmt}"
     try:
         mesh.export(str(dst), file_type=fmt)
     except Exception as e:  # noqa: BLE001
@@ -545,7 +545,7 @@ def cad(src: Path, out_dir: Path, fmt: str) -> Path:
 def vector(src: Path, out_dir: Path, fmt: str) -> Path:
     import fitz
     ext = src.suffix.lower().lstrip(".")
-    dst = out_dir / f"{src.stem}{'_bewerkt' if fmt == ext else ''}.{fmt}"
+    dst = out_dir / f"{src.stem}{'_edited' if fmt == ext else ''}.{fmt}"
     work = src
     if ext == "svgz":
         import gzip
@@ -674,7 +674,7 @@ def cert(src: Path, out_dir: Path, fmt: str) -> Path:
         items = _load_certs(data)
     except ConversionError:
         items = []
-    dst = out_dir / f"{src.stem}{'_bewerkt' if fmt == src.suffix.lower().lstrip('.') else ''}.{fmt}"
+    dst = out_dir / f"{src.stem}{'_edited' if fmt == src.suffix.lower().lstrip('.') else ''}.{fmt}"
     if fmt in ("pem", "der"):
         objs = [o for k, o in items if k in ("cert", "csr", "crl")]
         if not objs:
@@ -694,8 +694,8 @@ def cert(src: Path, out_dir: Path, fmt: str) -> Path:
                 names = ", ".join(str(n.value) for n in san.value)
             except Exception:  # noqa: BLE001
                 names = ""
-            lines += ["CERTIFICAAT", f"  Issued to:   {o.subject.rfc4514_string()}",
-                      f"  Uitgegeven door: {o.issuer.rfc4514_string()}",
+            lines += ["CERTIFICATE", f"  Issued to:   {o.subject.rfc4514_string()}",
+                      f"  Issued by:   {o.issuer.rfc4514_string()}",
                       f"  Valid from:  {o.not_valid_before_utc:%Y-%m-%d %H:%M} UTC",
                       f"  Valid until: {o.not_valid_after_utc:%Y-%m-%d %H:%M} UTC",
                       f"  Serienummer: {o.serial_number:x}",
@@ -765,7 +765,7 @@ def convert(fam: str, src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
         return write(events(src), out_dir / f"{src.stem}.{fmt}", fmt, src.stem)
     if fam == "gps":
         ext = src.suffix.lower().lstrip(".")
-        return write_track(read_track(src), out_dir / f"{src.stem}{'_bewerkt' if fmt == ext else ''}.{fmt}", fmt)
+        return write_track(read_track(src), out_dir / f"{src.stem}{'_edited' if fmt == ext else ''}.{fmt}", fmt)
     if fam == "model3d":
         return model3d(src, out_dir, fmt)
     if fam == "cad":

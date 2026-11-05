@@ -50,9 +50,9 @@ TARGETS = {
 
 LABELS = {
     "video": "Video", "audio": "Audio", "image": "Image", "pdf": "PDF",
-    "document": "Document", "spreadsheet": "Spreadsheet", "presentation": "Presentatie", "ebook": "E-book",
-    "disc": "Schijfimage (emulator)", "rom": "ROM (emulator)",
-    "archive": "Archief", "other": "Other file",
+    "document": "Document", "spreadsheet": "Spreadsheet", "presentation": "Presentation", "ebook": "E-book",
+    "disc": "Disc image (emulator)", "rom": "ROM (emulator)",
+    "archive": "Archive", "other": "Other file",
 }
 
 

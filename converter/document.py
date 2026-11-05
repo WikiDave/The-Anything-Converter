@@ -56,7 +56,7 @@ def pandoc(src: Path, fmt: str, dst: Path, in_fmt: Optional[str] = None) -> Path
 
 
 def _final(src: Path, out_dir: Path, fmt: str) -> Path:
-    stem = src.stem + ("_bewerkt" if fmt == src.suffix.lstrip(".").lower() else "")
+    stem = src.stem + ("_edited" if fmt == src.suffix.lstrip(".").lower() else "")
     return out_dir / f"{stem}.{fmt}"
 
 

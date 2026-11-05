@@ -5,6 +5,7 @@ Start:  python app.py   en open http://localhost:8000
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 import tempfile
 import uuid
@@ -226,6 +227,74 @@ def file_hashes(uid):
     path = up["path"]
     data = request.get_json(force=True, silent=True) or {}
     return jsonify(name=path.name, hashes=compute(path, str(data.get("key") or "") or None))
+
+
+# --------------------------------------------------------------------------- drives (desktop app only)
+
+def _drives_allowed():
+    """Formatting and disk health only from the desktop app on this computer, never from another machine."""
+    if not DESKTOP or request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify(error="Drives can only be managed in the desktop app on this computer."), 403
+    return None
+
+
+@app.get("/api/drives")
+def drives_list():
+    from converter import drives
+    if (deny := _drives_allowed()):
+        return deny
+    try:
+        return jsonify(drives=[d.public() for d in drives.list_drives()], filesystems=drives.filesystems_for(),
+                       platform=sys.platform)
+    except (ConversionError, OSError, ValueError, subprocess.SubprocessError) as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.get("/api/drives/health")
+def drives_health():
+    from converter import drives
+    if (deny := _drives_allowed()):
+        return deny
+    try:
+        return jsonify(drives.health(request.args.get("id", "")))
+    except (ConversionError, OSError, ValueError, subprocess.SubprocessError) as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.post("/api/drives/plan")
+def drives_plan():
+    from converter import drives
+    if (deny := _drives_allowed()):
+        return deny
+    data = request.get_json(force=True, silent=True) or {}
+    try:
+        d = drives.find(str(data.get("id", "")))
+        ok, why = drives.formattable(d, bool(data.get("allow_internal")))
+        cmds = drives.plan_format(d, str(data.get("fs", "exfat")), str(data.get("label", "")), bool(data.get("full")))
+        return jsonify(drive=d.public(), allowed=ok, why=why, commands=[" ".join(c) for c in cmds])
+    except ConversionError as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.post("/api/drives/format")
+def drives_format():
+    from converter import drives
+    if (deny := _drives_allowed()):
+        return deny
+    data = request.get_json(force=True, silent=True) or {}
+    opts = {"id": str(data.get("id", "")), "fs": str(data.get("fs", "exfat")), "label": str(data.get("label", "")),
+            "confirm": str(data.get("confirm", "")), "full": bool(data.get("full")),
+            "allow_internal": bool(data.get("allow_internal"))}
+    try:  # check before starting, so mistakes are reported straight away
+        d = drives.find(opts["id"])
+        ok, why = drives.formattable(d, opts["allow_internal"])
+        if not ok:
+            raise ConversionError(f"Not formatted: {why}.")
+        drives.check_confirm(d, opts["confirm"])
+    except ConversionError as e:
+        return jsonify(error=str(e)), 400
+    job = jobs.submit(WORK / uuid.uuid4().hex, "format", opts, kind="format")
+    return jsonify(job.public())
 
 
 @app.get("/api/samples")
@@ -463,7 +532,7 @@ def text_save(uid):
 def text_new():
     """Nieuw leeg tekstbestand (voor de editor), met de gekozen extensie."""
     data = request.get_json(force=True, silent=True) or {}
-    name = safe_name(str(data.get("name") or "nieuw.txt"))
+    name = safe_name(str(data.get("name") or "new.txt"))
     if "." not in name:
         name += ".txt"
     uid = uuid.uuid4().hex

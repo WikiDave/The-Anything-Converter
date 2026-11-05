@@ -63,7 +63,7 @@ def details(path: Path, ext: str, real: str | None) -> list[str]:
         return _pe(path)
     if head[:4] == b"\x7fELF":
         bits = 64 if head[4] == 2 else 32
-        etype = {1: "objectbestand", 2: "programma", 3: "gedeelde bibliotheek", 4: "core dump"}.get(head[16], "?")
+        etype = {1: "object file", 2: "program", 3: "shared library", 4: "core dump"}.get(head[16], "?")
         mach = {0x3E: "x86-64", 0xB7: "ARM64", 0x28: "ARM", 0x03: "x86", 0xF3: "RISC-V"}.get(
             struct.unpack_from("<H", head, 18)[0], "?")
         return [f"Linux/Unix ELF, {bits}-bit, {etype}, processor {mach}"]
@@ -133,7 +133,7 @@ def _pe(path: Path) -> list[str]:
     pe.parse_data_directories(directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_RESOURCE"],
                                            pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_SECURITY"]])
     mach = {0x14C: "x86 (32-bit)", 0x8664: "x64", 0xAA64: "ARM64"}.get(pe.FILE_HEADER.Machine, hex(pe.FILE_HEADER.Machine))
-    kind = "DLL" if pe.is_dll() else "driver" if pe.is_driver() else "programma"
+    kind = "DLL" if pe.is_dll() else "driver" if pe.is_driver() else "program"
     out = [f"Windows {kind}, {mach}"]
     import datetime
     ts = pe.FILE_HEADER.TimeDateStamp

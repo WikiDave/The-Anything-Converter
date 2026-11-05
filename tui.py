@@ -13,6 +13,7 @@ Start:  python tui.py [bestand]          volledig scherm
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -49,8 +50,12 @@ LOGO = r"""
 ██║     ██║   ██║██║╚██╗██║╚██╗ ██╔╝██╔══╝  ██╔══██╗   ██║   ██╔══╝  ██╔══██╗
 ╚██████╗╚██████╔╝██║ ╚████║ ╚████╔╝ ███████╗██║  ██║   ██║   ███████╗██║  ██║
  ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝""".strip("\n")
-LOGO_SMALL = "▄▀█ █▄ █ █▄█ ▀█▀ █ █ █ █▄ █ █▀▀   █▀▀ █▀█ █▄ █ █ █ █▀▀ █▀█ ▀█▀ █▀▀ █▀█\n" \
-             "█▀█ █ ▀█  █   █  █▀█ █ █ ▀█ █▄█   █▄▄ █▄█ █ ▀█ ▀▄▀ ██▄ █▀▄  █  ██▄ █▀▄"
+# 3 lines of box-drawing characters: crisp in every terminal font (the old 2-line pixel font looked blurry)
+LOGO_SMALL = (
+    "┏━┓ ┏┓╻ ╻ ╻ ╺┳╸ ╻ ╻ ╻ ┏┓╻ ┏━╸    ┏━╸ ┏━┓ ┏┓╻ ╻ ╻ ┏━╸ ┏━┓ ╺┳╸ ┏━╸ ┏━┓\n"
+    "┣━┫ ┃┗┫ ┗┳┛  ┃  ┣━┫ ┃ ┃┗┫ ┃╺┓    ┃   ┃ ┃ ┃┗┫ ┃┏┛ ┣╸  ┣┳┛  ┃  ┣╸  ┣┳┛\n"
+    "╹ ╹ ╹ ╹  ╹   ╹  ╹ ╹ ╹ ╹ ╹ ┗━┛    ┗━╸ ┗━┛ ╹ ╹ ┗┛  ┗━╸ ╹┗╸  ╹  ┗━╸ ╹┗╸"
+)
 LOGO_ASCII = r"""
    _              _   _     _                  ___                     _
   /_\  _ _ _  _ _| |_| |_  (_)_ _  __ _       / __|___ _ ___ _____ _ _| |_ ___ _ _
@@ -70,15 +75,26 @@ TOOLS = [
     ("PDF", "+", "Merge PDFs", "tab", "tab-pdf"), ("PDF", "/", "Split PDF", "tab", "tab-pdf"),
     ("PDF", "v", "PDF comprimeren", "fmt", "pdf"), ("IMG", "TXT", "Bestands-OCR", "fmt", "txt"),
     ("[ ]", "TXT", "Screenshot-OCR", "screen", ""), ("~", "TXT", "Audio/video to text", "fmt", "txt"),
-    ("~", "SRT", "Ondertitels maken", "fmt", "srt"), ("DOC", "EPUB", "E-book maken", "fmt", "epub"),
+    ("~", "SRT", "Make subtitles", "fmt", "srt"), ("DOC", "EPUB", "E-book maken", "fmt", "epub"),
     ("EPUB", "AZW", "E-book for Kindle", "fmt", "azw3"), ("~", "M4R", "iPhone ringtone", "fmt", "m4r"),
     ("IMG", "IG", "Social media size", "tab", "tab-social"), ("WWW", "PDF", "Save website", "web", ""),
     ("BIN", "ISO", "CUE/BIN to ISO", "fmt", "iso"), ("BIN", "1x", "Merge BIN tracks", "fmt", "cue"),
     ("ISO", "CHD", "To CHD", "fmt", "chd"), ("ISO", "CSO", "PSP ISO to CSO", "fmt", "cso"),
     ("ROM", "IPS", "ROM patchen", "fmt", "patch"), ("N64", "Z64", "Convert N64 ROM", "fmt", "z64"),
-    ("#", "SHA", "Checksum / hash", "tab", "tab-check"), ("ZIP", "7Z", "Archief", "tab", "tab-arch"),
-    ("URL", "MP4", "Video-link / torrent", "tab", "tab-fetch"), ("!", "AV", "Virusscan", "tab", "tab-check"),
+    ("#", "SHA", "Checksum / hash", "tab", "tab-check"), ("ZIP", "7Z", "Archive", "tab", "tab-arch"),
+    ("URL", "MP4", "Video link / torrent", "tab", "tab-fetch"), ("!", "AV", "Virus scan", "tab", "tab-check"),
     ("TXT", "ED", "Edit text", "tab", "tab-edit"), ("SQL", "DB", "Database viewer / SQL", "tab", "tab-db"),
+]
+
+
+COLOUR_PRESETS = [
+    ("green phosphor", "#a6ff5c", "#000000"), ("amber", "#ffb000", "#000000"), ("cyan", "#5ff5d0", "#000000"),
+    ("white", "#e8e8e8", "#000000"), ("matrix", "#00ff41", "#0d0208"), ("red alert", "#ff5555", "#120000"),
+    ("pink", "#ff79c6", "#1a0b14"), ("purple", "#c792ea", "#120b1a"), ("ice", "#9fdcff", "#04121c"),
+    ("gold", "#ffd700", "#161200"), ("dos", "#d0d0d0", "#0000a8"), ("c64", "#a5a5ff", "#40318d"),
+    ("solarized", "#93a1a1", "#002b36"), ("gruvbox", "#ebdbb2", "#282828"), ("nord", "#d8dee9", "#2e3440"),
+    ("dracula", "#f8f8f2", "#282a36"), ("high contrast", "#ffff00", "#000000"), ("paper", "#1a1a1a", "#f4f1e8"),
+    ("sepia", "#5b4636", "#f4ecd8"), ("green on white", "#0b6b00", "#f3fff0"),
 ]
 
 
@@ -117,29 +133,43 @@ def build_app(ascii_mode: bool = False):
         Checkbox.BUTTON_LEFT = "["
         Checkbox.BUTTON_RIGHT = "]"
 
-    def theme(name: str, fg: str, hi: str, dim: str) -> Theme:
-        return Theme(name=name, primary=fg, secondary=dim, accent=hi, foreground=fg, background="#000000",
-                     surface="#000000", panel="#0a0a0a", success=hi, warning="#ffb000", error="#ff5f56", dark=True,
-                     variables={"block-cursor-foreground": "#000000", "block-cursor-background": fg,
+    def _mix(a: str, b: str, t: float) -> str:
+        ca = [int(a[i:i + 2], 16) for i in (1, 3, 5)]
+        cb = [int(b[i:i + 2], 16) for i in (1, 3, 5)]
+        return "#" + "".join(f"{round(x + (y - x) * t):02x}" for x, y in zip(ca, cb))
+
+    def _light(c: str) -> bool:
+        r, g, b = (int(c[i:i + 2], 16) for i in (1, 3, 5))
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b > 140
+
+    def theme(name: str, fg: str, bg: str = "#000000") -> Theme:
+        light = _light(bg)
+        hi = _mix(fg, "#000000" if light else "#ffffff", 0.5)
+        dim = _mix(fg, bg, 0.45)
+        return Theme(name=name, primary=fg, secondary=dim, accent=hi, foreground=fg, background=bg,
+                     surface=bg, panel=_mix(fg, bg, 0.92), success=hi, warning="#ffb000", error="#ff5f56", dark=not light,
+                     variables={"block-cursor-foreground": bg, "block-cursor-background": fg,
                                 "input-selection-background": f"{fg} 35%", "footer-key-foreground": hi,
                                 "footer-description-foreground": dim, "border": dim, "border-blurred": dim})
 
-    themes = [theme("ac-groen", "#a6ff5c", "#d9ffb8", "#5b8a3a"), theme("ac-amber", "#ffb000", "#ffd98a", "#9a6c17"),
-              theme("ac-cyaan", "#5ff5d0", "#c4fff0", "#36897a"), theme("ac-wit", "#e8e8e8", "#ffffff", "#7a7a7a")]
+    themes = [theme("ac-" + n.replace(" ", "-"), fg, bg) for n, fg, bg in COLOUR_PRESETS]
+    custom = os.environ.get("ANYTHING_COLOURS", "")  # e.g. "#ffcc00,#101010" (text,background)
+    if re.fullmatch(r"#[0-9a-fA-F]{6},#[0-9a-fA-F]{6}", custom):
+        themes.insert(0, theme("ac-custom", *custom.lower().split(",")))
 
     line = "ascii" if ascii_mode else "solid"
     tall = "ascii" if ascii_mode else "tall"
     css = f"""
-Screen {{ background: #000000; }}
-* {{ scrollbar-color: $secondary; scrollbar-background: #000000; scrollbar-size-vertical: 1; }}
+Screen {{ background: $background; }}
+* {{ scrollbar-color: $secondary; scrollbar-background: $background; scrollbar-size-vertical: 1; }}
 #top {{ height: 1; color: $secondary; }}
 #top .name {{ color: $primary; width: auto; text-style: bold; }}
 #top .dim {{ width: 1fr; }}
-#logo {{ color: $primary; height: auto; margin: 1 0 0 0; }}
+#logo {{ color: $primary; height: auto; margin: 1 0 1 0; text-style: bold; }}
 #tagline {{ color: $secondary; margin: 0 0 1 0; }}
 #menubar {{ height: 3; border: {line} $secondary; padding: 0 1; }}
 #menubar Label {{ width: auto; color: $secondary; padding: 0 1; margin: 0 3 0 0; }}
-#menubar Label.on {{ color: #000000; background: $primary; }}
+#menubar Label.on {{ color: $background; background: $primary; }}
 #menubar Label.done {{ color: $primary; }}
 .frame {{ border: {line} $secondary; border-title-color: $accent; border-title-style: bold; padding: 0 1;
           height: auto; margin: 0 0 1 0; }}
@@ -149,35 +179,35 @@ Screen {{ background: #000000; }}
 .hint {{ color: $secondary; margin: 0 0 0 0; }}
 .row {{ height: auto; }}
 .row Input {{ width: 1fr; }}
-Input {{ background: #000000; border: {tall} $secondary; color: $accent; }}
+Input {{ background: $background; border: {tall} $secondary; color: $accent; }}
 Input:focus {{ border: {tall} $primary; }}
 Select {{ width: 1fr; }}
-Select > SelectCurrent {{ background: #000000; border: {tall} $secondary; }}
+Select > SelectCurrent {{ background: $background; border: {tall} $secondary; }}
 Select:focus > SelectCurrent {{ border: {tall} $primary; }}
-SelectOverlay {{ background: #000000; border: {line} $primary; }}
-Button {{ background: #000000; color: $primary; border: none; min-width: 10; height: 1; margin: 1 1 0 0;
+SelectOverlay {{ background: $background; border: {line} $primary; }}
+Button {{ background: $background; color: $primary; border: none; min-width: 10; height: 1; margin: 1 1 0 0;
           text-style: none; }}
-Button:hover, Button:focus {{ background: $primary; color: #000000; text-style: bold; }}
+Button:hover, Button:focus {{ background: $primary; color: $background; text-style: bold; }}
 Button.go {{ width: 100%; height: 3; border: {line} $primary; text-style: bold; margin: 0 0 1 0; }}
 Button.go:disabled {{ color: $secondary; border: {line} $secondary; }}
-RadioSet {{ background: #000000; border: none; height: auto; }}
-RadioButton, Checkbox {{ background: #000000; }}
-DirectoryTree {{ height: 12; background: #000000; border: {line} $secondary; }}
+RadioSet {{ background: $background; border: none; height: auto; }}
+RadioButton, Checkbox {{ background: $background; }}
+DirectoryTree {{ height: 12; background: $background; border: {line} $secondary; }}
 DirectoryTree:focus {{ border: {line} $primary; }}
 ProgressBar {{ margin: 0 0 1 0; }}
 Bar > .bar--bar {{ color: $primary; background: #1a2712; }}
 Bar > .bar--complete {{ color: $accent; }}
-TabbedContent ContentTabs {{ background: #000000; }}
+TabbedContent ContentTabs {{ background: $background; }}
 Tab {{ color: $secondary; padding: 0 1; }}
 Tab.-active {{ color: $accent; text-style: bold; }}
 .result {{ border: {line} $primary; padding: 0 1; height: auto; display: none; }}
 .result.show {{ display: block; }}
 .result.err {{ border: {line} $error; color: $error; }}
-TextArea {{ height: 12; background: #000000; border: {line} $secondary; }}
+TextArea {{ height: 12; background: $background; border: {line} $secondary; }}
 #ed-text {{ height: 1fr; min-height: 10; }}
 #db-sql {{ height: 6; }}
-DataTable {{ height: auto; max-height: 16; background: #000000; }}
-OptionList {{ height: auto; max-height: 16; background: #000000; border: none; }}
+DataTable {{ height: auto; max-height: 16; background: $background; }}
+OptionList {{ height: auto; max-height: 16; background: $background; border: none; }}
 .cols {{ height: auto; }}
 .cols > Vertical {{ width: 1fr; height: auto; }}
 .cols.stack {{ layout: vertical; }}
@@ -187,10 +217,10 @@ OptionList {{ height: auto; max-height: 16; background: #000000; border: none; }
 #tool-grid.n1 {{ grid-size: 1; }}
 .tool {{ width: 100%; height: 3; border: {line} $secondary; margin: 0; padding: 0 1; content-align: left middle;
          text-wrap: nowrap; text-overflow: ellipsis; }}
-.tool:hover, .tool:focus {{ border: {line} $primary; background: #000000; color: $accent; }}
-#status {{ dock: bottom; height: 1; color: $primary; background: #000000; padding: 0 1; }}
-HelpScreen {{ align: center middle; background: #000000 70%; }}
-#help {{ width: 84; max-width: 100%; height: auto; max-height: 90%; border: {line} $primary; background: #000000;
+.tool:hover, .tool:focus {{ border: {line} $primary; background: $background; color: $accent; }}
+#status {{ dock: bottom; height: 1; color: $primary; background: $background; padding: 0 1; }}
+HelpScreen {{ align: center middle; background: $background 70%; }}
+#help {{ width: 84; max-width: 100%; height: auto; max-height: 90%; border: {line} $primary; background: $background;
          padding: 1 2; }}
 """
 
@@ -198,21 +228,21 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
         return A(cli.bars(before, after, width).replace("  ORIGINAL", "ORIGINAL").replace("\n  ", "\n"))
 
     class HelpScreen(ModalScreen):
-        BINDINGS = [Binding("escape,f1,question_mark,q", "dismiss", "sluiten")]
+        BINDINGS = [Binding("escape,f1,question_mark,q", "dismiss", "close")]
 
         def compose(self) -> ComposeResult:
             with VerticalScroll(id="help"):
-                yield Static(A(f"ANYTHING CONVERTER {VERSION} · TERMINAL · HELP\n\nKEYS\n  tab / shift+tab   next / previous field\n  arrows + enter    choose in lists, folders and tabs\n  ctrl+s            start (on the current tab)\n  ctrl+o            type or paste a path\n  ctrl+t            change colour (green, amber, cyan, white)\n  f1 or ?           this help          ctrl+q   quit\n  1 to 9, 0         go to tab 1-10 (when not in a text field)\n\nTIPS\n  · drag a file into the terminal window to paste its path\n  · results go next to the original; nothing is ever overwritten\n  · CUE/BIN: choose the .cue, the .bin files in the same folder are included\n  · patch a ROM: choose the ROM and enter the .ips/.ups/.bps file at PATCH>\n  · copy text from the text box with ctrl+c (also works over SSH in most terminals)\n\nOTHER WAYS\n  anything-converter-tui --simple     numbered menus, works in any terminal\n  anything-converter-tui --ascii      ASCII characters only (old consoles)\n  anything-converter-tui --help       commands for scripts, e.g.\n      anything-converter-tui convert *.heic --to jpg\n\nesc = close"), markup=False)
+                yield Static(A(f"ANYTHING CONVERTER {VERSION} · TERMINAL · HELP\n\nKEYS\n  tab / shift+tab   next / previous field\n  arrows + enter    choose in lists, folders and tabs\n  ctrl+s            start (on the current tab)\n  ctrl+o            type or paste a path\n  ctrl+t            next colour theme (20 themes; --theme / --colours)\n  f1 or ?           this help          ctrl+q   quit\n  1 to 9, 0         go to tab 1-10 (when not in a text field)\n\nTIPS\n  · drag a file into the terminal window to paste its path\n  · results go next to the original; nothing is ever overwritten\n  · CUE/BIN: choose the .cue, the .bin files in the same folder are included\n  · patch a ROM: choose the ROM and enter the .ips/.ups/.bps file at PATCH>\n  · copy text from the text box with ctrl+c (also works over SSH in most terminals)\n\nOTHER WAYS\n  anything-converter-tui --simple     numbered menus, works in any terminal\n  anything-converter-tui --ascii      ASCII characters only (old consoles)\n  anything-converter-tui --help       commands for scripts, e.g.\n      anything-converter-tui convert *.heic --to jpg\n\nesc = close"), markup=False)
 
     class Converter(App):
         TITLE = "Anything Converter"
         CSS = css
         BINDINGS = [
             Binding("ctrl+s", "start", "start"),
-            Binding("ctrl+o", "focus_path", "pad"),
-            Binding("ctrl+t", "skin", "kleur"),
-            Binding("f1", "help", "hulp"),
-            Binding("question_mark", "help", "hulp", show=False),
+            Binding("ctrl+o", "focus_path", "path"),
+            Binding("ctrl+t", "skin", "colour"),
+            Binding("f1", "help", "help"),
+            Binding("question_mark", "help", "help", show=False),
             Binding("ctrl+q", "quit", "quit"),
         ] + [Binding(str(i), f"tab({i})", show=False) for i in range(1, 10)] + [Binding("0", "tab(10)", show=False)]
         TABS = ["tab-convert", "tab-tools", "tab-pdf", "tab-social", "tab-arch", "tab-fetch", "tab-check",
@@ -231,12 +261,12 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
             with Horizontal(id="top"):
                 yield Label("ANYTHING CONVERTER (TM)", classes="name")
                 yield Label(A(f"   VER {VERSION} · TERMINAL"), classes="dim")
-                yield Label(A("f1 hulp · ctrl+q stop"), classes="dim", id="keys")
+                yield Label(A("f1 help · ctrl+q quit"), classes="dim", id="keys")
             yield Static(LOGO_ASCII if ascii_mode else LOGO, id="logo")
             yield Label(A("> convert · shrink · enlarge · trim · pdf · ocr · speech · roms · social"),
                         id="tagline")
             with Horizontal(id="menubar"):
-                for i, txt in enumerate(("01 FILE", "02 FORMAT", "03 OPTIES", "04 OUTPUT"), 1):
+                for i, txt in enumerate(("01 FILE", "02 FORMAT", "03 OPTIONS", "04 OUTPUT"), 1):
                     yield Label(txt, id=f"step{i}", classes="on" if i == 1 else "")
             with TabbedContent(initial="tab-convert", id="tabs"):
                 with TabPane(E("1 CONVERT"), id="tab-convert"):
@@ -247,11 +277,11 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
                     yield from self.compose_pdf()
                 with TabPane(E("4 SOCIAL"), id="tab-social"):
                     yield from self.compose_social()
-                with TabPane(E("5 ARCHIEF"), id="tab-arch"):
+                with TabPane(E("5 ARCHIVE"), id="tab-arch"):
                     yield from self.compose_archive()
                 with TabPane(E("6 LINK"), id="tab-fetch"):
                     yield from self.compose_fetch()
-                with TabPane(E("7 CONTROLE"), id="tab-check"):
+                with TabPane(E("7 CHECK"), id="tab-check"):
                     yield from self.compose_check()
                 with TabPane(E("8 OCR/WEB"), id="tab-web"):
                     yield from self.compose_web()
@@ -259,7 +289,7 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
                     yield from self.compose_editor()
                 with TabPane(E("0 DATABASE"), id="tab-db"):
                     yield from self.compose_db()
-            yield Label("> gereed", id="status", markup=False)
+            yield Label("> ready", id="status", markup=False)
             yield Footer()
 
         def frame(self, title: str, **kw):
@@ -271,7 +301,7 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
             with VerticalScroll():
                 with self.frame("01 · FILE", id="f-file"):
                     with Horizontal(classes="row"):
-                        yield Label("PAD>", classes="prompt")
+                        yield Label("PATH>", classes="prompt")
                         yield Input(placeholder=A("type or paste a path (or drag a file here)"), id="path")
                     yield Files(str(self.src.parent if self.src else Path.cwd()), id="tree")
                     yield Label(A("// choose a file with the arrows and enter, or click it"), id="fileinfo",
@@ -292,14 +322,14 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
                             yield RadioButton("Normal", value=True, id="q-medium")
                             yield RadioButton("Low", id="q-low")
                         with Horizontal(classes="row"):
-                            yield Label("DOEL>", classes="prompt")
+                            yield Label("TARGET>", classes="prompt")
                             yield Input(placeholder="e.g. 8 MB or 500 KB", id="target")
                 with self.frame("TRIM · VIDEO", id="f-trim"):
                     with Horizontal(classes="row"):
                         yield Label("START>", classes="prompt")
                         yield Input(placeholder="0:00", id="t-start")
                         yield Label("END>", classes="prompt")
-                        yield Input(placeholder="einde", id="t-end")
+                        yield Input(placeholder="end", id="t-end")
                     with Horizontal(classes="row", id="video-row"):
                         yield Select([(f"{h}p", str(h)) for h in (2160, 1440, 1080, 720, 480, 360)],
                                      prompt="resolution: original", id="height", allow_blank=True)
@@ -336,25 +366,25 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
                     yield Checkbox("Remove all metadata (privacy)", id="nometa")
                 with self.frame("SPEECH TO TEXT", id="f-speech"):
                     with Horizontal(classes="row"):
-                        yield Select([(n, v) for v, n in (("auto", "language: automatic"), ("nl", "Nederlands"),
-                                                          ("en", "Engels"), ("de", "Duits"), ("fr", "Frans"),
-                                                          ("es", "Spaans"), ("it", "Italiaans"), ("pt", "Portugees"),
-                                                          ("ru", "Russisch"), ("tr", "Turks"), ("ar", "Arabisch"),
-                                                          ("hi", "Hindi"), ("zh", "Chinees"), ("ja", "Japans"))],
+                        yield Select([(n, v) for v, n in (("auto", "language: automatic"), ("nl", "Dutch"),
+                                                          ("en", "English"), ("de", "German"), ("fr", "French"),
+                                                          ("es", "Spanish"), ("it", "Italian"), ("pt", "Portuguese"),
+                                                          ("ru", "Russian"), ("tr", "Turkish"), ("ar", "Arabic"),
+                                                          ("hi", "Hindi"), ("zh", "Chinese"), ("ja", "Japanese"))],
                                      value="auto", id="lang", allow_blank=False)
-                        yield Select([("snel (base, 150 MB)", "base"), ("nauwkeurig (small, 480 MB)", "small"),
-                                      ("zeer nauwkeurig (medium, 1,5 GB)", "medium")], value="base", id="model",
+                        yield Select([("fast (base, 150 MB)", "base"), ("accurate (small, 480 MB)", "small"),
+                                      ("very accurate (medium, 1.5 GB)", "medium")], value="base", id="model",
                                      allow_blank=False)
                     yield Checkbox("Translate to English", id="translate")
                     yield Label(A("// runs locally on your computer. the model is downloaded the first time."),
                                 classes="hint")
-                with self.frame("AFMETINGEN", id="f-image"):
+                with self.frame("DIMENSIONS", id="f-image"):
                     with Horizontal(classes="row"):
-                        yield Label("SCHAAL %>", classes="prompt")
+                        yield Label("SCALE %>", classes="prompt")
                         yield Input(placeholder="100", id="scale")
-                        yield Label("BREEDTE>", classes="prompt")
+                        yield Label("WIDTH>", classes="prompt")
                         yield Input(placeholder="auto", id="img-w")
-                        yield Label("HOOGTE>", classes="prompt")
+                        yield Label("HEIGHT>", classes="prompt")
                         yield Input(placeholder="auto", id="img-h")
                 with self.frame("ROM-PATCH", id="f-patch"):
                     with Horizontal(classes="row"):
@@ -381,7 +411,7 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
                     yield Label(A("FILES> one per line, in order (pdfs and/or photos)"), classes="prompt")
                     yield TextArea("", id="pdf-files")
                     with Horizontal(classes="row"):
-                        yield Label("PAGINA'S>", classes="prompt")
+                        yield Label("PAGES>", classes="prompt")
                         yield Input(placeholder="e.g. 1-3,5  (empty = all)", id="pdf-pages")
                         yield Select([("90° rechtsom", "90"), ("180°", "180"), ("90° linksom", "270")], value="90",
                                      id="pdf-angle", allow_blank=False)
@@ -414,7 +444,7 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
             with VerticalScroll():
                 with self.frame("VIEW / EXTRACT ARCHIVE"):
                     with Horizontal(classes="row"):
-                        yield Label("ARCHIEF>", classes="prompt")
+                        yield Label("ARCHIVE>", classes="prompt")
                         yield Input(placeholder=".zip, .7z, .tar.gz, ...", id="ar-path")
                     with Horizontal(classes="row"):
                         yield Button(E("[ BEKIJKEN ]"), id="ar-list")
@@ -452,13 +482,13 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
             with VerticalScroll():
                 with self.frame("VIRUSSCAN & CHECKSUM"):
                     with Horizontal(classes="row"):
-                        yield Label("PAD>", classes="prompt")
+                        yield Label("PATH>", classes="prompt")
                         yield Input(placeholder="file or folder", id="scan-path")
                     with Horizontal(classes="row"):
                         yield Label("HMAC>", classes="prompt")
                         yield Input(placeholder="key (optional, checksum only)", id="hmac")
                     with Horizontal(classes="row"):
-                        yield Button(E("[ VIRUSSCAN ]"), id="scan-go")
+                        yield Button(E("[ VIRUS SCAN ]"), id="scan-go")
                         yield Button(E("[ CHECKSUM ]"), id="hash-go")
                     yield Static("", id="scan-result", markup=False)
                 with self.frame("VIRUSTOTAL (OPTIONEEL)"):
@@ -477,12 +507,12 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
                     with Horizontal(classes="row"):
                         yield Button(E("[ RECOGNISE ]"), id="ocr-go")
                         yield Button(E("[ SCREENSHOT ]"), id="ocr-screen")
-                        yield Button(E("[ KOPIEER ]"), id="ocr-copy")
+                        yield Button(E("[ COPY ]"), id="ocr-copy")
                     yield TextArea("", id="ocr-out", read_only=True)
                 with self.frame("SAVE WEBSITE"):
                     with Horizontal(classes="row"):
                         yield Label("URL>", classes="prompt")
-                        yield Input(placeholder="https://voorbeeld.nl", id="web-url")
+                        yield Input(placeholder="https://example.com", id="web-url")
                         yield Select([(".pdf", "pdf"), (".png", "png"), (".jpg", "jpg")], value="pdf", id="web-fmt",
                                      allow_blank=False)
                         yield Button(E("[ SAVE ]"), id="web-go")
@@ -490,12 +520,12 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
 
         def compose_editor(self) -> ComposeResult:
             with Vertical():
-                with self.frame("TEKSTEDITOR"):
+                with self.frame("TEXT EDITOR"):
                     with Horizontal(classes="row"):
                         yield Label("FILE>", classes="prompt")
                         yield Input(placeholder="path to a text file (or a new name)", id="ed-path")
                         yield Button(E("[ OPENEN ]"), id="ed-open")
-                        yield Button(E("[ CONTROLEER ]"), id="ed-check")
+                        yield Button(E("[ VALIDATE ]"), id="ed-check")
                         yield Button(E("[ SAVE ]"), id="ed-save")
                     yield Label(A("// ctrl+s = save. the first save keeps a copy (.bak) of the original."), id="ed-msg", classes="hint", markup=False)
                 yield TextArea("", id="ed-text", show_line_numbers=True, tab_behavior="indent")
@@ -518,7 +548,7 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
                 with self.frame("SQL"):
                     yield TextArea("", id="db-sql")
                     with Horizontal(classes="row"):
-                        yield Button(E("[ > UITVOEREN ]") if ascii_mode else E("[ ▶ UITVOEREN ]"), id="db-run")
+                        yield Button(E("[ > UITVOEREN ]") if ascii_mode else E("[ ▶ RUN ]"), id="db-run")
                         yield Select([("database (.sqlite)", "sqlite"), ("sql-dump", "sql"), ("excel", "xlsx"),
                                       ("json", "json"), ("csv", "csv"), ("result as csv", "q-csv"),
                                       ("result as excel", "q-xlsx")], value="sqlite", id="db-fmt", allow_blank=False)
@@ -529,10 +559,15 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
             for th in themes:
                 self.register_theme(th)
             try:
-                skin = user_settings.load().get("tui_skin", "ac-groen")
+                skin = user_settings.load().get("tui_skin", "ac-green-phosphor")
             except Exception:  # noqa: BLE001
-                skin = "ac-groen"
-            self.theme = skin if skin in [x.name for x in themes] else "ac-groen"
+                skin = "ac-green-phosphor"
+            wanted = os.environ.get("ANYTHING_THEME", "")
+            if wanted:
+                skin = "ac-" + wanted.lower().replace(" ", "-").removeprefix("ac-")
+            if any(x.name == "ac-custom" for x in themes) and not wanted:
+                skin = "ac-custom"
+            self.theme = skin if skin in [x.name for x in themes] else "ac-green-phosphor"
             for wid in ("#progress", "#f-progress", "#so-progress", "#text-out"):
                 self.query_one(wid).display = False
             self.show_options(None, None)
@@ -553,7 +588,7 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
             if ascii_mode:
                 logo.update(LOGO_ASCII if width >= 84 and self.size.height >= 40 else "ANYTHING CONVERTER")
             else:
-                logo.update(LOGO if width >= 82 and tall else LOGO_SMALL if width >= 74 else "ANYTHING CONVERTER")
+                logo.update(LOGO if width >= 82 and tall else LOGO_SMALL if width >= len(LOGO_SMALL.splitlines()[0]) + 2 else "ANYTHING CONVERTER")
             h = self.size.height
             logo.display = h >= 30
             self.query_one("#tagline").display = h >= 34
@@ -883,7 +918,7 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
                 elif action == "split":
                     dst = pdftools.split(src, src.parent, pages)
                 elif action in ("rotate", "delete"):
-                    dst = cli.unique(src.with_name(f"{src.stem}_bewerkt.pdf"))
+                    dst = cli.unique(src.with_name(f"{src.stem}_edited.pdf"))
                     pdftools.edit_pages(src, dst, delete=pages if action == "delete" else "",
                                         rotate=(pages or "1-") if action == "rotate" else "", angle=angle)
                 else:
@@ -1171,7 +1206,7 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
                 msg.update(f"!! saving failed: {exc}")
                 return
             err = validate(text, p.suffix.lower().lstrip("."))
-            msg.update(A(f"// opgeslagen ✓ {p}" + (f" — note: {err}" if err else "")))
+            msg.update(A(f"// saved ✓ {p}" + (f" — note: {err}" if err else "")))
 
         def on_key(self, event) -> None:
             if event.key == "ctrl+s" and self.query_one("#tabs", TabbedContent).active == "tab-edit":
@@ -1233,8 +1268,8 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
             self.db_source = Path.cwd() / "nieuwe-database.sqlite"
             self.db_load(dbtool.prepare(None, work))
             self.query_one("#db-sql", TextArea).text = (
-                "CREATE TABLE klanten (id INTEGER PRIMARY KEY, naam TEXT NOT NULL, plaats TEXT);\n"
-                "INSERT INTO klanten (naam, plaats) VALUES ('Anna', 'Utrecht'), ('Bo', 'Gent');\nSELECT * FROM klanten;")
+                "CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT);\n"
+                "INSERT INTO customers (name, city) VALUES ('Anna', 'Utrecht'), ('Bo', 'Ghent');\nSELECT * FROM customers;")
             self.query_one("#db-msg", Label).update(A("// new empty database. press run to execute the example."))
 
         @on(Button.Pressed, "#db-run")
@@ -1270,7 +1305,7 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
                 tmp = Path(tempfile.mkdtemp(prefix="ac-dbx-"))
                 made = dbtool.export(self.db_file, fmt.replace("q-", ""), tmp, self.db_source.name, sql)
                 dst = cli.move_out(made, self.db_source.parent)
-                msg.update(A(f"// opgeslagen ✓ {dst}"))
+                msg.update(A(f"// saved ✓ {dst}"))
             except (ConversionError, OSError) as exc:
                 msg.update(A(f"!! {exc}"))
 
@@ -1307,6 +1342,10 @@ def main(argv: list[str] | None = None) -> int:
             os.environ["PATH"] = str(bindir) + os.pathsep + os.environ.get("PATH", "")
             break
     cli.ASCII = args.ascii or cli.wants_ascii()
+    if getattr(args, "theme", None):
+        os.environ["ANYTHING_THEME"] = args.theme
+    if getattr(args, "colours", None):
+        os.environ["ANYTHING_COLOURS"] = args.colours
     if args.cmd:
         return cli.run_command(args)
     ok, why = terminal_capable()

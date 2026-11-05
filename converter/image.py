@@ -243,7 +243,7 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
 
     target = opts.get("target_bytes")
     quality = QUALITY.get(opts.get("quality") or "high", 92)
-    stem = src.stem + ("_bewerkt" if fmt == src.suffix.lstrip(".").lower() else "")
+    stem = src.stem + ("_edited" if fmt == src.suffix.lstrip(".").lower() else "")
     if fmt in SPECIAL:
         if target:
             raise ConversionError(f"Target size is not supported for .{fmt}.")

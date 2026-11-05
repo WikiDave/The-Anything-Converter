@@ -77,7 +77,7 @@ def _rom_sample(ext: str, d: Path) -> Path | None:
         rom = bytearray(body * 4)
         rom[0x7FC0:0x7FC0 + 21] = title.ljust(21)
         p.write_bytes((bytes(512) if ext == "smc" else b"") + bytes(rom))
-    elif ext in ("gb", "gbc", "gba", "md", "gen", "smd", "sms", "gg", "pce", "a26", "lnx", "ws", "wsc", "ngp"):
+    elif ext in ("gb", "gbc", "gba", "gen", "smd", "sms", "gg", "pce", "a26", "lnx", "ws", "wsc", "ngp"):
         rom = bytearray(body * 2)
         rom[0x134:0x134 + len(title)] = title
         p.write_bytes(bytes(rom))
@@ -94,7 +94,7 @@ def _rom_sample(ext: str, d: Path) -> Path | None:
 
 
 def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange lijst is hier het duidelijkst
-    if ext in ("cue", "bin", "iso", "nes", "z64", "n64", "v64", "sfc", "smc", "gb", "gbc", "gba", "md", "gen", "smd",
+    if ext in ("cue", "bin", "iso", "nes", "z64", "n64", "v64", "sfc", "smc", "gb", "gbc", "gba", "gen", "smd",
                "sms", "gg", "pce", "nds", "ips"):
         r = _rom_sample(ext, d)
         if r:

@@ -14,14 +14,14 @@
   <div class="topline">
     <span>ANYTHING CONVERTER (TM)</span>
     <span class="dim" id="verLabel">VER 2.1</span>
-    <span class="dim hide-sm" id="modeLabel">LOKALE MODUS</span>
-    <a class="btn small" href="/web/" title="PDF samenvoegen/splitsen en archieven (zip, rar, 7z) bekijken en aanpassen">[ PDF &amp; ARCHIEF ]</a>
-    <button id="termBtn" class="btn small hidden" type="button" title="Terminalversie openen (zelfde converter, in een terminalvenster)">[ TERMINAL ]</button>
-    <button id="quitBtn" class="btn small hidden" type="button" title="Converter afsluiten">[ AFSLUITEN ]</button>
-    <span class="themes" role="group" aria-label="Kleurthema">
-      <button type="button" data-theme="groen">[GROEN]</button>
+    <span class="dim hide-sm" id="modeLabel">LOCAL MODE</span>
+    <a class="btn small" href="/web/" title="Merge/split PDFs and view and edit archives (zip, rar, 7z)">[ PDF &amp; ARCHIVE ]</a>
+    <button id="termBtn" class="btn small hidden" type="button" title="Open the terminal version (same converter, in a terminal window)">[ TERMINAL ]</button>
+    <button id="quitBtn" class="btn small hidden" type="button" title="Quit the converter">[ QUIT ]</button>
+    <span class="themes" role="group" aria-label="Colour theme">
+      <button type="button" data-theme="groen">[GREEN]</button>
       <button type="button" data-theme="amber">[AMBER]</button>
-      <button type="button" data-theme="cyaan">[CYAAN]</button>
+      <button type="button" data-theme="cyaan">[CYAN]</button>
     </span>
   </div>
 
@@ -39,19 +39,19 @@
 ██║     ██║   ██║██║╚██╗██║╚██╗ ██╔╝██╔══╝  ██╔══██╗   ██║   ██╔══╝  ██╔══██╗
 ╚██████╗╚██████╔╝██║ ╚████║ ╚████╔╝ ███████╗██║  ██║   ██║   ███████╗██║  ██║
  ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝</pre>
-    <p class="tagline">&gt; converteer · verklein · vergroot · knip — alles blijft op je eigen machine<span class="cursor">_</span></p>
+    <p class="tagline">&gt; convert · shrink · enlarge · trim — everything stays on your own machine<span class="cursor">_</span></p>
   </header>
 
   <!-- Menubalk met stappen -->
-  <nav class="menubar" aria-label="Stappen">
-    <span data-step="1" class="on">01 BESTAND</span>
-    <span data-step="2">02 FORMAAT</span>
-    <span data-step="3">03 GROOTTE</span>
-    <span data-step="4">04 UITVOER</span>
+  <nav class="menubar" aria-label="Steps">
+    <span data-step="1" class="on">01 FILE</span>
+    <span data-step="2">02 FORMAT</span>
+    <span data-step="3">03 SIZE</span>
+    <span data-step="4">04 OUTPUT</span>
   </nav>
 
   <!-- Stap 1: bestand kiezen -->
-  <section id="drop" class="drop" tabindex="0" role="button" aria-label="Kies een bestand">
+  <section id="drop" class="drop" tabindex="0" role="button" aria-label="Choose a file">
     <input id="fileInput" type="file" multiple hidden>
 <pre class="drop-art" aria-hidden="true">
  ┌──────────┐
@@ -62,11 +62,44 @@
  │   ▲▲▲▲▲   │
  │     █     │
  └───────────┘</pre>
-    <p class="big">&gt; SLEEP EEN BESTAND HIERHEEN<span class="cursor">_</span></p>
-    <p class="dim">of druk op [ENTER] / klik om te bladeren</p>
-    <p class="dim small">video · audio · afbeelding · pdf · word · excel · powerpoint · tekst · archief</p>
+    <p class="big">&gt; DROP A FILE HERE<span class="cursor">_</span></p>
+    <p class="dim">or press [ENTER] / click to browse</p>
+    <p class="dim small">video · audio · image · pdf · word · excel · powerpoint · text · archive</p>
     <pre id="uploadBar" class="txtbar hidden"></pre>
   </section>
+
+  <!-- Drives: health and safe formatting (desktop app only) -->
+  <fieldset id="drivesBox" class="frame hidden">
+    <legend>DRIVES · HEALTH &amp; FORMAT</legend>
+    <div class="row">
+      <button id="drvRefresh" class="btn" type="button">[ ↻ REFRESH ]</button>
+      <label class="check"><input id="drvInternal" type="checkbox"><span>also internal disks</span></label>
+      <button id="drvClose" class="btn" type="button">[ CLOSE ]</button>
+    </div>
+    <div id="drvList" class="drv-list"></div>
+    <pre id="drvHealth" class="drv-health hidden"></pre>
+    <div id="drvForm" class="hidden">
+      <p class="drv-target" id="drvTarget"></p>
+      <div class="grid">
+        <label class="field"><span>FILE SYSTEM&gt;</span><span class="sel"><select id="drvFs"></select></span></label>
+        <label class="field"><span>NAME&gt;</span><input id="drvLabel" type="text" maxlength="32" value="USB"></label>
+        <label class="field"><span>METHOD&gt;</span><span class="sel"><select id="drvFull">
+          <option value="">quick (new, empty file system)</option>
+          <option value="1">full + overwrite with zeros (slow; old data cannot be recovered)</option>
+        </select></span></label>
+      </div>
+      <pre id="drvPlan" class="small dim"></pre>
+      <p class="err small">!! everything on this drive will be deleted. type the device name to confirm.</p>
+      <div class="row">
+        <span class="prompt">TYPE <b id="drvConfirmName"></b>&gt;</span>
+        <input id="drvConfirm" type="text" autocomplete="off" spellcheck="false">
+        <button id="drvGo" class="btn" type="button" disabled>[ FORMAT ]</button>
+      </div>
+      <pre id="drvBar" class="txtbar hidden"></pre>
+      <p id="drvMsg" class="small"></p>
+    </div>
+    <p class="dim small">// the disk with your operating system is never shown as formattable. windows asks for administrator permission; linux asks for your password.</p>
+  </fieldset>
 
   <!-- Test files: try what the converter does with each kind of file -->
   <fieldset class="frame" id="sampleBox">
@@ -82,16 +115,16 @@
   <!-- Of: video ophalen via een link -->
   <form id="urlForm" class="url-form" autocomplete="off">
     <fieldset class="frame">
-      <legend>OF PLAK EEN LINK · TORRENT</legend>
+      <legend>OR PASTE A LINK · TORRENT</legend>
       <div class="row">
         <span class="prompt">LINK&gt;</span>
-        <input id="urlInput" type="text" inputmode="url" placeholder="https://www.youtube.com/watch?v=… of magnet:?…" aria-label="Link naar een video of magnet-link">
-        <button id="urlBtn" class="btn" type="submit">[ OPHALEN ]</button>
+        <input id="urlInput" type="text" inputmode="url" placeholder="https://www.youtube.com/watch?v=… or magnet:?…" aria-label="Link to a video or magnet link">
+        <button id="urlBtn" class="btn" type="submit">[ DOWNLOAD ]</button>
       </div>
       <div class="row url-extra">
-        <label class="check"><input id="urlAudio" type="checkbox"><span>Alleen geluid</span></label>
-        <label class="check"><input id="urlScan" type="checkbox" checked><span>Controleren op virussen</span></label>
-        <button id="torrentBtn" class="btn" type="button">[ .TORRENT KIEZEN ]</button>
+        <label class="check"><input id="urlAudio" type="checkbox"><span>Audio only</span></label>
+        <label class="check"><input id="urlScan" type="checkbox" checked><span>Check for viruses</span></label>
+        <button id="torrentBtn" class="btn" type="button">[ CHOOSE .TORRENT ]</button>
         <input id="torrentInput" type="file" accept=".torrent,application/x-bittorrent" hidden>
         <button id="urlStop" class="btn hidden" type="button">[ STOP ]</button>
       </div>
@@ -99,77 +132,77 @@
       <p id="urlMsg" class="dim small hidden"></p>
       <div id="torrentFiles" class="tor-files hidden"></div>
       <details class="vt-box">
-        <summary>VIRUSSCANNER &amp; VIRUSTOTAL</summary>
-        <p class="dim small" id="scannerInfo">// scanner zoeken…</p>
+        <summary>VIRUS SCANNER &amp; VIRUSTOTAL</summary>
+        <p class="dim small" id="scannerInfo">// looking for a scanner…</p>
         <div class="row">
-          <span class="prompt">VT-SLEUTEL&gt;</span>
-          <input id="vtKey" type="password" autocomplete="off" placeholder="optioneel: gratis sleutel van virustotal.com" aria-label="VirusTotal API-sleutel">
-          <button id="vtSave" class="btn" type="button">[ OPSLAAN ]</button>
+          <span class="prompt">VT KEY&gt;</span>
+          <input id="vtKey" type="password" autocomplete="off" placeholder="optional: free key from virustotal.com" aria-label="VirusTotal API key">
+          <button id="vtSave" class="btn" type="button">[ SAVE ]</button>
         </div>
-        <p class="dim small">// met een sleutel wordt de vingerafdruk (sha-256) automatisch bij virustotal opgezocht: 70+ scanners. het bestand zelf wordt nooit geüpload. sleutel maken: virustotal.com → account → api key.</p>
+        <p class="dim small">// with a key the fingerprint (sha-256) is looked up at virustotal automatically: 70+ scanners. the file itself is never uploaded. get a key: virustotal.com → account → api key.</p>
       </details>
-      <p class="dim small">// video: youtube, vimeo en honderden andere sites. torrent: magnet-link of .torrent-bestand.<br>// alleen voor eigen bestanden, vrije licenties (bijv. creative commons, linux-iso's) of met toestemming van de maker.</p>
+      <p class="dim small">// video: youtube, vimeo and hundreds of other sites. torrent: magnet link or .torrent file.<br>// only for your own files, free licences (e.g. creative commons, linux isos) or with the creator's permission.</p>
     </fieldset>
   </form>
 
   <!-- Gereedschap: snelle keuzes zoals "PDF naar Word" -->
   <fieldset class="frame tools" id="tools">
-    <legend>GEREEDSCHAP</legend>
+    <legend>TOOLS</legend>
     <div class="tool-grid" id="toolGrid"></div>
     <div id="webForm" class="web-form hidden">
-      <label class="field"><span>WEBSITE&gt;</span><input id="webUrl" type="url" placeholder="https://voorbeeld.nl" spellcheck="false"></label>
+      <label class="field"><span>WEBSITE&gt;</span><input id="webUrl" type="url" placeholder="https://example.com" spellcheck="false"></label>
       <span class="sel"><select id="webFmt"><option value="pdf">.pdf</option><option value="png">.png</option><option value="jpg">.jpg</option></select></span>
-      <button id="webGo" class="btn" type="button">[ OPSLAAN ]</button>
+      <button id="webGo" class="btn" type="button">[ SAVE ]</button>
     </div>
     <div id="textOut" class="text-out hidden">
-      <p class="dim small" id="textOutTitle">// herkende tekst</p>
+      <p class="dim small" id="textOutTitle">// recognised text</p>
       <textarea id="textOutBox" rows="10" spellcheck="false"></textarea>
-      <button id="textCopy" class="btn small" type="button">[ KOPIEER ]</button>
-      <button id="textSave" class="btn small" type="button">[ ↓ OPSLAAN .TXT ]</button>
-      <button id="textClose" class="btn small" type="button">[ SLUIT ]</button>
+      <button id="textCopy" class="btn small" type="button">[ COPY ]</button>
+      <button id="textSave" class="btn small" type="button">[ ↓ SAVE .TXT ]</button>
+      <button id="textClose" class="btn small" type="button">[ CLOSE ]</button>
     </div>
-    <p class="dim small">// tip: plak een schermafbeelding met ctrl+v / cmd+v om er direct tekst uit te halen.</p>
+    <p class="dim small">// tip: paste a screenshot with ctrl+v / cmd+v to get the text out straight away.</p>
   </fieldset>
 
   <!-- Stap 2: opties -->
   <section id="panel" class="hidden">
     <fieldset class="frame">
-      <legend>BESTAND</legend>
+      <legend>FILE</legend>
       <div class="file-card">
         <dl class="kv">
-          <dt>NAAM</dt><dd id="fName"></dd>
+          <dt>NAME</dt><dd id="fName"></dd>
           <dt>INFO</dt><dd id="fMeta"></dd>
         </dl>
         <p id="scanMsg" class="scan-msg hidden"></p>
         <div id="hashBox" class="hash-box hidden">
-          <label class="field"><span>HMAC-SLEUTEL&gt;</span><input id="hashKey" type="text" placeholder="optioneel" spellcheck="false"></label>
+          <label class="field"><span>HMAC KEY&gt;</span><input id="hashKey" type="text" placeholder="optional" spellcheck="false"></label>
           <pre id="hashOut"></pre>
         </div>
         <span class="file-actions">
-          <a id="saveSrc" class="btn hidden" href="#" download>[ ↓ OPSLAAN ]</a>
-          <button id="scanBtn" class="btn" type="button">[ VIRUSSCAN ]</button>
-          <button id="hashBtn" class="btn" type="button" title="MD5, SHA-1, SHA-256, CRC-32 en meer">[ CHECKSUM ]</button>
-          <button id="editBtn" class="btn hidden" type="button" title="Tekst bewerken">[ BEWERKEN ]</button>
-          <button id="dbBtn" class="btn hidden" type="button" title="Tabellen bekijken en SQL uitvoeren">[ DATABASE ]</button>
-          <button id="resetBtn" class="btn" type="button">[ ANDER BESTAND ]</button>
+          <a id="saveSrc" class="btn hidden" href="#" download>[ ↓ SAVE ]</a>
+          <button id="scanBtn" class="btn" type="button">[ VIRUS SCAN ]</button>
+          <button id="hashBtn" class="btn" type="button" title="MD5, SHA-1, SHA-256, CRC-32 and more">[ CHECKSUM ]</button>
+          <button id="editBtn" class="btn hidden" type="button" title="Edit text">[ EDIT ]</button>
+          <button id="dbBtn" class="btn hidden" type="button" title="View tables and run SQL">[ DATABASE ]</button>
+          <button id="resetBtn" class="btn" type="button">[ OTHER FILE ]</button>
         </span>
       </div>
     </fieldset>
 
     <!-- Teksteditor -->
     <fieldset id="editBox" class="frame hidden">
-      <legend>TEKSTEDITOR</legend>
+      <legend>TEXT EDITOR</legend>
       <div class="ed-bar">
         <span id="edInfo" class="dim small"></span>
         <span>
-          <button id="edCheck" class="btn small" type="button">[ CONTROLEER ]</button>
-          <button id="edSave" class="btn small" type="button" title="ctrl+s">[ OPSLAAN ]</button>
+          <button id="edCheck" class="btn small" type="button">[ VALIDATE ]</button>
+          <button id="edSave" class="btn small" type="button" title="ctrl+s">[ SAVE ]</button>
           <a id="edDownload" class="btn small" href="#" download>[ ↓ DOWNLOAD ]</a>
-          <button id="edClose" class="btn small" type="button">[ SLUIT ]</button>
+          <button id="edClose" class="btn small" type="button">[ CLOSE ]</button>
         </span>
       </div>
       <div class="ed-wrap"><pre id="edLines" class="ed-lines" aria-hidden="true"></pre><textarea id="edText" spellcheck="false" wrap="off"></textarea></div>
-      <p id="edMsg" class="dim small">// opslaan bewaart de werkkopie (daarna kun je hem ook omzetten). je origineel verandert niet.</p>
+      <p id="edMsg" class="dim small">// save keeps the working copy (you can convert it afterwards). your original does not change.</p>
     </fieldset>
 
     <!-- Databasetester -->
@@ -177,9 +210,9 @@
       <legend>DATABASE</legend>
       <div class="db-grid">
         <div class="db-side">
-          <p class="dim small">// tabellen</p>
+          <p class="dim small">// tables</p>
           <ul id="dbTables" class="db-tables"></ul>
-          <button id="dbClose" class="btn small" type="button">[ SLUIT ]</button>
+          <button id="dbClose" class="btn small" type="button">[ CLOSE ]</button>
         </div>
         <div class="db-main">
           <div class="db-view">
@@ -187,61 +220,61 @@
             <div id="dbRows" class="db-rows"></div>
             <p class="db-pager"><button id="dbPrev" class="btn small" type="button">[ ◀ ]</button> <span id="dbPage" class="dim small"></span> <button id="dbNext" class="btn small" type="button">[ ▶ ]</button></p>
           </div>
-          <label class="dim small" for="dbSql">// sql (ctrl+enter = uitvoeren). meerdere opdrachten mogen, gescheiden door ;</label>
-          <textarea id="dbSql" rows="5" spellcheck="false" placeholder="SELECT * FROM tabel LIMIT 10;"></textarea>
+          <label class="dim small" for="dbSql">// sql (ctrl+enter = run). several statements are allowed, separated by ;</label>
+          <textarea id="dbSql" rows="5" spellcheck="false" placeholder="SELECT * FROM my_table LIMIT 10;"></textarea>
           <p class="db-actions">
-            <button id="dbRun" class="btn small" type="button">[ ▶ UITVOEREN ]</button>
-            <span class="sel"><select id="dbExamples"><option value="">voorbeelden…</option>
-              <option value="CREATE TABLE klanten (id INTEGER PRIMARY KEY, naam TEXT NOT NULL, plaats TEXT, sinds DATE);">tabel maken</option>
-              <option value="INSERT INTO klanten (naam, plaats, sinds) VALUES ('Anna', 'Utrecht', '2024-03-01'), ('Bo', 'Gent', '2025-11-12');">rijen toevoegen</option>
-              <option value="SELECT plaats, COUNT(*) AS aantal FROM klanten GROUP BY plaats ORDER BY aantal DESC;">groeperen en tellen</option>
-              <option value="UPDATE klanten SET plaats = 'Amsterdam' WHERE naam = 'Anna';">rij wijzigen</option>
-              <option value="DELETE FROM klanten WHERE id = 2;">rij verwijderen</option>
-              <option value="ALTER TABLE klanten ADD COLUMN email TEXT;">kolom toevoegen</option>
-              <option value="SELECT name, sql FROM sqlite_master WHERE type = 'table';">structuur bekijken</option>
+            <button id="dbRun" class="btn small" type="button">[ ▶ RUN ]</button>
+            <span class="sel"><select id="dbExamples"><option value="">examples…</option>
+              <option value="CREATE TABLE klanten (id INTEGER PRIMARY KEY, naam TEXT NOT NULL, plaats TEXT, sinds DATE);">create a table</option>
+              <option value="INSERT INTO klanten (naam, plaats, sinds) VALUES ('Anna', 'Utrecht', '2024-03-01'), ('Bo', 'Gent', '2025-11-12');">add rows</option>
+              <option value="SELECT plaats, COUNT(*) AS aantal FROM klanten GROUP BY plaats ORDER BY aantal DESC;">group and count</option>
+              <option value="UPDATE klanten SET plaats = 'Amsterdam' WHERE naam = 'Anna';">change a row</option>
+              <option value="DELETE FROM klanten WHERE id = 2;">delete a row</option>
+              <option value="ALTER TABLE klanten ADD COLUMN email TEXT;">add a column</option>
+              <option value="SELECT name, sql FROM sqlite_master WHERE type = 'table';">view the structure</option>
             </select></span>
             <span class="sel"><select id="dbExportFmt">
               <option value="sqlite">database (.sqlite)</option><option value="sql">sql-dump</option>
-              <option value="xlsx">excel (alle tabellen)</option><option value="json">json</option>
+              <option value="xlsx">excel (all tables)</option><option value="json">json</option>
               <option value="csv">csv</option><option value="html">html</option>
-              <option value="q-csv">resultaat als csv</option><option value="q-xlsx">resultaat als excel</option>
+              <option value="q-csv">result as csv</option><option value="q-xlsx">result as excel</option>
             </select></span>
             <button id="dbExport" class="btn small" type="button">[ ↓ EXPORT ]</button>
           </p>
-          <p id="dbMsg" class="dim small">// je werkt op een kopie: het originele bestand verandert niet.</p>
+          <p id="dbMsg" class="dim small">// you are working on a copy: the original file does not change.</p>
           <div id="dbResult" class="db-rows"></div>
         </div>
       </div>
     </fieldset>
 
     <fieldset class="frame">
-      <legend>02 · FORMAAT</legend>
+      <legend>02 · FORMAT</legend>
       <label class="field">
-        <span>UITVOER&gt;</span>
+        <span>OUTPUT&gt;</span>
         <span class="sel"><select id="format"></select></span>
       </label>
     </fieldset>
 
     <fieldset class="frame" id="sizeField">
-      <legend>03 · GROOTTE</legend>
-      <div class="radios" role="radiogroup" aria-label="Modus">
-        <label><input type="radio" name="sizeMode" value="quality" checked><span>Kwaliteit</span></label>
-        <label><input type="radio" name="sizeMode" value="target"><span>Doelgrootte (KB/MB/GB)</span></label>
+      <legend>03 · SIZE</legend>
+      <div class="radios" role="radiogroup" aria-label="Mode">
+        <label><input type="radio" name="sizeMode" value="quality" checked><span>Quality</span></label>
+        <label><input type="radio" name="sizeMode" value="target"><span>Target size (KB/MB/GB)</span></label>
       </div>
 
       <div id="qualityBox" class="sub">
-        <div class="radios" role="radiogroup" aria-label="Kwaliteit">
-          <label><input type="radio" name="quality" value="high"><span>Hoog <em>groot bestand</em></span></label>
-          <label><input type="radio" name="quality" value="medium" checked><span>Normaal</span></label>
-          <label><input type="radio" name="quality" value="low"><span>Laag <em>kleinst</em></span></label>
+        <div class="radios" role="radiogroup" aria-label="Quality">
+          <label><input type="radio" name="quality" value="high"><span>High <em>large file</em></span></label>
+          <label><input type="radio" name="quality" value="medium" checked><span>Normal</span></label>
+          <label><input type="radio" name="quality" value="low"><span>Low <em>smallest</em></span></label>
         </div>
       </div>
 
       <div id="targetBox" class="sub hidden">
         <div class="row">
-          <span class="prompt">DOEL&gt;</span>
-          <input id="targetSize" type="number" min="0" step="any" placeholder="8" inputmode="decimal" aria-label="Doelgrootte">
-          <span class="sel unit"><select id="targetUnit" aria-label="Eenheid">
+          <span class="prompt">TARGET&gt;</span>
+          <input id="targetSize" type="number" min="0" step="any" placeholder="8" inputmode="decimal" aria-label="Target size">
+          <span class="sel unit"><select id="targetUnit" aria-label="Unit">
             <option value="kb">KB</option>
             <option value="mb" selected>MB</option>
             <option value="gb">GB</option>
@@ -251,7 +284,7 @@
           <button type="button" data-f="0.1">10%</button>
           <button type="button" data-f="0.25">25%</button>
           <button type="button" data-f="0.5">50%</button>
-          <button type="button" data-f="2">2× GROTER</button>
+          <button type="button" data-f="2">2× LARGER</button>
           <button type="button" data-abs="8">8 MB</button>
           <button type="button" data-abs="25">25 MB</button>
         </div>
@@ -264,9 +297,9 @@
       <legend>VIDEO</legend>
       <div class="grid">
         <label class="field">
-          <span>RESOLUTIE&gt;</span>
+          <span>RESOLUTION&gt;</span>
           <span class="sel"><select id="height">
-            <option value="">origineel / automatisch</option>
+            <option value="">original / automatic</option>
             <option value="2160">2160p (4K)</option>
             <option value="1440">1440p</option>
             <option value="1080">1080p</option>
@@ -276,9 +309,9 @@
           </select></span>
         </label>
         <label class="field">
-          <span>APPARAAT&gt;</span>
+          <span>DEVICE&gt;</span>
           <span class="sel"><select id="device">
-            <option value="">geen voorkeur</option>
+            <option value="">no preference</option>
             <option value="iphone">iPhone</option>
             <option value="ipad">iPad</option>
             <option value="android">Android</option>
@@ -293,7 +326,7 @@
             <option value="blackberry">BlackBerry</option>
           </select></span>
         </label>
-        <label class="check"><input id="removeAudio" type="checkbox"><span>Geluid verwijderen</span></label>
+        <label class="check"><input id="removeAudio" type="checkbox"><span>Remove sound</span></label>
       </div>
     </fieldset>
 
@@ -390,82 +423,82 @@
 
     <!-- Spraak naar tekst -->
     <fieldset id="speechBox" class="frame hidden">
-      <legend>SPRAAK NAAR TEKST</legend>
+      <legend>SPEECH TO TEXT</legend>
       <div class="grid">
         <label class="field">
-          <span>TAAL&gt;</span>
+          <span>LANGUAGE&gt;</span>
           <span class="sel"><select id="speechLang">
-            <option value="auto">automatisch herkennen</option>
-            <option value="nl">Nederlands</option>
-            <option value="en">Engels</option>
-            <option value="de">Duits</option>
-            <option value="fr">Frans</option>
-            <option value="es">Spaans</option>
-            <option value="it">Italiaans</option>
-            <option value="pt">Portugees</option>
-            <option value="ru">Russisch</option>
-            <option value="tr">Turks</option>
-            <option value="ar">Arabisch</option>
+            <option value="auto">detect automatically</option>
+            <option value="nl">Dutch</option>
+            <option value="en">English</option>
+            <option value="de">German</option>
+            <option value="fr">French</option>
+            <option value="es">Spanish</option>
+            <option value="it">Italian</option>
+            <option value="pt">Portuguese</option>
+            <option value="ru">Russian</option>
+            <option value="tr">Turkish</option>
+            <option value="ar">Arabic</option>
             <option value="hi">Hindi</option>
-            <option value="zh">Chinees</option>
-            <option value="ja">Japans</option>
+            <option value="zh">Chinese</option>
+            <option value="ja">Japanese</option>
           </select></span>
         </label>
         <label class="field">
           <span>MODEL&gt;</span>
           <span class="sel"><select id="speechModel">
-            <option value="base">snel (base, 150 MB)</option>
-            <option value="small">nauwkeurig (small, 480 MB)</option>
-            <option value="medium">zeer nauwkeurig (medium, 1,5 GB)</option>
+            <option value="base">fast (base, 150 MB)</option>
+            <option value="small">accurate (small, 480 MB)</option>
+            <option value="medium">very accurate (medium, 1.5 GB)</option>
           </select></span>
         </label>
-        <label class="check"><input id="speechTranslate" type="checkbox"><span>Vertalen naar Engels</span></label>
+        <label class="check"><input id="speechTranslate" type="checkbox"><span>Translate to English</span></label>
       </div>
-      <p class="dim small">// volledig op je eigen computer. het model wordt de eerste keer gedownload en daarna bewaard.<br>// .txt = lopende tekst · .srt / .vtt = ondertitels met tijden. knippen werkt ook.</p>
+      <p class="dim small">// fully on your own computer. the model is downloaded the first time and kept afterwards.<br>// .txt = running text · .srt / .vtt = subtitles with timings. trimming works too.</p>
     </fieldset>
 
     <!-- GIF -->
     <fieldset id="gifBox" class="frame hidden">
       <legend>GIF</legend>
       <div class="grid">
-        <label class="field"><span>BREEDTE PX&gt;</span><input id="gifWidth" type="number" min="40" placeholder="480"></label>
+        <label class="field"><span>WIDTH PX&gt;</span><input id="gifWidth" type="number" min="40" placeholder="480"></label>
         <label class="field"><span>FPS&gt;</span><input id="gifFps" type="number" min="1" max="50" placeholder="12"></label>
       </div>
     </fieldset>
 
     <!-- Afbeelding -->
     <fieldset id="imageBox" class="frame hidden">
-      <legend>AFMETINGEN</legend>
+      <legend>DIMENSIONS</legend>
       <div class="grid three">
-        <label class="field"><span>SCHAAL %&gt;</span><input id="scalePct" type="number" min="1" placeholder="100"></label>
-        <label class="field"><span>BREEDTE&gt;</span><input id="imgW" type="number" min="1" placeholder="auto"></label>
-        <label class="field"><span>HOOGTE&gt;</span><input id="imgH" type="number" min="1" placeholder="auto"></label>
+        <label class="field"><span>SCALE %&gt;</span><input id="scalePct" type="number" min="1" placeholder="100"></label>
+        <label class="field"><span>WIDTH&gt;</span><input id="imgW" type="number" min="1" placeholder="auto"></label>
+        <label class="field"><span>HEIGHT&gt;</span><input id="imgH" type="number" min="1" placeholder="auto"></label>
       </div>
-      <p class="dim small">// percentage óf breedte en/of hoogte. één waarde = verhouding blijft. leeg = origineel.</p>
+      <p class="dim small">// percentage or width and/or height. one value = keep the aspect ratio. empty = original.</p>
     </fieldset>
 
     <!-- Knippen -->
     <fieldset id="trimBox" class="frame hidden">
-      <legend>KNIPPEN</legend>
+      <legend>TRIM</legend>
       <div class="screen">
         <video id="preview" controls playsinline preload="metadata" class="hidden"></video>
         <audio id="previewAudio" controls preload="metadata" class="hidden"></audio>
       </div>
       <div class="trim-track" id="trimTrack">
         <div class="trim-sel" id="trimSel"></div>
-        <input type="range" id="rStart" min="0" max="1000" value="0" aria-label="Startpunt">
-        <input type="range" id="rEnd" min="0" max="1000" value="1000" aria-label="Eindpunt">
+        <input type="range" id="rStart" min="0" max="1000" value="0" aria-label="Start point">
+        <input type="range" id="rEnd" min="0" max="1000" value="1000" aria-label="End point">
       </div>
       <div class="grid trim-fields">
         <label class="field"><span>IN&gt;</span>
-          <span class="row"><input id="trimStart" placeholder="0:00"><button type="button" class="btn small" id="setStart" title="Huidige positie als start">[|◀ HIER]</button></span>
+          <span class="row"><input id="trimStart" placeholder="0:00"><button type="button" class="btn small" id="setStart" title="Current position as start">[|◀ HERE]</button></span>
         </label>
-        <label class="field"><span>UIT&gt;</span>
-          <span class="row"><input id="trimEnd" placeholder="einde"><button type="button" class="btn small" id="setEnd" title="Huidige positie als einde">[HIER ▶|]</button></span>
+        <label class="field"><span>OUT&gt;</span>
+          <span class="row"><input id="trimEnd" placeholder="end"><button type="button" class="btn small" id="setEnd" title="Current position as end">[HERE ▶|]</button></span>
         </label>
       </div>
-      <p class="dim small">SELECTIE: <strong id="trimLen">–</strong> // tijden als 1:23.5 of in seconden</p>
-      <label class="check"><input id="fastTrim" type="checkbox"><span>Snel knippen zonder hercoderen <em>(knipt op keyframe)</em></span></label>
+      <p class="dim small">SELECTION: <strong id="trimLen">–</strong> // times like 1:23.5 or in seconds</p>
+      <label class="check"><input id="fastTrim" type="checkbox"><span>Fast trim without re-encoding <em>(cuts on a keyframe)</em></span></label>
     </fieldset>
 
     <button id="goBtn" class="go" type="button">[ ▶ START ]</button>
@@ -479,10 +512,11 @@
   </section>
 
   <footer class="statusline">
-    <span id="status">&gt; gereed</span>
-    <span class="dim">bestanden worden na 60 min gewist</span>
+    <span id="status">&gt; ready</span>
+    <span class="dim">files are deleted after 60 min</span>
   </footer>
 </main>
+<script src="/static/themes.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>

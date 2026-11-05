@@ -39,7 +39,7 @@ def _safe_extract(src: Path, dest: Path) -> None:
         with _py7zr().SevenZipFile(src) as z:
             for name in z.getnames():
                 if not (dest / name).resolve().is_relative_to(dest):
-                    raise ConversionError("Archief bevat onveilige paden.")
+                    raise ConversionError("The archive contains unsafe paths.")
             z.extractall(dest)
         return
     if zipfile.is_zipfile(src):
@@ -47,7 +47,7 @@ def _safe_extract(src: Path, dest: Path) -> None:
             for m in z.infolist():
                 target = (dest / m.filename).resolve()
                 if not target.is_relative_to(dest):
-                    raise ConversionError("Archief bevat onveilige paden.")
+                    raise ConversionError("The archive contains unsafe paths.")
             z.extractall(dest)
     else:
         with tarfile.open(src) as t:
@@ -102,7 +102,7 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
 
     dst = out_dir / f"{name}.{fmt}"
     if dst.resolve() == src.resolve():
-        dst = out_dir / f"{name}_bewerkt.{fmt}"
+        dst = out_dir / f"{name}_edited.{fmt}"
     _pack(items, base, dst, fmt, level)
 
     # Bij een doelgrootte: probeer sterkere compressie voordat we opgeven.

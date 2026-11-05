@@ -319,7 +319,7 @@ def midi_render(src: Path, dst: Path, fmt: str) -> Path:
 
 def convert(src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
     ext = src.suffix.lower().lstrip(".")
-    dst = out_dir / f"{src.stem}{'_bewerkt' if fmt == ext else ''}.{fmt}"
+    dst = out_dir / f"{src.stem}{'_edited' if fmt == ext else ''}.{fmt}"
     if ext in MIDI:
         return midi_render(src, dst, fmt)
     if ext in PLAYLISTS:

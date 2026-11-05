@@ -14,11 +14,11 @@ from . import datafmt, objfmt, subsfmt, textfmt, unpack
 from .catalog import catalog, ext_of, looks_text, sniff
 
 FAMILY_LABELS = {
-    "text": "Text / code", "data": "Data", "subtitle": "Ondertitels", "playlist": "Afspeellijst", "midi": "MIDI",
-    "font": "Lettertype", "mail": "E-mail", "contact": "Contacten", "calendar": "Agenda", "gps": "GPS / kaart",
-    "model3d": "3D-model", "cad": "CAD-tekening", "vector": "Vectorafbeelding", "cert": "Certificate / key",
-    "medical": "Medisch beeld (DICOM)", "compressed": "Compressed file", "archive2": "Archief / pakket",
-    "vmdisk": "VM disk", "comic": "Stripboek", "info": "Other file",
+    "text": "Text / code", "data": "Data", "subtitle": "Subtitles", "playlist": "Playlist", "midi": "MIDI",
+    "font": "Font", "mail": "E-mail", "contact": "Contacts", "calendar": "Calendar", "gps": "GPS / map",
+    "model3d": "3D model", "cad": "CAD drawing", "vector": "Vector image", "cert": "Certificate / key",
+    "medical": "Medical image (DICOM)", "compressed": "Compressed file", "archive2": "Archive / package",
+    "vmdisk": "VM disk", "comic": "Comic book", "info": "Other file",
 }
 
 LO_VECTOR = {"odg", "vsd", "vsdx", "vssx", "pub", "cdr", "emf", "wmf", "cgm", "otg"}

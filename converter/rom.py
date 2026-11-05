@@ -209,7 +209,7 @@ def cue_to_iso(cue: Path, out_dir: Path, progress=None) -> Path:
 def merge_cue(cue: Path, out_dir: Path, progress=None) -> tuple[Path, Path]:
     """Alle sporen in één .bin, met een nieuwe .cue (zoals binmerge)."""
     files = parse_cue(cue)
-    work = out_dir / "_schijf"
+    work = out_dir / "_disc"
     work.mkdir(exist_ok=True)
     bin_out = work / f"{cue.stem}.bin"
     lines = [f'FILE "{bin_out.name}" BINARY']
@@ -390,7 +390,7 @@ def cso_to_iso(src: Path, dst: Path, progress=None) -> Path:
 
 
 def iso_to_cue(iso: Path, out_dir: Path) -> tuple[Path, Path]:
-    work = out_dir / "_schijf"
+    work = out_dir / "_disc"
     work.mkdir(exist_ok=True)
     bin_out = work / f"{iso.stem}.bin"
     shutil.copyfile(iso, bin_out)
@@ -636,7 +636,7 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
             stem += "_trim"
         else:
             raise ConversionError(f"ROM to .{fmt} is not supported.")
-        dst = out_dir / f"{stem}{'_bewerkt' if fmt == ext and fmt != 'nds' else ''}.{fmt}"
+        dst = out_dir / f"{stem}{'_edited' if fmt == ext and fmt != 'nds' else ''}.{fmt}"
         dst.write_bytes(out)
         return dst
 
@@ -661,7 +661,7 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
             _chd(["extractcd", "-i", str(src), "-o", str(cue), "-ob", str(out_dir / f"{stem}.bin")])
             return cue_to_iso(cue, out_dir, progress)
         if fmt == "cue":
-            work = out_dir / "_schijf"
+            work = out_dir / "_disc"
             work.mkdir(exist_ok=True)
             cue = work / f"{stem}.cue"
             _chd(["extractcd", "-i", str(src), "-o", str(cue), "-ob", str(work / f"{stem}.bin")])

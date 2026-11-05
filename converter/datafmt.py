@@ -617,7 +617,7 @@ def convert(src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
         return convert_db(src, out_dir, fmt)
     if ext == "ipynb":
         return notebook(src, out_dir, fmt)
-    dst = out_dir / f"{src.stem}{'_bewerkt' if fmt.split('-')[0] == ext else ''}.{fmt.split('-')[0]}"
+    dst = out_dir / f"{src.stem}{'_edited' if fmt.split('-')[0] == ext else ''}.{fmt.split('-')[0]}"
     if ext == "har":
         return write(har_rows(src), dst, fmt, src.stem)
     if ext in ("rss", "atom"):

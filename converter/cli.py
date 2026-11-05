@@ -163,13 +163,18 @@ def build_parser(with_file: bool = False) -> argparse.ArgumentParser:
     ap.add_argument("--simple", "--simpel", dest="simpel", action="store_true",
                     help="simple mode with numbered menus (works in any terminal)")
     ap.add_argument("--ascii", action="store_true", help="ASCII characters only (old or limited terminals)")
+    ap.add_argument("--theme", help="colour theme: green-phosphor, amber, cyan, white, matrix, red-alert, pink, "
+                                    "purple, ice, gold, dos, c64, solarized, gruvbox, nord, dracula, high-contrast, "
+                                    "paper, sepia, green-on-white (ctrl+t switches)")
+    ap.add_argument("--colours", "--colors", dest="colours", metavar="TEXT,BACKGROUND",
+                    help='your own colours, e.g. "#ffcc00,#101010"')
     ap.add_argument("--ui-lang", "--taal-ui", dest="ui_lang", choices=["en", "nl"],
                     help="language of the terminal texts (default: en; or set ANYTHING_LANG=nl)")
     if with_file:
         ap.add_argument("bestand", nargs="?", metavar="file", help="file to open straight away")
         ap.set_defaults(cmd=None)
         ap.epilog = ("Commands (more help: anything-converter-tui <command> --help):\n"
-                     "  convert, formats, hash, pdf, archive, social, ocr, web, fetch, scan, sql\n\n" + ap.epilog)
+                     "  convert, formats, hash, pdf, archive, social, ocr, web, fetch, scan, sql, drives\n\n" + ap.epilog)
         return ap
     sub = ap.add_subparsers(dest="cmd", metavar="command")
 
@@ -257,6 +262,15 @@ def build_parser(with_file: bool = False) -> argparse.ArgumentParser:
     q.add_argument("bestand", type=Path, metavar="file")
     q.add_argument("opdracht", nargs="?", metavar="query", help="e.g. \"SELECT * FROM table\" (without: list the tables)")
     q.add_argument("--save", "--opslaan", dest="opslaan", type=Path, help="keep the changes as a new .sqlite")
+
+    dr = sub.add_parser("drives", aliases=["schijven"], help="USB sticks, disks, CD/DVD: list, health, format")
+    dr.add_argument("actie", choices=["list", "health", "format"], metavar="{list,health,format}")
+    dr.add_argument("drive", nargs="?", help="device as shown by 'drives list', e.g. /dev/sdb, disk4 or 2")
+    dr.add_argument("--fs", default="exfat", help="exfat (default), fat32, ntfs, ext4, apfs, hfs+")
+    dr.add_argument("--label", default="USB", help="name of the new volume")
+    dr.add_argument("--full", action="store_true", help="overwrite everything with zeros first (slow)")
+    dr.add_argument("--internal", action="store_true", help="also allow internal (non-system) disks")
+    dr.add_argument("--yes", metavar="DEVICE", help="confirm without asking by repeating the device name")
 
     v = sub.add_parser("scan", help="check a file or folder for viruses")
     v.add_argument("pad", type=Path, metavar="path")
@@ -365,7 +379,7 @@ def cmd_pdf(a) -> int:
         out_dir.mkdir(parents=True, exist_ok=True)
         dst = pdftools.split(src, out_dir, a.paginas)
     elif a.actie in ("rotate", "delete"):
-        dst = unique(a.uitvoer or src.with_name(f"{src.stem}_bewerkt.pdf"))
+        dst = unique(a.uitvoer or src.with_name(f"{src.stem}_edited.pdf"))
         pdftools.edit_pages(src, dst, delete=a.paginas if a.actie == "delete" else "",
                             rotate=(a.paginas or "1-") if a.actie == "rotate" else "", angle=a.hoek)
     else:
@@ -448,7 +462,7 @@ def cmd_ocr(a) -> int:
     elif a.bestand:
         path = a.bestand
     else:
-        raise ConversionError("Geef een afbeelding of PDF, of gebruik --scherm.")
+        raise ConversionError("Give an image or PDF, or use --screen.")
     text = ocr.searchable_pdf_text(path) if path.suffix.lower() == ".pdf" else ocr.image(path)
     print(text)
     return 0
@@ -507,6 +521,44 @@ def cmd_scan(a) -> int:
     return 2 if v["status"] == "infected" else 0
 
 
+def cmd_drives(a) -> int:
+    from . import drives
+    if a.actie == "list":
+        for d in drives.list_drives():
+            ok, why = drives.formattable(d, a.internal)
+            say(f"{d.id:<14} {d.name[:28]:<28} {human_size(d.size) if d.size else 'no medium':>10}  "
+                f"{(d.bus or d.kind).upper():<8} {', '.join(d.labels + d.mounts)[:40]}")
+            say(f"{'':14} {'can be formatted' if ok else 'not formattable: ' + why}")
+        return 0
+    if not a.drive:
+        raise ConversionError("Give the drive, e.g. 'drives health /dev/sdb'. See 'drives list'.")
+    if a.actie == "health":
+        r = drives.health(a.drive)
+        say(f"{a.drive}: {r['verdict']}" + (f" ({r['source']})" if r["source"] else ""))
+        for line in r["lines"]:
+            say("  " + line)
+        return 0 if r["verdict"] in ("OK", "UNKNOWN", "N/A") else 2
+    d = drives.find(a.drive)
+    ok, why = drives.formattable(d, a.internal)
+    if not ok:
+        raise ConversionError(f"Not formatted: {why}.")
+    say(f"FORMAT {d.id} · {d.name} · {human_size(d.size)} · {', '.join(d.labels + d.mounts)}")
+    for c in drives.plan_format(d, a.fs, a.label, a.full):
+        say("  will run: " + " ".join(c))
+    confirm = a.yes
+    if confirm is None:
+        say("!! EVERYTHING on this drive will be deleted.")
+        confirm = ask(f"type {d.id} to confirm (empty = cancel)")
+    if not confirm:
+        say("cancelled")
+        return 1
+    bar = Progress()
+    msg = drives.format_drive(d.id, a.fs, a.label, confirm, a.full, a.internal, bar)
+    bar.done()
+    say("OK: " + msg)
+    return 0
+
+
 def parse(argv: list[str]) -> argparse.Namespace:
     first = next((a for a in argv if not a.startswith("-")), None)
     return build_parser(with_file=first not in COMMANDS).parse_args(argv)
@@ -543,7 +595,8 @@ def cmd_sql(a) -> int:
 COMMANDS = {"converteer": cmd_convert, "convert": cmd_convert, "formaten": cmd_formats, "formats": cmd_formats,
             "info": cmd_formats, "hash": cmd_hash, "checksum": cmd_hash, "pdf": cmd_pdf, "archief": cmd_archive,
             "archive": cmd_archive, "social": cmd_social, "ocr": cmd_ocr, "web": cmd_web, "ophalen": cmd_fetch,
-            "fetch": cmd_fetch, "scan": cmd_scan, "sql": cmd_sql}
+            "fetch": cmd_fetch, "scan": cmd_scan, "sql": cmd_sql,
+            "drives": cmd_drives, "schijven": cmd_drives}
 
 
 # ============================================================================ eenvoudige modus
@@ -627,7 +680,7 @@ def simple_convert() -> None:
     if cat in ("video", "audio", "image", "pdf") and fmt not in ("txt", "srt", "vtt", "docx", "rtf", "xlsx"):
         g = choose("SIZE", ["quality high", "quality normal", "quality low", "target size (e.g. 8 MB)"])
         if g == 3:
-            opts["target_bytes"] = parse_size(ask("doelgrootte", "8 MB"), "mb")
+            opts["target_bytes"] = parse_size(ask("target size", "8 MB"), "mb")
         elif g >= 0:
             opts["quality"] = ["high", "medium", "low"][g]
     if cat in ("video", "audio"):
