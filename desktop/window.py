@@ -101,7 +101,7 @@ class Api:
 
     def save_end(self):
         if not self._out:
-            return {"error": "niets om op te slaan"}
+            return {"error": "nothing to save"}
         self._out.close()
         self._out = None
         return {"path": self._target}
@@ -138,7 +138,7 @@ def check() -> str:
     if sys.platform == "win32":
         from webview.platforms import winforms
         if winforms.renderer != "edgechromium":
-            raise RuntimeError("WebView2 ontbreekt")
+            raise RuntimeError("WebView2 is missing")
         return "edgechromium"
     if sys.platform == "darwin":
         import WebKit  # noqa: F401

@@ -17,7 +17,7 @@ def tui_command() -> list[str]:
         name = "anything-converter-tui.exe" if sys.platform == "win32" else "anything-converter-tui"
         exe = Path(sys.executable).resolve().parent / name
         if not exe.exists():
-            raise RuntimeError(f"Terminalversie niet gevonden: {exe}")
+            raise RuntimeError(f"Terminal version not found: {exe}")
         return [str(exe)]
     return [sys.executable, str(ROOT / "tui.py")]
 
@@ -51,4 +51,4 @@ def open_tui() -> None:
         if path:
             subprocess.Popen([path, *args, *cmd], cwd=home, env=env, start_new_session=True)
             return
-    raise RuntimeError("Geen terminalprogramma gevonden. Start in een terminal: " + shlex.join(cmd))
+    raise RuntimeError("No terminal program found. Run in a terminal: " + shlex.join(cmd))

@@ -41,7 +41,7 @@ def test_download_from_local_seed(tmp_path):
     assert paths == ["pakket/a.bin", "pakket/map/b.txt"]
     got = (tmp_path / "out" / "pakket" / "a.bin").read_bytes()
     assert got == (tmp_path / "seed" / "pakket" / "a.bin").read_bytes()
-    assert any(m.startswith("Downloaden") for m in seen)
+    assert any(m.startswith("Downloading") for m in seen)
     del ses
 
 

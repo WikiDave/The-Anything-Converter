@@ -39,14 +39,14 @@ def capture(url: str, out_dir: Path, fmt: str, progress: Optional[Callable[[floa
         url = "https://" + url
     exe = chromium()
     if not exe:
-        raise ConversionError("Hiervoor is Chrome, Edge of Chromium nodig (gratis te installeren).")
+        raise ConversionError("This needs Chrome, Edge or Chromium (free to install).")
     name = re.sub(r"[^A-Za-z0-9.-]+", "_", re.sub(r"^https?://(www\.)?", "", url))[:60].strip("_") or "website"
     dst = out_dir / f"{name}.{fmt}"
     profile = tempfile.mkdtemp(prefix="webshot-")
     base = [exe, "--headless=new", "--disable-gpu", *no_sandbox(), "--hide-scrollbars", "--no-first-run",
             f"--user-data-dir={profile}", "--virtual-time-budget=8000"]
     if progress:
-        progress(0.3, "pagina laden")
+        progress(0.3, "loading page")
     if fmt == "pdf":
         cmd = [*base, "--no-pdf-header-footer", f"--print-to-pdf={dst}", url]
         target = dst
@@ -58,7 +58,7 @@ def capture(url: str, out_dir: Path, fmt: str, progress: Optional[Callable[[floa
     finally:
         shutil.rmtree(profile, ignore_errors=True)
     if not target.exists():
-        raise ConversionError("De website kon niet geladen worden.")
+        raise ConversionError("The website could not be loaded.")
     if fmt == "jpg":
         from PIL import Image
         Image.open(target).convert("RGB").save(dst, "JPEG", quality=88)

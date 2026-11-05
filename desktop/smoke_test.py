@@ -46,7 +46,7 @@ def convert(name, blob, fmt):
         if job["status"] in ("done", "error"):
             break
         time.sleep(1)
-    assert job["status"] == "done", f"{name} -> {fmt} mislukt: {job.get('error')}"
+    assert job["status"] == "done", f"{name} -> {fmt} failed: {job.get('error')}"
     print(f"  ok: {name} -> {job['filename']} ({job['size']} bytes)")
 
 
@@ -85,7 +85,7 @@ def main():
             except Exception:
                 time.sleep(1)
         else:
-            raise SystemExit("app startte niet binnen 90 seconden")
+            raise SystemExit("app did not start within 90 seconds")
         print("ping:", info)
         assert info["desktop"] is True
         want = os.environ.get("EXPECT_WINDOW")
@@ -95,11 +95,11 @@ def main():
         convert("test.png", sample_png(), "jpg")
         caps = call("/api/capabilities")
         print("  mogelijkheden:", caps)
-        assert caps["pymupdf"] and caps["sevenzip"], "PDF-gereedschap of 7z ontbreekt"
+        assert caps["pymupdf"] and caps["sevenzip"], "PDF tools or 7z missing"
         # Intel-Macs: pywhispercpp heeft daar alleen een oude versie; spraak is daar optioneel
         if not caps["speech"]:
-            print("  LET OP: spraakherkenning niet beschikbaar:", caps.get("speech_error"))
-            assert os.environ.get("ALLOW_NO_SPEECH") == "1", "spraakherkenning ontbreekt"
+            print("  NOTE: speech recognition not available:", caps.get("speech_error"))
+            assert os.environ.get("ALLOW_NO_SPEECH") == "1", "speech recognition is missing"
         convert("test.pdf", sample_pdf(), "docx")
         convert("test.pdf", sample_pdf(), "xlsx")
         convert("test.png", sample_png(), "svg")
@@ -111,7 +111,7 @@ def main():
         convert("test.svg", b"<svg xmlns='http://www.w3.org/2000/svg' width='40' height='20'>"
                 b"<rect width='40' height='20' fill='red'/></svg>", "png")
         convert("test.py", b"print('hallo')\n", "html")
-        assert caps.get("sevenzip_tool"), "7-Zip ontbreekt in de app"
+        assert caps.get("sevenzip_tool"), "7-Zip is missing from the app"
         convert("test.wav", sample_wav(), "mp3")
         # libtorrent aanwezig? Een kapot .torrent-bestand moet "geen geldig" geven, niet "vereisen libtorrent".
         job = call("/api/torrent", files=("kapot.torrent", b"geen torrent"))
@@ -120,11 +120,11 @@ def main():
             if job["status"] in ("done", "error"):
                 break
             time.sleep(1)
-        assert "geldig" in (job.get("error") or ""), f"torrent-module werkt niet: {job.get('error')}"
+        assert "geldig" in (job.get("error") or ""), f"torrent module does not work: {job.get('error')}"
         print("  ok: libtorrent aanwezig")
         call("/api/quit", {})
         proc.wait(timeout=30)
-        print("afgesloten met code", proc.returncode)
+        print("exited with code", proc.returncode)
     finally:
         if proc.poll() is None:
             proc.kill()

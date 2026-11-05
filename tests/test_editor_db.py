@@ -51,7 +51,7 @@ def test_database_tester_flow():
     assert r["result"]["rijen"] == [[2, "y"], [1, "x"]] and r["tables"][0]["rijen"] == 2
     assert c.get(f"/api/db/{uid}/table?name=t").get_json()["totaal"] == 2
     err = c.post(f"/api/db/{uid}/query", json={"sql": "SELECT * FROM nope"}).get_json()
-    assert "SQL-fout" in err["error"]
+    assert "SQL error" in err["error"]
     for fmt in ("sqlite", "sql", "xlsx", "csv", "json"):
         res = c.get(f"/api/db/{uid}/export?fmt={fmt}")
         assert res.status_code == 200 and len(res.data) > 10, fmt
@@ -88,6 +88,6 @@ def test_sql_command_line(tmp_path):
     csv_file.write_text("naam,leeftijd\nAnna,30\nBo,25\n")
     tui = [sys.executable, "-W", "ignore", str(ROOT / "tui.py")]
     r = subprocess.run([*tui, "sql", str(csv_file)], capture_output=True, text=True)
-    assert "tabel m (2 rijen)" in r.stdout
+    assert "tabel m (2 rows)" in r.stdout
     r = subprocess.run([*tui, "sql", str(csv_file), "SELECT naam FROM m WHERE leeftijd > 26"], capture_output=True, text=True)
     assert "Anna" in r.stdout and "Bo" not in r.stdout

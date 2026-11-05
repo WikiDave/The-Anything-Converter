@@ -49,10 +49,10 @@ TARGETS = {
 }
 
 LABELS = {
-    "video": "Video", "audio": "Audio", "image": "Afbeelding", "pdf": "PDF",
+    "video": "Video", "audio": "Audio", "image": "Image", "pdf": "PDF",
     "document": "Document", "spreadsheet": "Spreadsheet", "presentation": "Presentatie", "ebook": "E-book",
     "disc": "Schijfimage (emulator)", "rom": "ROM (emulator)",
-    "archive": "Archief", "other": "Overig bestand",
+    "archive": "Archief", "other": "Other file",
 }
 
 

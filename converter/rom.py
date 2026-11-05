@@ -127,8 +127,7 @@ def parse_cue(cue: Path) -> list[dict]:
                 want = norm(Path(m.group(1).replace("\\", "/")).name)
                 cand = [x for x in cue.parent.iterdir() if norm(x.name) == want]
                 if not cand:
-                    raise ConversionError(f"De CUE verwijst naar '{m.group(1)}', maar dat bestand ontbreekt. "
-                                          "Kies de .cue en alle .bin-bestanden samen (of een zip met alles).")
+                    raise ConversionError(f"The CUE refers to '{m.group(1)}', but that file is missing. Choose the .cue and all .bin files together (or a zip with everything).")
                 p = cand[0]
             files.append({"file": p, "tracks": []})
             continue
@@ -144,7 +143,7 @@ def parse_cue(cue: Path) -> list[dict]:
         if files and files[-1]["tracks"] and re.match(r"(PREGAP|POSTGAP|FLAGS|ISRC|TITLE|PERFORMER)\b", line, re.I):
             files[-1]["tracks"][-1]["extra"].append(line)
     if not files:
-        raise ConversionError("Dit CUE-bestand bevat geen sporen.")
+        raise ConversionError("This CUE file has no tracks.")
     return files
 
 
@@ -193,7 +192,7 @@ def raw_to_iso(src: Path, start: int, end: int, sector: int, ttype: str, dst: Pa
                 break
             o.write(sec[off:off + 2048])
             if progress and n % 4096 == 0:
-                progress(0.1 + 0.85 * n / total, "naar ISO")
+                progress(0.1 + 0.85 * n / total, "to ISO")
     return dst
 
 
@@ -201,7 +200,7 @@ def cue_to_iso(cue: Path, out_dir: Path, progress=None) -> Path:
     tracks = _track_ranges(parse_cue(cue))
     data = next((t for t in tracks if t["type"] != "AUDIO"), None)
     if not data:
-        raise ConversionError("Deze schijf heeft alleen audiosporen; kies .wav.")
+        raise ConversionError("This disc only has audio tracks; choose .wav.")
     dst = out_dir / f"{cue.stem}.iso"
     raw_to_iso(data["file"], data["start"], data["end"], data["sector"], data["type"], dst, progress)
     return dst
@@ -227,7 +226,7 @@ def merge_cue(cue: Path, out_dir: Path, progress=None) -> tuple[Path, Path]:
             ss = SECTOR.get(f["tracks"][0]["type"], 2352) if f["tracks"] else 2352
             offset_frames += f["file"].stat().st_size // ss
             if progress:
-                progress(0.1 + 0.8 * (k + 1) / len(files), "sporen samenvoegen")
+                progress(0.1 + 0.8 * (k + 1) / len(files), "merging tracks")
     cue_out = work / f"{cue.stem}.cue"
     cue_out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return cue_out, bin_out
@@ -236,7 +235,7 @@ def merge_cue(cue: Path, out_dir: Path, progress=None) -> tuple[Path, Path]:
 def audio_tracks(cue: Path, out_dir: Path, progress=None) -> Path:
     tracks = [t for t in _track_ranges(parse_cue(cue)) if t["type"] == "AUDIO"]
     if not tracks:
-        raise ConversionError("Deze schijf heeft geen audiosporen.")
+        raise ConversionError("This disc has no audio tracks.")
     dst = out_dir / f"{cue.stem}_audio.zip"
     with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
         for k, t in enumerate(tracks):
@@ -276,7 +275,7 @@ def bin_cue_for(src: Path) -> Path:
         mode = "MODE1/2352"
     cue = src.with_suffix(".cue")
     if cue.exists():
-        cue = src.parent / f"{src.stem}_gemaakt.cue"
+        cue = src.parent / f"{src.stem}_created.cue"
     cue.write_text(f'FILE "{src.name}" BINARY\n  TRACK 01 {mode}\n    INDEX 01 00:00:00\n', encoding="utf-8")
     return cue
 
@@ -286,7 +285,7 @@ def ccd_cue(ccd: Path) -> Path:
     img = next((p for p in ccd.parent.iterdir() if p.stem.lower() == ccd.stem.lower()
                 and p.suffix.lower() == ".img"), None)
     if not img:
-        raise ConversionError("Het .img-bestand bij deze .ccd ontbreekt; kies ze samen.")
+        raise ConversionError("The .img file for this .ccd is missing; choose them together.")
     text = ccd.read_text(errors="replace")
     lines = [f'FILE "{img.name}" BINARY']
     for sec in re.finditer(r"\[TRACK (\d+)\]([^\[]*)", text):
@@ -360,10 +359,10 @@ def iso_to_cso(src: Path, dst: Path, level: int = 9, progress=None) -> Path:
             o.write(data)
             pos += len(data)
             if progress and n % 8192 == 0:
-                progress(0.1 + 0.85 * n / nblocks, "comprimeren naar CSO")
+                progress(0.1 + 0.85 * n / nblocks, "compressing to CSO")
         index.append(pos)
         if pos >= 0x80000000:
-            raise ConversionError("Dit image is te groot voor CSO (max. ~2 GB gecomprimeerd).")
+            raise ConversionError("This image is too large for CSO (max. ~2 GB compressed).")
         o.seek(0x18)
         o.write(struct.pack(f"<{len(index)}I", *index))
     return dst
@@ -373,7 +372,7 @@ def cso_to_iso(src: Path, dst: Path, progress=None) -> Path:
     with open(src, "rb") as f, open(dst, "wb") as o:
         head = f.read(0x18)
         if head[:4] != b"CISO":
-            raise ConversionError("Dit is geen CSO-bestand (ZSO wordt niet ondersteund).")
+            raise ConversionError("This is not a CSO file (ZSO is not supported).")
         _, hsize, total, block, ver, align, _ = struct.unpack("<4sIQIBBH", head)
         nblocks = (total + block - 1) // block
         index = struct.unpack(f"<{nblocks + 1}I", f.read(4 * (nblocks + 1)))
@@ -405,8 +404,7 @@ def iso_to_cue(iso: Path, out_dir: Path) -> tuple[Path, Path]:
 def _chd(args: list[str]) -> None:
     tool = chdman()
     if not tool:
-        raise ConversionError("Voor CHD is chdman nodig (van MAME). macOS: brew install rom-tools · "
-                              "Ubuntu/Debian: sudo apt install mame-tools · Windows: chdman.exe uit MAME.")
+        raise ConversionError("CHD needs chdman (from MAME). macOS: brew install rom-tools · Ubuntu/Debian: sudo apt install mame-tools · Windows: chdman.exe from MAME.")
     run([tool, *args, "-f"], timeout=7200)
 
 
@@ -415,7 +413,7 @@ def _chd(args: list[str]) -> None:
 def n64_convert(data: bytes, want: str) -> bytes:
     have = n64_order(data)
     if not have:
-        raise ConversionError("Dit is geen herkenbare N64-ROM.")
+        raise ConversionError("This is not a recognisable N64 ROM.")
     if have == want:
         return data
     # eerst naar z64 (big endian)
@@ -451,7 +449,7 @@ def smd_to_bin(data: bytes) -> bytes:
 
 def nds_trim(data: bytes) -> bytes:
     if len(data) < 0x200:
-        raise ConversionError("Dit is geen geldige Nintendo DS-ROM.")
+        raise ConversionError("This is not a valid Nintendo DS ROM.")
     used = struct.unpack_from("<I", data, 0x80)[0]
     # DSi-ROM's hebben een groter gebruikt gebied (0x210)
     if data[0x12] & 0x02 and len(data) >= 0x214:
@@ -460,7 +458,7 @@ def nds_trim(data: bytes) -> bytes:
     if data[used:used + 2] == b"ac":
         used += 0x88
     if not 0x200 < used <= len(data):
-        raise ConversionError("De DS-header geeft een onlogische grootte; niet ingekort.")
+        raise ConversionError("The DS header gives an illogical size; not trimmed.")
     return data[:used]
 
 
@@ -514,7 +512,7 @@ def apply_ups(rom: bytes, patch: bytes) -> bytes:
     out_size, pos = _vlq(patch, pos)
     src_crc, dst_crc = struct.unpack_from("<II", patch, len(patch) - 12)
     if zlib.crc32(rom) != src_crc:
-        raise ConversionError("Deze UPS-patch hoort bij een andere versie van de ROM (CRC klopt niet).")
+        raise ConversionError("This UPS patch belongs to a different version of the ROM (CRC mismatch).")
     out = bytearray(rom[:out_size].ljust(out_size, b"\0"))
     rel = 0
     end = len(patch) - 12
@@ -530,7 +528,7 @@ def apply_ups(rom: bytes, patch: bytes) -> bytes:
             if x == 0:
                 break
     if zlib.crc32(out) != dst_crc:
-        raise ConversionError("Patch toegepast, maar de controle (CRC) klopt niet.")
+        raise ConversionError("Patch applied, but the check (CRC) does not match.")
     return bytes(out)
 
 
@@ -539,7 +537,7 @@ def apply_bps(rom: bytes, patch: bytes) -> bytes:
         raise ConversionError("Ongeldige BPS-patch.")
     src_crc, dst_crc, _ = struct.unpack_from("<III", patch, len(patch) - 12)
     if zlib.crc32(rom) != src_crc:
-        raise ConversionError("Deze BPS-patch hoort bij een andere versie van de ROM (CRC klopt niet).")
+        raise ConversionError("This BPS patch belongs to a different version of the ROM (CRC mismatch).")
     pos = 4
     _, pos = _vlq(patch, pos)
     out_size, pos = _vlq(patch, pos)
@@ -573,7 +571,7 @@ def apply_bps(rom: bytes, patch: bytes) -> bytes:
                     op += 1
                     dst_rel += 1
     if zlib.crc32(out) != dst_crc:
-        raise ConversionError("Patch toegepast, maar de controle (CRC) klopt niet.")
+        raise ConversionError("Patch applied, but the check (CRC) does not match.")
     return bytes(out)
 
 
@@ -607,7 +605,7 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
         patch = Path(opts["patch"]) if opts.get("patch") else \
             next((p for p in src.parent.iterdir() if p.suffix.lower().lstrip(".") in PATCH_EXT), None)
         if not patch:
-            raise ConversionError("Geen patch (.ips, .ups of .bps) gevonden; kies de ROM en de patch samen.")
+            raise ConversionError("No patch (.ips, .ups or .bps) found; choose the ROM and the patch together.")
         kind = patch.suffix.lower().lstrip(".")
         data = {"ips": apply_ips, "ups": apply_ups, "bps": apply_bps}[kind](src.read_bytes(), patch.read_bytes())
         dst = out_dir / f"{stem} [{patch.stem}].{ext}"
@@ -637,7 +635,7 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
             out = nds_trim(data)
             stem += "_trim"
         else:
-            raise ConversionError(f"ROM naar .{fmt} wordt niet ondersteund.")
+            raise ConversionError(f"ROM to .{fmt} is not supported.")
         dst = out_dir / f"{stem}{'_bewerkt' if fmt == ext and fmt != 'nds' else ''}.{fmt}"
         dst.write_bytes(out)
         return dst
@@ -651,7 +649,7 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
         if ext == "mds":
             mdf = next((p for p in src.parent.iterdir() if p.suffix.lower() == ".mdf"), None)
             if not mdf:
-                raise ConversionError("Het .mdf-bestand bij deze .mds ontbreekt; kies ze samen.")
+                raise ConversionError("The .mdf file for this .mds is missing; choose them together.")
             return bin_cue_for(mdf)
         if ext == "nrg":
             return bin_cue_for(nrg_to_iso(src, out_dir))
@@ -668,7 +666,7 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
             cue = work / f"{stem}.cue"
             _chd(["extractcd", "-i", str(src), "-o", str(cue), "-ob", str(work / f"{stem}.bin")])
             return _zip(disc_files(cue), out_dir / f"{stem} (bin-cue).zip")
-        raise ConversionError(f"CHD naar .{fmt} wordt niet ondersteund.")
+        raise ConversionError(f"CHD to .{fmt} is not supported.")
     if ext == "cso":
         iso = cso_to_iso(src, out_dir / f"{stem}.iso", progress)
         if fmt == "iso":
@@ -685,7 +683,7 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
             dst = out_dir / f"{stem}.chd"
             _chd(["createcd", "-i", str(src), "-o", str(dst)])
             return dst
-        raise ConversionError(f"ISO naar .{fmt} wordt niet ondersteund.")
+        raise ConversionError(f"ISO to .{fmt} is not supported.")
     if ext == "gdi" and fmt == "chd":
         dst = out_dir / f"{stem}.chd"
         _chd(["createcd", "-i", str(src), "-o", str(dst)])
@@ -706,4 +704,4 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
     if fmt == "cso":
         iso = cue_to_iso(cue, out_dir, progress)
         return iso_to_cso(iso, out_dir / f"{stem}.cso", progress=progress)
-    raise ConversionError(f"Schijfimage naar .{fmt} wordt niet ondersteund.")
+    raise ConversionError(f"Disc image to .{fmt} is not supported.")

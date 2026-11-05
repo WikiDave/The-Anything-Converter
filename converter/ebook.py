@@ -35,10 +35,10 @@ def convert(src: Path, out_dir: Path, fmt: str, opts: dict, progress: Optional[P
     tool = calibre()
     if tool:
         if progress:
-            progress(0.2, "omzetten met Calibre")
+            progress(0.2, "converting with Calibre")
         run([tool, str(src), str(dst)], timeout=1800)
         if not dst.exists():
-            raise ConversionError("Calibre kon dit e-book niet omzetten.")
+            raise ConversionError("Calibre could not convert this e-book.")
         return dst
     # Zonder Calibre
     if ext in ("epub", "fb2") and fmt in ("txt", "html", "pdf", "docx", "rtf"):
@@ -76,8 +76,7 @@ def convert(src: Path, out_dir: Path, fmt: str, opts: dict, progress: Optional[P
         if have("pandoc"):
             run(["pandoc", str(docx), "-o", str(dst), "--standalone"], timeout=600)
             return dst
-    raise ConversionError(f".{ext} naar .{fmt} heeft Calibre nodig (gratis, calibre-ebook.com). "
-                          "Na installeren werkt het vanzelf.")
+    raise ConversionError(f".{ext} to .{fmt} needs Calibre (free, calibre-ebook.com). Once installed it works automatically.")
 
 
 def html_to_text(body: str) -> str:

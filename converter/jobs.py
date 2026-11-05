@@ -22,7 +22,7 @@ class Job:
     opts: dict
     status: str = "queued"  # queued | running | done | error
     progress: float = 0.0
-    message: str = "In de wachtrij"
+    message: str = "Queued"
     result: Optional[Path] = None
     error: Optional[str] = None
     created: float = field(default_factory=time.time)
@@ -65,12 +65,12 @@ def run_conversion(src: Path, out_dir: Path, category: str, opts: dict, progress
         return transcribe.transcribe(src, out_dir / f"{src.stem}.{fmt}", fmt, opts, progress, start, end)
     if category == "image" and fmt in ("txt", "docx", "rtf", "xlsx"):
         if progress:
-            progress(0.2, "tekst herkennen (OCR)")
+            progress(0.2, "recognising text (OCR)")
         text = ocr.image(src)
         if not text.strip():
-            raise ConversionError("Er is geen tekst gevonden in deze afbeelding.")
+            raise ConversionError("No text was found in this image.")
         if progress:
-            progress(0.9, "opslaan")
+            progress(0.9, "saving")
         from .pdftools import text_to_document
         return text_to_document(text, out_dir / f"{src.stem}.{fmt}", fmt)
     if category in ("disc", "rom"):
@@ -139,22 +139,22 @@ class JobManager:
                 else:
                     opts = dict(job.opts, _cancelled=lambda: job.extra.get("cancel", False))
                     job.result = run_conversion(job.src, out_dir, job.category, opts, progress)
-                job.status, job.progress, job.message = "done", 1.0, "Klaar"
+                job.status, job.progress, job.message = "done", 1.0, "Done"
             except ConversionError as exc:
-                job.status, job.error, job.message = "error", str(exc), "Mislukt"
+                job.status, job.error, job.message = "error", str(exc), "Failed"
             except Exception as exc:  # onverwacht: log voor debugging
                 traceback.print_exc()
-                job.status, job.error, job.message = "error", f"Onverwachte fout: {exc}", "Mislukt"
+                job.status, job.error, job.message = "error", f"Unexpected error: {exc}", "Failed"
 
     @staticmethod
     def _scan(job: Job, path: Path, progress) -> None:
         """Download automatisch op virussen controleren (tenzij uitgezet)."""
         if not job.opts.get("scan", True):
             return
-        progress(0.995, "Controleren op virussen")
+        progress(0.995, "Check for viruses")
         job.extra["virus"] = virus.check(path, settings.load().get("vt_key"))
         if job.extra["virus"]["status"] == "infected":
-            job.message = "Virus gevonden"
+            job.message = "Virus found"
 
     def _cleanup_loop(self) -> None:
         while True:

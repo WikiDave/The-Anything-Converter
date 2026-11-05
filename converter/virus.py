@@ -61,14 +61,14 @@ def scan_local(path: Path) -> dict:
         try:
             p = _run([exe, "-Scan", "-ScanType", "3", "-File", str(path), "-DisableRemediation"])
         except Exception as exc:
-            return {"engine": "Microsoft Defender", "status": "unknown", "detail": f"scan mislukt: {exc}"}
+            return {"engine": "Microsoft Defender", "status": "unknown", "detail": f"scan failed: {exc}"}
         out = (p.stdout or "") + (p.stderr or "")
         if p.returncode == 0:
-            return {"engine": "Microsoft Defender", "status": "clean", "detail": "geen bedreigingen gevonden"}
+            return {"engine": "Microsoft Defender", "status": "clean", "detail": "no threats found"}
         if p.returncode == 2 or "threat" in out.lower():
             names = [ln.split(":", 1)[-1].strip() for ln in out.splitlines() if "Threat" in ln and ":" in ln]
             return {"engine": "Microsoft Defender", "status": "infected",
-                    "detail": ", ".join(names[:5]) or "bedreiging gevonden"}
+                    "detail": ", ".join(names[:5]) or "threat found"}
         return {"engine": "Microsoft Defender", "status": "unknown", "detail": out.strip()[-300:] or f"code {p.returncode}"}
 
     clam = shutil.which("clamdscan") or shutil.which("clamscan")
@@ -80,17 +80,16 @@ def scan_local(path: Path) -> dict:
         try:
             p = _run(cmd)
         except Exception as exc:
-            return {"engine": "ClamAV", "status": "unknown", "detail": f"scan mislukt: {exc}"}
+            return {"engine": "ClamAV", "status": "unknown", "detail": f"scan failed: {exc}"}
         if p.returncode == 0:
-            return {"engine": "ClamAV", "status": "clean", "detail": "geen virussen gevonden"}
+            return {"engine": "ClamAV", "status": "clean", "detail": "no viruses found"}
         if p.returncode == 1:
             found = [ln.rsplit(":", 1)[-1].replace("FOUND", "").strip() for ln in p.stdout.splitlines() if "FOUND" in ln]
-            return {"engine": "ClamAV", "status": "infected", "detail": ", ".join(found[:5]) or "virus gevonden"}
+            return {"engine": "ClamAV", "status": "infected", "detail": ", ".join(found[:5]) or "virus found"}
         return {"engine": "ClamAV", "status": "unknown", "detail": (p.stderr or p.stdout).strip()[-300:]}
 
-    hint = ("installeer ClamAV (macOS: brew install clamav · Linux: sudo apt install clamav) "
-            "of gebruik de VirusTotal-controle")
-    return {"engine": None, "status": "unknown", "detail": "geen virusscanner gevonden op deze computer: " + hint}
+    hint = ("install ClamAV (macOS: brew install clamav · Linux: sudo apt install clamav) or use the VirusTotal check")
+    return {"engine": None, "status": "unknown", "detail": "no virus scanner found on this computer: " + hint}
 
 
 def virustotal(digest: str, api_key: Optional[str]) -> Optional[dict]:
@@ -103,16 +102,16 @@ def virustotal(digest: str, api_key: Optional[str]) -> Optional[dict]:
             stats = json.load(r)["data"]["attributes"]["last_analysis_stats"]
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
-            return {"status": "unknown", "detail": "nog nooit door VirusTotal gezien"}
+            return {"status": "unknown", "detail": "never seen by VirusTotal"}
         if exc.code in (401, 403):
-            return {"status": "unknown", "detail": "VirusTotal-sleutel klopt niet"}
-        return {"status": "unknown", "detail": f"VirusTotal gaf fout {exc.code}"}
+            return {"status": "unknown", "detail": "VirusTotal key is wrong"}
+        return {"status": "unknown", "detail": f"VirusTotal returned error {exc.code}"}
     except Exception as exc:
-        return {"status": "unknown", "detail": f"VirusTotal niet bereikbaar ({exc.__class__.__name__})"}
+        return {"status": "unknown", "detail": f"VirusTotal not reachable ({exc.__class__.__name__})"}
     bad = stats.get("malicious", 0) + stats.get("suspicious", 0)
     total = sum(stats.values())
     return {"status": "infected" if stats.get("malicious", 0) else "clean",
-            "detail": f"{bad} van {total} scanners melden iets"}
+            "detail": f"{bad} of {total} scanners report something"}
 
 
 def check(path: Path, api_key: Optional[str] = None) -> dict:

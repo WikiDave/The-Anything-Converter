@@ -33,9 +33,9 @@ def _open_any(src: Path, work: Path) -> Image.Image:
                 rgb = raw.postprocess(use_camera_wb=True, no_auto_bright=False, output_bps=8)
             return Image.fromarray(rgb)
         except ImportError as e:
-            raise ConversionError("Camera-RAW lezen vraagt rawpy.") from e
+            raise ConversionError("Reading camera RAW needs rawpy.") from e
         except Exception as e:  # noqa: BLE001
-            raise ConversionError(f"Dit RAW-bestand kan niet gelezen worden: {e}") from e
+            raise ConversionError(f"This RAW file cannot be read: {e}") from e
     try:
         im = Image.open(src)
         im.load()
@@ -71,7 +71,7 @@ def _open_any(src: Path, work: Path) -> Image.Image:
             return im
     magick = "magick" if have("magick") else "convert"
     if not have(magick):
-        raise ConversionError("Dit afbeeldingsformaat kan niet gelezen worden (ImageMagick ontbreekt).")
+        raise ConversionError("This image format cannot be read (ImageMagick is missing).")
     run([magick, f"{src}[0]", str(tmp)], timeout=300)
     im = Image.open(tmp)
     im.load()
@@ -153,7 +153,7 @@ def _fit_lossy(frames, fmt, target, progress) -> bytes:
 
     for rnd in range(8):
         if progress:
-            progress(min(0.1 + rnd * 0.1, 0.9), "Kwaliteit zoeken")
+            progress(min(0.1 + rnd * 0.1, 0.9), "Finding quality")
         lo, hi = 5, 95
         small = _encode(frames, fmt, scale, lo)
         if len(small) > target:
@@ -170,7 +170,7 @@ def _fit_lossy(frames, fmt, target, progress) -> bytes:
             else:
                 hi = mid - 1
         return best
-    raise ConversionError(f"Kon niet kleiner dan {human_size(target)} komen.")
+    raise ConversionError(f"Could not get smaller than {human_size(target)}.")
 
 
 def _fit_lossless(frames, fmt, target, progress) -> bytes:
@@ -193,7 +193,7 @@ def _fit_lossless(frames, fmt, target, progress) -> bytes:
         data = _encode(frames, fmt, scale, 100, palette)
         if len(data) <= target:
             return data
-    raise ConversionError(f"Kon niet kleiner dan {human_size(target)} komen.")
+    raise ConversionError(f"Could not get smaller than {human_size(target)}.")
 
 
 def _grow(frames, fmt, target, quality, data, progress) -> bytes:
@@ -220,11 +220,11 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
     fmt = (opts.get("format") or src.suffix.lstrip(".")).lower()
     fmt = {"jpeg": "jpg", "tif": "tiff", "jfif": "jpg"}.get(fmt, fmt)
     if fmt not in PIL_FORMAT and fmt not in SPECIAL:
-        raise ConversionError(f"Uitvoerformaat .{fmt} wordt niet ondersteund voor afbeeldingen.")
+        raise ConversionError(f"Output format .{fmt} is not supported for images.")
 
     frames = _load(src, out_dir)
     if progress:
-        progress(0.05, "Afbeelding geladen")
+        progress(0.05, "Image loaded")
 
     # Handmatig schalen
     if opts.get("scale_percent"):
@@ -246,12 +246,12 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
     stem = src.stem + ("_bewerkt" if fmt == src.suffix.lstrip(".").lower() else "")
     if fmt in SPECIAL:
         if target:
-            raise ConversionError(f"Doelgrootte wordt niet ondersteund voor .{fmt}.")
+            raise ConversionError(f"Target size is not supported for .{fmt}.")
         dst = out_dir / f"{stem}.{fmt}"
         _special(frames[0], fmt, dst)
         return dst
     if target and fmt in ("ico", "pdf", "eps", "tga"):
-        raise ConversionError(f"Doelgrootte wordt niet ondersteund voor .{fmt}; kies bijv. jpg, png of webp.")
+        raise ConversionError(f"Target size is not supported for .{fmt}; choose e.g. jpg, png or webp.")
     if target:
         data = (_fit_lossy if fmt in LOSSY else _fit_lossless)(frames, fmt, target, progress)
     else:

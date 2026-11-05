@@ -90,9 +90,9 @@ def decompress(src: Path, out_dir: Path) -> Path:
         else:
             return _extract_tool(src, out_dir, single=True)
     except ImportError as e:
-        raise ConversionError(f".{ext} uitpakken vraagt een extra onderdeel: {e.name}") from e
+        raise ConversionError(f"Extracting .{ext} needs an extra component: {e.name}") from e
     except Exception as e:  # noqa: BLE001
-        raise ConversionError(f"Uitpakken lukte niet: {e}") from e
+        raise ConversionError(f"Extracting failed: {e}") from e
     dst = out_dir / name
     dst.write_bytes(raw)
     return dst
@@ -111,7 +111,7 @@ def compress(src: Path, out_dir: Path, fmt: str) -> Path:
         import zstandard
         dst.write_bytes(zstandard.ZstdCompressor(level=19).compress(data))
     else:
-        raise ConversionError(f"Comprimeren als .{fmt} wordt niet ondersteund.")
+        raise ConversionError(f"Compressing as .{fmt} is not supported.")
     return dst
 
 
@@ -120,7 +120,7 @@ def compress(src: Path, out_dir: Path, fmt: str) -> Path:
 def _ar_extract(src: Path, dest: Path) -> None:
     data = src.read_bytes()
     if data[:8] != b"!<arch>\n":
-        raise ConversionError("Geen ar-archief.")
+        raise ConversionError("Not an ar archive.")
     pos = 8
     while pos + 60 <= len(data):
         name = data[pos:pos + 16].decode("latin-1").strip().rstrip("/")
@@ -175,18 +175,16 @@ def _extract_tool(src: Path, dest: Path, single: bool = False) -> Path:
             return files[0] if single and len(files) == 1 else dest
         err = r.stdout.decode("utf-8", "replace") + r.stderr.decode("utf-8", "replace")
         if "Wrong password" in err or "encrypted" in err.lower():
-            raise ConversionError("Dit archief is met een wachtwoord beveiligd.")
+            raise ConversionError("This archive is password-protected.")
         if not bsdtar():
-            raise ConversionError("De inhoud kon niet gelezen worden (leeg, beschadigd of een onbekend "
-                                  "bestandssysteem).")
+            raise ConversionError("The contents could not be read (empty, damaged or an unknown file system).")
     bt = bsdtar()
     if bt:
         r = subprocess.run([bt, "-xf", str(src), "-C", str(dest)], capture_output=True, **NO_WINDOW)
         if r.returncode == 0:
             files = [p for p in dest.rglob("*") if p.is_file()]
             return files[0] if single and len(files) == 1 else dest
-    raise ConversionError("Dit soort archief uitpakken vraagt 7-Zip (zit in de desktop-app; los: 7-zip.org, macOS: "
-                          "brew install sevenzip, Linux: sudo apt install 7zip).")
+    raise ConversionError("Extracting this kind of archive needs 7-Zip (included in the desktop app; separately: 7-zip.org, macOS: brew install sevenzip, Linux: sudo apt install 7zip).")
 
 
 def extract(src: Path, dest: Path) -> Path:
@@ -205,7 +203,7 @@ def extract(src: Path, dest: Path) -> Path:
         if zipfile.is_zipfile(src):
             with zipfile.ZipFile(src) as z:
                 if any(i.flag_bits & 1 for i in z.infolist()):
-                    raise ConversionError("Dit archief is met een wachtwoord beveiligd.")
+                    raise ConversionError("This archive is password-protected.")
         _safe_extract(src, dest)
         return dest
     if head[:8] == b"!<arch>\n":
@@ -217,7 +215,7 @@ def extract(src: Path, dest: Path) -> Path:
     if ext in ("gz", "bz2", "xz", "zst", "lz4", "br", "lzma"):
         inner = decompress(src, dest)
         if tarfile.is_tarfile(inner):
-            sub = dest / "inhoud"
+            sub = dest / "contents"
             sub.mkdir(exist_ok=True)
             with tarfile.open(inner) as t:
                 t.extractall(sub, filter="data")
@@ -243,21 +241,21 @@ def listing(src: Path) -> str:
         shutil.rmtree(tmp, ignore_errors=True)
     from .util import human_size
     lines = [f"{human_size(s):>10}  {n}" for n, s in rows]
-    lines.append(f"\n{len(rows)} bestanden, {human_size(sum(s for _, s in rows))} uitgepakt")
+    lines.append(f"\n{len(rows)} files, {human_size(sum(s for _, s in rows))} unpacked")
     return "\n".join(lines) + "\n"
 
 
 def repack(src: Path, out_dir: Path, fmt: str) -> Path:
     from .archive import _pack
     if fmt == "txt":
-        dst = out_dir / f"{src.stem}_inhoud.txt"
+        dst = out_dir / f"{src.stem}_contents.txt"
         dst.write_text(listing(src), encoding="utf-8")
         return dst
-    work = out_dir / "_inhoud"
+    work = out_dir / "_contents"
     extract(src, work)
     items = sorted(work.iterdir())
     if not items:
-        raise ConversionError("Het archief is leeg.")
+        raise ConversionError("The archive is empty.")
     dst = out_dir / f"{src.stem}.{fmt}"
     _pack(items, work, dst, fmt, 9)
     shutil.rmtree(work, ignore_errors=True)
@@ -273,7 +271,7 @@ def comic(src: Path, out_dir: Path, fmt: str) -> Path:
                                                                          ".bmp")),
                    key=lambda p: [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", p.name)])
     if not pages:
-        raise ConversionError("Geen pagina's (afbeeldingen) gevonden in dit stripboek.")
+        raise ConversionError("No pages (images) found in this comic book.")
     dst = out_dir / f"{src.stem}.{fmt}"
     if fmt == "pdf":
         from .pdftools import merge
@@ -292,8 +290,7 @@ def vmdisk(src: Path, out_dir: Path, fmt: str) -> Path:
     if fmt in ("zip", "txt"):
         return repack(src, out_dir, fmt)
     if not have("qemu-img"):
-        raise ConversionError("VM-schijven omzetten vraagt qemu-img (macOS: brew install qemu, Linux: sudo apt install "
-                              "qemu-utils, Windows: qemu.org).")
+        raise ConversionError("Converting VM disks needs qemu-img (macOS: brew install qemu, Linux: sudo apt install qemu-utils, Windows: qemu.org).")
     qfmt = {"vhd": "vpc", "raw": "raw", "qcow2": "qcow2", "vmdk": "vmdk", "vdi": "vdi", "vhdx": "vhdx"}[fmt]
     dst = out_dir / f"{src.stem}.{fmt}"
     r = subprocess.run(["qemu-img", "convert", "-p", "-O", qfmt, str(src), str(dst)], capture_output=True,

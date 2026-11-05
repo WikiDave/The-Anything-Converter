@@ -60,25 +60,25 @@ LOGO_ASCII = r"""
 
 # Gereedschap: (icoon links, icoon rechts, naam, actie, waarde)
 TOOLS = [
-    ("PDF", "DOC", "PDF naar Word", "fmt", "docx"), ("PDF", "XLS", "PDF naar Excel", "fmt", "xlsx"),
-    ("PDF", "PPT", "PDF naar PPT", "fmt", "pptx"), ("PDF", "PNG", "PDF naar PNG", "fmt", "png"),
-    ("PDF", "JPG", "PDF naar JPEG", "fmt", "jpg"), ("PDF", "TXT", "PDF naar TXT", "fmt", "txt"),
-    ("PDF", "RTF", "PDF naar RTF", "fmt", "rtf"), ("PDF", "HTM", "PDF naar HTML", "fmt", "html"),
-    ("PDF", "XML", "PDF naar XML", "fmt", "xml"), ("DOC", "PDF", "Word naar PDF", "fmt", "pdf"),
-    ("XLS", "PDF", "Excel naar PDF", "fmt", "pdf"), ("PPT", "PDF", "PPT naar PDF", "fmt", "pdf"),
-    ("IMG", "PDF", "Afbeelding naar PDF", "fmt", "pdf"), ("TXT", "PDF", "TXT/RTF naar PDF", "fmt", "pdf"),
-    ("PDF", "+", "PDF samenvoegen", "tab", "tab-pdf"), ("PDF", "/", "PDF splitsen", "tab", "tab-pdf"),
+    ("PDF", "DOC", "PDF to Word", "fmt", "docx"), ("PDF", "XLS", "PDF to Excel", "fmt", "xlsx"),
+    ("PDF", "PPT", "PDF to PPT", "fmt", "pptx"), ("PDF", "PNG", "PDF to PNG", "fmt", "png"),
+    ("PDF", "JPG", "PDF to JPEG", "fmt", "jpg"), ("PDF", "TXT", "PDF to TXT", "fmt", "txt"),
+    ("PDF", "RTF", "PDF to RTF", "fmt", "rtf"), ("PDF", "HTM", "PDF to HTML", "fmt", "html"),
+    ("PDF", "XML", "PDF to XML", "fmt", "xml"), ("DOC", "PDF", "Word to PDF", "fmt", "pdf"),
+    ("XLS", "PDF", "Excel to PDF", "fmt", "pdf"), ("PPT", "PDF", "PPT to PDF", "fmt", "pdf"),
+    ("IMG", "PDF", "Image to PDF", "fmt", "pdf"), ("TXT", "PDF", "TXT/RTF to PDF", "fmt", "pdf"),
+    ("PDF", "+", "Merge PDFs", "tab", "tab-pdf"), ("PDF", "/", "Split PDF", "tab", "tab-pdf"),
     ("PDF", "v", "PDF comprimeren", "fmt", "pdf"), ("IMG", "TXT", "Bestands-OCR", "fmt", "txt"),
-    ("[ ]", "TXT", "Screenshot-OCR", "screen", ""), ("~", "TXT", "Audio/video naar tekst", "fmt", "txt"),
+    ("[ ]", "TXT", "Screenshot-OCR", "screen", ""), ("~", "TXT", "Audio/video to text", "fmt", "txt"),
     ("~", "SRT", "Ondertitels maken", "fmt", "srt"), ("DOC", "EPUB", "E-book maken", "fmt", "epub"),
-    ("EPUB", "AZW", "E-book voor Kindle", "fmt", "azw3"), ("~", "M4R", "iPhone-beltoon", "fmt", "m4r"),
-    ("IMG", "IG", "Social media formaat", "tab", "tab-social"), ("WWW", "PDF", "Website opslaan", "web", ""),
-    ("BIN", "ISO", "CUE/BIN naar ISO", "fmt", "iso"), ("BIN", "1x", "BIN-sporen samenvoegen", "fmt", "cue"),
-    ("ISO", "CHD", "Naar CHD", "fmt", "chd"), ("ISO", "CSO", "PSP ISO naar CSO", "fmt", "cso"),
-    ("ROM", "IPS", "ROM patchen", "fmt", "patch"), ("N64", "Z64", "N64-ROM omzetten", "fmt", "z64"),
+    ("EPUB", "AZW", "E-book for Kindle", "fmt", "azw3"), ("~", "M4R", "iPhone ringtone", "fmt", "m4r"),
+    ("IMG", "IG", "Social media size", "tab", "tab-social"), ("WWW", "PDF", "Save website", "web", ""),
+    ("BIN", "ISO", "CUE/BIN to ISO", "fmt", "iso"), ("BIN", "1x", "Merge BIN tracks", "fmt", "cue"),
+    ("ISO", "CHD", "To CHD", "fmt", "chd"), ("ISO", "CSO", "PSP ISO to CSO", "fmt", "cso"),
+    ("ROM", "IPS", "ROM patchen", "fmt", "patch"), ("N64", "Z64", "Convert N64 ROM", "fmt", "z64"),
     ("#", "SHA", "Checksum / hash", "tab", "tab-check"), ("ZIP", "7Z", "Archief", "tab", "tab-arch"),
     ("URL", "MP4", "Video-link / torrent", "tab", "tab-fetch"), ("!", "AV", "Virusscan", "tab", "tab-check"),
-    ("TXT", "ED", "Tekst bewerken", "tab", "tab-edit"), ("SQL", "DB", "Database bekijken / SQL", "tab", "tab-db"),
+    ("TXT", "ED", "Edit text", "tab", "tab-edit"), ("SQL", "DB", "Database viewer / SQL", "tab", "tab-db"),
 ]
 
 
@@ -195,38 +195,14 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
 """
 
     def bars(before: int, after: int, width: int = 26) -> str:
-        return A(cli.bars(before, after, width).replace("  ORIGINEEL", "ORIGINEEL").replace("\n  ", "\n"))
+        return A(cli.bars(before, after, width).replace("  ORIGINAL", "ORIGINAL").replace("\n  ", "\n"))
 
     class HelpScreen(ModalScreen):
         BINDINGS = [Binding("escape,f1,question_mark,q", "dismiss", "sluiten")]
 
         def compose(self) -> ComposeResult:
             with VerticalScroll(id="help"):
-                yield Static(A(f"""ANYTHING CONVERTER {VERSION} · TERMINAL · HULP
-
-TOETSEN
-  tab / shift+tab   naar het volgende / vorige veld
-  pijltjes + enter  kiezen in lijsten, mappen en tabbladen
-  ctrl+s            start (op het tabblad waar je bent)
-  ctrl+o            pad typen of plakken
-  ctrl+t            kleur wisselen (groen, amber, cyaan, wit)
-  f1 of ?           deze hulp          ctrl+q   afsluiten
-  1 t/m 9, 0        naar tabblad 1-10 (als je niet in een tekstveld staat)
-
-TIPS
-  · sleep een bestand in het terminalvenster om het pad te plakken
-  · resultaten komen naast het origineel; er wordt nooit iets overschreven
-  · CUE/BIN: kies de .cue, de .bin-bestanden in dezelfde map gaan vanzelf mee
-  · ROM patchen: kies de ROM en vul bij PATCH> het .ips/.ups/.bps-bestand in
-  · kopieer tekst uit het tekstvak met ctrl+c (werkt ook via SSH in de meeste terminals)
-
-ANDERE MANIEREN
-  anything-converter-tui --simpel     menu's met nummers, werkt in elke terminal
-  anything-converter-tui --ascii      alleen ASCII-tekens (oude consoles)
-  anything-converter-tui --help       opdrachten voor scripts, bijv.
-      anything-converter-tui converteer *.heic --naar jpg
-
-esc = sluiten"""), markup=False)
+                yield Static(A(f"ANYTHING CONVERTER {VERSION} · TERMINAL · HELP\n\nKEYS\n  tab / shift+tab   next / previous field\n  arrows + enter    choose in lists, folders and tabs\n  ctrl+s            start (on the current tab)\n  ctrl+o            type or paste a path\n  ctrl+t            change colour (green, amber, cyan, white)\n  f1 or ?           this help          ctrl+q   quit\n  1 to 9, 0         go to tab 1-10 (when not in a text field)\n\nTIPS\n  · drag a file into the terminal window to paste its path\n  · results go next to the original; nothing is ever overwritten\n  · CUE/BIN: choose the .cue, the .bin files in the same folder are included\n  · patch a ROM: choose the ROM and enter the .ips/.ups/.bps file at PATCH>\n  · copy text from the text box with ctrl+c (also works over SSH in most terminals)\n\nOTHER WAYS\n  anything-converter-tui --simple     numbered menus, works in any terminal\n  anything-converter-tui --ascii      ASCII characters only (old consoles)\n  anything-converter-tui --help       commands for scripts, e.g.\n      anything-converter-tui convert *.heic --to jpg\n\nesc = close"), markup=False)
 
     class Converter(App):
         TITLE = "Anything Converter"
@@ -237,7 +213,7 @@ esc = sluiten"""), markup=False)
             Binding("ctrl+t", "skin", "kleur"),
             Binding("f1", "help", "hulp"),
             Binding("question_mark", "help", "hulp", show=False),
-            Binding("ctrl+q", "quit", "afsluiten"),
+            Binding("ctrl+q", "quit", "quit"),
         ] + [Binding(str(i), f"tab({i})", show=False) for i in range(1, 10)] + [Binding("0", "tab(10)", show=False)]
         TABS = ["tab-convert", "tab-tools", "tab-pdf", "tab-social", "tab-arch", "tab-fetch", "tab-check",
                 "tab-web", "tab-edit", "tab-db"]
@@ -257,13 +233,13 @@ esc = sluiten"""), markup=False)
                 yield Label(A(f"   VER {VERSION} · TERMINAL"), classes="dim")
                 yield Label(A("f1 hulp · ctrl+q stop"), classes="dim", id="keys")
             yield Static(LOGO_ASCII if ascii_mode else LOGO, id="logo")
-            yield Label(A("> converteer · verklein · vergroot · knip · pdf · ocr · spraak · rom's · social"),
+            yield Label(A("> convert · shrink · enlarge · trim · pdf · ocr · speech · roms · social"),
                         id="tagline")
             with Horizontal(id="menubar"):
-                for i, txt in enumerate(("01 BESTAND", "02 FORMAAT", "03 OPTIES", "04 UITVOER"), 1):
+                for i, txt in enumerate(("01 FILE", "02 FORMAT", "03 OPTIES", "04 OUTPUT"), 1):
                     yield Label(txt, id=f"step{i}", classes="on" if i == 1 else "")
             with TabbedContent(initial="tab-convert", id="tabs"):
-                with TabPane(E("1 OMZETTEN"), id="tab-convert"):
+                with TabPane(E("1 CONVERT"), id="tab-convert"):
                     yield from self.compose_convert()
                 with TabPane(E("2 TOOLS"), id="tab-tools"):
                     yield from self.compose_tools()
@@ -293,51 +269,51 @@ esc = sluiten"""), markup=False)
 
         def compose_convert(self) -> ComposeResult:
             with VerticalScroll():
-                with self.frame("01 · BESTAND", id="f-file"):
+                with self.frame("01 · FILE", id="f-file"):
                     with Horizontal(classes="row"):
                         yield Label("PAD>", classes="prompt")
-                        yield Input(placeholder=A("typ of plak een pad (of sleep een bestand hierheen)"), id="path")
+                        yield Input(placeholder=A("type or paste a path (or drag a file here)"), id="path")
                     yield Files(str(self.src.parent if self.src else Path.cwd()), id="tree")
-                    yield Label(A("// kies een bestand met de pijltjes en enter, of klik erop"), id="fileinfo",
+                    yield Label(A("// choose a file with the arrows and enter, or click it"), id="fileinfo",
                                 markup=False, classes="dim")
                 with Horizontal(classes="cols", id="cols"):
-                    with self.frame("02 · FORMAAT"):
-                        yield Select([], prompt="eerst een bestand kiezen", id="format", allow_blank=True)
+                    with self.frame("02 · FORMAT"):
+                        yield Select([], prompt="choose a file first", id="format", allow_blank=True)
                         yield Label("", id="fmt-hint", classes="hint", markup=False)
-                        yield Label("UITVOER-MAP>", classes="prompt")
-                        yield Input(placeholder="(zelfde map als het bestand)", id="outdir")
-                        yield Checkbox(A("Alle bestanden van dit type in deze map"), id="batch")
-                    with self.frame("03 · GROOTTE", id="f-size"):
+                        yield Label("OUTPUT FOLDER>", classes="prompt")
+                        yield Input(placeholder="(same folder as the file)", id="outdir")
+                        yield Checkbox(A("All files of this type in this folder"), id="batch")
+                    with self.frame("03 · SIZE", id="f-size"):
                         with RadioSet(id="mode"):
-                            yield RadioButton("Kwaliteit", value=True, id="m-quality")
-                            yield RadioButton("Doelgrootte", id="m-target")
+                            yield RadioButton("Quality", value=True, id="m-quality")
+                            yield RadioButton("Target size", id="m-target")
                         with RadioSet(id="quality"):
-                            yield RadioButton("Hoog", id="q-high")
-                            yield RadioButton("Normaal", value=True, id="q-medium")
-                            yield RadioButton("Laag", id="q-low")
+                            yield RadioButton("High", id="q-high")
+                            yield RadioButton("Normal", value=True, id="q-medium")
+                            yield RadioButton("Low", id="q-low")
                         with Horizontal(classes="row"):
                             yield Label("DOEL>", classes="prompt")
-                            yield Input(placeholder="bijv. 8 MB of 500 KB", id="target")
-                with self.frame("KNIPPEN · VIDEO", id="f-trim"):
+                            yield Input(placeholder="e.g. 8 MB or 500 KB", id="target")
+                with self.frame("TRIM · VIDEO", id="f-trim"):
                     with Horizontal(classes="row"):
-                        yield Label("IN>", classes="prompt")
+                        yield Label("START>", classes="prompt")
                         yield Input(placeholder="0:00", id="t-start")
-                        yield Label("UIT>", classes="prompt")
+                        yield Label("END>", classes="prompt")
                         yield Input(placeholder="einde", id="t-end")
                     with Horizontal(classes="row", id="video-row"):
                         yield Select([(f"{h}p", str(h)) for h in (2160, 1440, 1080, 720, 480, 360)],
-                                     prompt="resolutie: origineel", id="height", allow_blank=True)
+                                     prompt="resolution: original", id="height", allow_blank=True)
                         yield Select([(n, v) for v, n in (("iphone", "iPhone"), ("ipad", "iPad"),
                                                           ("android", "Android"), ("ipod", "iPod"),
                                                           ("playstation", "PlayStation"), ("psp", "PSP"),
                                                           ("xbox", "Xbox"), ("nintendo-switch", "Nintendo Switch"),
                                                           ("nintendo-3ds", "Nintendo 3DS"), ("wii", "Wii"),
                                                           ("kindle-fire", "Kindle Fire"), ("blackberry", "BlackBerry"))],
-                                     prompt="apparaat: geen voorkeur", id="device", allow_blank=True)
-                    yield Checkbox("Geluid verwijderen", id="noaudio")
-                with self.frame("SPRAAK NAAR TEKST", id="f-speech"):
+                                     prompt="device: no preference", id="device", allow_blank=True)
+                    yield Checkbox("Remove audio", id="noaudio")
+                with self.frame("SPEECH TO TEXT", id="f-speech"):
                     with Horizontal(classes="row"):
-                        yield Select([(n, v) for v, n in (("auto", "taal: automatisch"), ("nl", "Nederlands"),
+                        yield Select([(n, v) for v, n in (("auto", "language: automatic"), ("nl", "Nederlands"),
                                                           ("en", "Engels"), ("de", "Duits"), ("fr", "Frans"),
                                                           ("es", "Spaans"), ("it", "Italiaans"), ("pt", "Portugees"),
                                                           ("ru", "Russisch"), ("tr", "Turks"), ("ar", "Arabisch"),
@@ -346,8 +322,8 @@ esc = sluiten"""), markup=False)
                         yield Select([("snel (base, 150 MB)", "base"), ("nauwkeurig (small, 480 MB)", "small"),
                                       ("zeer nauwkeurig (medium, 1,5 GB)", "medium")], value="base", id="model",
                                      allow_blank=False)
-                    yield Checkbox("Vertalen naar Engels", id="translate")
-                    yield Label(A("// lokaal op je computer. het model wordt de eerste keer gedownload."),
+                    yield Checkbox("Translate to English", id="translate")
+                    yield Label(A("// runs locally on your computer. the model is downloaded the first time."),
                                 classes="hint")
                 with self.frame("AFMETINGEN", id="f-image"):
                     with Horizontal(classes="row"):
@@ -360,7 +336,7 @@ esc = sluiten"""), markup=False)
                 with self.frame("ROM-PATCH", id="f-patch"):
                     with Horizontal(classes="row"):
                         yield Label("PATCH>", classes="prompt")
-                        yield Input(placeholder=".ips, .ups of .bps", id="patch")
+                        yield Input(placeholder=".ips, .ups or .bps", id="patch")
                 yield Button(E("[ > START ]  (ctrl+s)") if ascii_mode else E("[ ▶ START ]  (ctrl+s)"), id="go",
                              classes="go")
                 yield ProgressBar(total=100, show_eta=False, id="progress")
@@ -369,67 +345,64 @@ esc = sluiten"""), markup=False)
 
         def compose_tools(self) -> ComposeResult:
             with VerticalScroll():
-                with self.frame("GEREEDSCHAP · KIES EN GA"):
+                with self.frame("TOOLS · PICK AND GO"):
                     with Grid(id="tool-grid"):
                         for i, (a, b, name, _, _) in enumerate(TOOLS):
                             icon = f"{a}>{b}" if ascii_mode else f"{a}→{b}"
                             yield Button(E(f"{icon:<9} {name}"), id=f"tool-{i}", classes="tool")
-                    yield Label(A("// pdf-, ocr- en spraakgereedschap kiest het formaat voor je; daarna kies je "
-                                  "het bestand."), classes="hint")
+                    yield Label(A("// pdf, ocr and speech tools pick the format for you; then you choose the file."), classes="hint")
 
         def compose_pdf(self) -> ComposeResult:
             with VerticalScroll():
                 with self.frame("PDF-WERKBANK"):
-                    yield Label(A("BESTANDEN> één per regel, in volgorde (pdf's en/of foto's)"), classes="prompt")
+                    yield Label(A("FILES> one per line, in order (pdfs and/or photos)"), classes="prompt")
                     yield TextArea("", id="pdf-files")
                     with Horizontal(classes="row"):
                         yield Label("PAGINA'S>", classes="prompt")
-                        yield Input(placeholder="bijv. 1-3,5  (leeg = alles)", id="pdf-pages")
+                        yield Input(placeholder="e.g. 1-3,5  (empty = all)", id="pdf-pages")
                         yield Select([("90° rechtsom", "90"), ("180°", "180"), ("90° linksom", "270")], value="90",
                                      id="pdf-angle", allow_blank=False)
                     with Horizontal(classes="row"):
-                        yield Button(E("[ SAMENVOEGEN ]"), id="pdf-merge")
-                        yield Button(E("[ SPLITSEN ]"), id="pdf-split")
-                        yield Button(E("[ DRAAIEN ]"), id="pdf-rotate")
-                        yield Button(E("[ VERWIJDEREN ]"), id="pdf-delete")
+                        yield Button(E("[ MERGE ]"), id="pdf-merge")
+                        yield Button(E("[ SPLIT ]"), id="pdf-split")
+                        yield Button(E("[ ROTATE ]"), id="pdf-rotate")
+                        yield Button(E("[ DELETE ]"), id="pdf-delete")
                         yield Button(E("[ COMPRIMEREN ]"), id="pdf-compress")
-                    yield Label(A("// splitsen zonder pagina's = elke pagina apart (zip). met pagina's = alleen "
-                                  "die pagina's als één pdf."), classes="hint")
+                    yield Label(A("// split without pages = every page separately (zip). with pages = only those pages as one pdf."), classes="hint")
                 yield Static("", id="pdf-result", classes="result", markup=False)
 
         def compose_social(self) -> ComposeResult:
             opts = [(A(social.label(p[1])), p[1]) for p in social.PRESETS]
             with VerticalScroll():
-                with self.frame("SOCIAL MEDIA · EXACT FORMAAT"):
+                with self.frame("SOCIAL MEDIA · EXACT SIZE"):
                     with Horizontal(classes="row"):
                         yield Label("FOTO/VIDEO>", classes="prompt")
-                        yield Input(placeholder="pad naar foto of video", id="so-path")
+                        yield Input(placeholder="path to photo or video", id="so-path")
                     yield Select(opts, value="ig-portrait", id="so-preset", allow_blank=False)
                     with RadioSet(id="so-fit"):
-                        yield RadioButton("Vullen (bijsnijden vanuit het midden)", value=True, id="so-cover")
+                        yield RadioButton("Fill (crop from the centre)", value=True, id="so-cover")
                         yield RadioButton("Passend (alles zichtbaar, vage rand)", id="so-contain")
                     yield Button(E("[ MAKEN ]"), id="so-go", classes="go")
-                    yield Label(A("// panorama-carrousel: een brede foto in stukken om te swipen op instagram, "
-                                  "facebook en threads."), classes="hint")
+                    yield Label(A("// panorama carousel: a wide photo in pieces to swipe through on instagram, facebook and threads."), classes="hint")
                 yield ProgressBar(total=100, show_eta=False, id="so-progress")
                 yield Static("", id="so-result", classes="result", markup=False)
 
         def compose_archive(self) -> ComposeResult:
             with VerticalScroll():
-                with self.frame("ARCHIEF BEKIJKEN / UITPAKKEN"):
+                with self.frame("VIEW / EXTRACT ARCHIVE"):
                     with Horizontal(classes="row"):
                         yield Label("ARCHIEF>", classes="prompt")
                         yield Input(placeholder=".zip, .7z, .tar.gz, ...", id="ar-path")
                     with Horizontal(classes="row"):
                         yield Button(E("[ BEKIJKEN ]"), id="ar-list")
-                        yield Button(E("[ UITPAKKEN ]"), id="ar-extract")
-                with self.frame("INPAKKEN"):
-                    yield Label(A("PADEN> bestanden of mappen, één per regel"), classes="prompt")
+                        yield Button(E("[ EXTRACT ]"), id="ar-extract")
+                with self.frame("PACK"):
+                    yield Label(A("PATHS> files or folders, one per line"), classes="prompt")
                     yield TextArea("", id="ar-files")
                     with Horizontal(classes="row"):
                         yield Select([(x, x) for x in ("zip", "7z", "tar.gz", "tar.xz", "tar.bz2", "tar")],
                                      value="zip", id="ar-fmt", allow_blank=False)
-                        yield Button(E("[ INPAKKEN ]"), id="ar-pack")
+                        yield Button(E("[ PACK ]"), id="ar-pack")
                 yield Static("", id="ar-result", classes="result", markup=False)
 
         def compose_fetch(self) -> ComposeResult:
@@ -437,19 +410,19 @@ esc = sluiten"""), markup=False)
                 with self.frame("LINK · MAGNET · .TORRENT"):
                     with Horizontal(classes="row"):
                         yield Label("LINK>", classes="prompt")
-                        yield Input(placeholder=A("https://www.youtube.com/watch?v=…  of  magnet:?…  of .torrent"),
+                        yield Input(placeholder=A("https://www.youtube.com/watch?v=…  or  magnet:?…  or .torrent"),
                                     id="url")
                     with Horizontal(classes="row"):
-                        yield Checkbox("Alleen geluid", id="audio")
-                        yield Checkbox("Controleren op virussen", value=True, id="scan")
+                        yield Checkbox("Audio only", id="audio")
+                        yield Checkbox("Check for viruses", value=True, id="scan")
                     with Horizontal(classes="row"):
-                        yield Label("OPSLAAN IN>", classes="prompt")
+                        yield Label("SAVE TO>", classes="prompt")
                         yield Input(value=str(Path.home() / "Downloads"), id="dl-dir")
                     with Horizontal(classes="row"):
-                        yield Button(E("[ OPHALEN ]"), id="fetch")
+                        yield Button(E("[ DOWNLOAD ]"), id="fetch")
                         yield Button(E("[ STOP ]"), id="stop")
                     yield ProgressBar(total=100, show_eta=False, id="f-progress")
-                    yield Static(A("// alleen voor eigen bestanden, vrije licenties of met toestemming van de maker."),
+                    yield Static(A("// only for your own files, free licences or with the creator's permission."),
                                  id="f-result", markup=False, classes="dim")
 
         def compose_check(self) -> ComposeResult:
@@ -457,76 +430,75 @@ esc = sluiten"""), markup=False)
                 with self.frame("VIRUSSCAN & CHECKSUM"):
                     with Horizontal(classes="row"):
                         yield Label("PAD>", classes="prompt")
-                        yield Input(placeholder="bestand of map", id="scan-path")
+                        yield Input(placeholder="file or folder", id="scan-path")
                     with Horizontal(classes="row"):
                         yield Label("HMAC>", classes="prompt")
-                        yield Input(placeholder="sleutel (optioneel, alleen voor checksum)", id="hmac")
+                        yield Input(placeholder="key (optional, checksum only)", id="hmac")
                     with Horizontal(classes="row"):
                         yield Button(E("[ VIRUSSCAN ]"), id="scan-go")
                         yield Button(E("[ CHECKSUM ]"), id="hash-go")
                     yield Static("", id="scan-result", markup=False)
                 with self.frame("VIRUSTOTAL (OPTIONEEL)"):
                     with Horizontal(classes="row"):
-                        yield Label("SLEUTEL>", classes="prompt")
-                        yield Input(password=True, placeholder="gratis api-sleutel van virustotal.com", id="vt")
-                        yield Button(E("[ OPSLAAN ]"), id="vt-save")
+                        yield Label("KEY>", classes="prompt")
+                        yield Input(password=True, placeholder="free api key from virustotal.com", id="vt")
+                        yield Button(E("[ SAVE ]"), id="vt-save")
                     yield Label("", id="scanner-info", markup=False, classes="dim")
 
         def compose_web(self) -> ComposeResult:
             with VerticalScroll():
-                with self.frame("TEKST HERKENNEN (OCR)"):
+                with self.frame("RECOGNISE TEXT (OCR)"):
                     with Horizontal(classes="row"):
-                        yield Label("BESTAND>", classes="prompt")
-                        yield Input(placeholder="afbeelding of gescande pdf", id="ocr-path")
+                        yield Label("FILE>", classes="prompt")
+                        yield Input(placeholder="image or scanned pdf", id="ocr-path")
                     with Horizontal(classes="row"):
-                        yield Button(E("[ HERKENNEN ]"), id="ocr-go")
-                        yield Button(E("[ SCHERMAFBEELDING ]"), id="ocr-screen")
+                        yield Button(E("[ RECOGNISE ]"), id="ocr-go")
+                        yield Button(E("[ SCREENSHOT ]"), id="ocr-screen")
                         yield Button(E("[ KOPIEER ]"), id="ocr-copy")
                     yield TextArea("", id="ocr-out", read_only=True)
-                with self.frame("WEBSITE OPSLAAN"):
+                with self.frame("SAVE WEBSITE"):
                     with Horizontal(classes="row"):
                         yield Label("URL>", classes="prompt")
                         yield Input(placeholder="https://voorbeeld.nl", id="web-url")
                         yield Select([(".pdf", "pdf"), (".png", "png"), (".jpg", "jpg")], value="pdf", id="web-fmt",
                                      allow_blank=False)
-                        yield Button(E("[ OPSLAAN ]"), id="web-go")
+                        yield Button(E("[ SAVE ]"), id="web-go")
                     yield Static("", id="web-result", markup=False, classes="dim")
 
         def compose_editor(self) -> ComposeResult:
             with Vertical():
                 with self.frame("TEKSTEDITOR"):
                     with Horizontal(classes="row"):
-                        yield Label("BESTAND>", classes="prompt")
-                        yield Input(placeholder="pad naar een tekstbestand (of een nieuwe naam)", id="ed-path")
+                        yield Label("FILE>", classes="prompt")
+                        yield Input(placeholder="path to a text file (or a new name)", id="ed-path")
                         yield Button(E("[ OPENEN ]"), id="ed-open")
                         yield Button(E("[ CONTROLEER ]"), id="ed-check")
-                        yield Button(E("[ OPSLAAN ]"), id="ed-save")
-                    yield Label(A("// ctrl+s = opslaan. bij de eerste keer opslaan blijft een kopie (.bak) van het "
-                                  "origineel bewaard."), id="ed-msg", classes="hint", markup=False)
+                        yield Button(E("[ SAVE ]"), id="ed-save")
+                    yield Label(A("// ctrl+s = save. the first save keeps a copy (.bak) of the original."), id="ed-msg", classes="hint", markup=False)
                 yield TextArea("", id="ed-text", show_line_numbers=True, tab_behavior="indent")
 
         def compose_db(self) -> ComposeResult:
             with VerticalScroll():
                 with self.frame("DATABASE (SQLITE, .SQL, CSV, EXCEL)"):
                     with Horizontal(classes="row"):
-                        yield Label("BESTAND>", classes="prompt")
-                        yield Input(placeholder="pad naar .sqlite, .db, .sql, .csv of .xlsx", id="db-path")
+                        yield Label("FILE>", classes="prompt")
+                        yield Input(placeholder="path to .sqlite, .db, .sql, .csv or .xlsx", id="db-path")
                         yield Button(E("[ OPENEN ]"), id="db-open")
-                        yield Button(E("[ NIEUW ]"), id="db-new")
-                    yield Label(A("// je werkt op een kopie; met exporteren bewaar je de wijzigingen."), id="db-msg",
+                        yield Button(E("[ NEW ]"), id="db-new")
+                    yield Label(A("// you are working on a copy; export to keep your changes."), id="db-msg",
                                 classes="hint", markup=False)
                 with Horizontal(classes="cols", id="db-cols"):
-                    with self.frame("TABELLEN"):
+                    with self.frame("TABLES"):
                         yield OptionList(id="db-tables")
-                    with self.frame("INHOUD"):
+                    with self.frame("CONTENTS"):
                         yield DataTable(id="db-rows", zebra_stripes=True)
                 with self.frame("SQL"):
                     yield TextArea("", id="db-sql")
                     with Horizontal(classes="row"):
                         yield Button(E("[ > UITVOEREN ]") if ascii_mode else E("[ ▶ UITVOEREN ]"), id="db-run")
                         yield Select([("database (.sqlite)", "sqlite"), ("sql-dump", "sql"), ("excel", "xlsx"),
-                                      ("json", "json"), ("csv", "csv"), ("resultaat als csv", "q-csv"),
-                                      ("resultaat als excel", "q-xlsx")], value="sqlite", id="db-fmt", allow_blank=False)
+                                      ("json", "json"), ("csv", "csv"), ("result as csv", "q-csv"),
+                                      ("result as excel", "q-xlsx")], value="sqlite", id="db-fmt", allow_blank=False)
                         yield Button(E("[ EXPORT ]"), id="db-export")
                     yield DataTable(id="db-result", zebra_stripes=True)
 
@@ -543,8 +515,8 @@ esc = sluiten"""), markup=False)
             self.show_options(None, None)
             eng = virus.available_engine()
             self.query_one("#scanner-info", Label).update(A(
-                f"// scanner op deze computer: {eng}" if eng else
-                "// geen scanner gevonden. windows: defender staat er standaard op. mac/linux: installeer clamav."))
+                f"// scanner on this computer: {eng}" if eng else
+                "// no scanner found. windows: defender is built in. mac/linux: install clamav."))
             self.relayout(self.size.width)
             if self.src:
                 self.choose(self.src)
@@ -635,7 +607,7 @@ esc = sluiten"""), markup=False)
             elif p.is_file():
                 self.choose(p.resolve())
             else:
-                self.status("bestaat niet: " + event.value)
+                self.status("does not exist: " + event.value)
 
         def choose(self, path: Path) -> None:
             if not path.is_file():
@@ -657,12 +629,12 @@ esc = sluiten"""), markup=False)
                 meta.append(kind)
             if info.get("ext") and info["ext"] != path.suffix.lower().lstrip("."):
                 meta.append(f"eigenlijk .{info['ext']}")
-            self.query_one("#fileinfo", Label).update(A(f"NAAM  {path.name}\nINFO  {' · '.join(meta)}"))
+            self.query_one("#fileinfo", Label).update(A(f"NAME  {path.name}\nINFO  {' · '.join(meta)}"))
             self.query_one("#path", Input).value = str(path)
             ext = path.suffix.lower().lstrip(".")
             sel = self.query_one("#format", Select)
             sel.set_options([(A(f".{x}  {fmt_label(self.cat, x)}".rstrip() +
-                                ("  (zelfde formaat)" if x == ext else "")), x) for x in self.targets])
+                                ("  (same format)" if x == ext else "")), x) for x in self.targets])
             want = self.preset if self.preset in self.targets else (ext if ext in self.targets else self.targets[0])
             self.preset = None
             sel.value = want
@@ -694,11 +666,11 @@ esc = sluiten"""), markup=False)
             self.query_one("#f-speech").display = speech
             self.query_one("#f-image").display = cat == "image" and not texty
             self.query_one("#f-patch").display = cat in ("rom",)
-            hint = {"disc": "// cue/bin: de .bin-bestanden in dezelfde map gaan vanzelf mee. chd vraagt chdman.",
-                    "rom": "// patch: vul hieronder het .ips/.ups/.bps-bestand in en kies .patch.",
-                    "ebook": "// mobi/azw3 en meer: installeer calibre (gratis), dan werkt het vanzelf."}.get(cat, "")
+            hint = {"disc": "// cue/bin: the .bin files in the same folder are included automatically. chd needs chdman.",
+                    "rom": "// patch: enter the .ips/.ups/.bps file below and choose .patch.",
+                    "ebook": "// mobi/azw3 and more: install calibre (free) and it works automatically."}.get(cat, "")
             if speech:
-                hint = "// spraak wordt lokaal herkend; lange opnames duren even."
+                hint = "// speech is recognised locally; long recordings take a while."
             self.query_one("#fmt-hint", Label).update(A(hint))
 
         @on(Input.Submitted, "#patch")
@@ -726,7 +698,7 @@ esc = sluiten"""), markup=False)
                 if self.src and value in self.targets:
                     self.query_one("#format", Select).value = value
                     self.preset = None
-                self.status(f"{name.lower()}: kies een bestand (pijltjes + enter, of plak een pad)")
+                self.status(f"{name.lower()}: choose a file (arrows + enter, or paste a path)")
 
         # ------------------------------------------------------------ converteren
         def action_start(self) -> None:
@@ -750,7 +722,7 @@ esc = sluiten"""), markup=False)
             if self.query_one("#f-size").display and self.query_one("#m-target", RadioButton).value:
                 raw = self.query_one("#target", Input).value.strip()
                 if not raw:
-                    raise ConversionError("Vul een doelgrootte in, bijvoorbeeld 8 MB of 500 KB.")
+                    raise ConversionError("Enter a target size, for example 8 MB or 500 KB.")
                 opts["target_bytes"] = parse_size(raw, "mb")
             else:
                 q = self.query_one("#quality", RadioSet).pressed_button
@@ -778,12 +750,12 @@ esc = sluiten"""), markup=False)
 
         def start_convert(self) -> None:
             if not self.src:
-                self.result("#result", "!! FOUT\nKies eerst een bestand.", True)
+                self.result("#result", "!! ERROR\nChoose a file first.", True)
                 return
             try:
                 opts = self.options()
             except ConversionError as exc:
-                self.result("#result", f"!! FOUT\n{exc}", True)
+                self.result("#result", f"!! ERROR\n{exc}", True)
                 return
             patch_raw = self.query_one("#patch", Input).value.strip()
             patch = Path(self.clean(patch_raw)).expanduser() if patch_raw and self.cat == "rom" else None
@@ -821,21 +793,21 @@ esc = sluiten"""), markup=False)
                     done_lines.append(f"!! {src.name}: {exc}")
                 except Exception as exc:  # noqa: BLE001
                     errors += 1
-                    done_lines.append(f"!! {src.name}: er ging iets mis: {exc}")
+                    done_lines.append(f"!! {src.name}: something went wrong: {exc}")
             if len(files) == 1 and last:
                 src, dst = last
-                text = f"STATUS: OK\nBESTAND    {dst}\n" + bars(src.stat().st_size, dst.stat().st_size)
+                text = f"STATUS: OK\nFILE       {dst}\n" + bars(src.stat().st_size, dst.stat().st_size)
                 self.call_from_thread(self.result, "#result", text, False)
                 if dst.suffix.lower() in (".txt", ".srt", ".vtt"):
                     self.call_from_thread(self.show_text, dst.read_text(encoding="utf-8", errors="replace"))
-                self.call_from_thread(self.status, f"klaar: {dst.name} ({human_size(dst.stat().st_size)})")
+                self.call_from_thread(self.status, f"done: {dst.name} ({human_size(dst.stat().st_size)})")
             elif len(files) == 1:
-                self.call_from_thread(self.result, "#result", "!! FOUT\n" + done_lines[0][3:].split(": ", 1)[-1],
+                self.call_from_thread(self.result, "#result", "!! ERROR\n" + done_lines[0][3:].split(": ", 1)[-1],
                                       True)
             else:
-                head = f"STATUS: {len(files) - errors} van {len(files)} gelukt\n"
+                head = f"STATUS: {len(files) - errors} of {len(files)} succeeded\n"
                 self.call_from_thread(self.result, "#result", head + "\n".join(done_lines[-30:]), bool(errors))
-                self.call_from_thread(self.status, f"klaar: {len(files) - errors}/{len(files)} bestanden")
+                self.call_from_thread(self.status, f"done: {len(files) - errors}/{len(files)} files")
             self.call_from_thread(self.done_convert)
 
         def show_text(self, text: str) -> None:
@@ -856,13 +828,13 @@ esc = sluiten"""), markup=False)
                 files = [self.src]
             missing = [str(p) for p in files if not p.is_file()]
             if not files or missing:
-                self.result("#pdf-result", "!! " + ("bestaat niet: " + ", ".join(missing) if missing else
-                                                    "vul eerst een of meer bestanden in"), True)
+                self.result("#pdf-result", "!! " + ("does not exist: " + ", ".join(missing) if missing else
+                                                    "enter one or more files first"), True)
                 return
             action = event.button.id.split("-")[1]
             pages = self.query_one("#pdf-pages", Input).value.strip()
             angle = int(self.query_one("#pdf-angle", Select).value)
-            self.result("#pdf-result", "> bezig…")
+            self.result("#pdf-result", "> working…")
             self.pdf_worker(action, files, pages, angle)
 
         @work(thread=True, group="pdf")
@@ -872,7 +844,7 @@ esc = sluiten"""), markup=False)
             try:
                 if action == "merge":
                     if len(files) < 2:
-                        raise ConversionError("Samenvoegen: vul minstens twee bestanden in, één per regel.")
+                        raise ConversionError("Merge: enter at least two files, one per line.")
                     dst = cli.unique(src.with_name(f"{src.stem}_samengevoegd.pdf"))
                     pdftools.merge(files, dst)
                 elif action == "split":
@@ -883,18 +855,18 @@ esc = sluiten"""), markup=False)
                                         rotate=(pages or "1-") if action == "rotate" else "", angle=angle)
                 else:
                     dst = cli.convert_file(src, None, {"format": "pdf", "quality": "low"})
-                text = f"STATUS: OK\nBESTAND    {dst}\n" + bars(sum(p.stat().st_size for p in files),
+                text = f"STATUS: OK\nFILE       {dst}\n" + bars(sum(p.stat().st_size for p in files),
                                                                dst.stat().st_size)
                 self.call_from_thread(self.result, "#pdf-result", text)
             except (ConversionError, ValueError) as exc:
-                self.call_from_thread(self.result, "#pdf-result", f"!! FOUT\n{exc}", True)
+                self.call_from_thread(self.result, "#pdf-result", f"!! ERROR\n{exc}", True)
 
         # ------------------------------------------------------------ social
         @on(Button.Pressed, "#so-go")
         def social_go(self) -> None:
             p = Path(self.clean(self.query_one("#so-path", Input).value)).expanduser()
             if not p.is_file():
-                self.result("#so-result", "!! kies een foto of video", True)
+                self.result("#so-result", "!! choose a photo or video", True)
                 return
             pid = self.query_one("#so-preset", Select).value
             fit = "contain" if self.query_one("#so-contain", RadioButton).value else "cover"
@@ -918,14 +890,14 @@ esc = sluiten"""), markup=False)
                 elif cat == "video":
                     made = social.video(p, tmp, pid, fit, progress)
                 else:
-                    raise ConversionError("Kies een foto of video.")
+                    raise ConversionError("Choose a photo or video.")
                 dst = cli.move_out(made, p.parent)
                 self.call_from_thread(self.result, "#so-result",
-                                      f"STATUS: OK\nBESTAND    {dst}\n" + bars(p.stat().st_size, dst.stat().st_size))
+                                      f"STATUS: OK\nFILE       {dst}\n" + bars(p.stat().st_size, dst.stat().st_size))
             except ConversionError as exc:
-                self.call_from_thread(self.result, "#so-result", f"!! FOUT\n{exc}", True)
+                self.call_from_thread(self.result, "#so-result", f"!! ERROR\n{exc}", True)
             except Exception as exc:  # noqa: BLE001
-                self.call_from_thread(self.result, "#so-result", f"!! FOUT\n{exc}", True)
+                self.call_from_thread(self.result, "#so-result", f"!! ERROR\n{exc}", True)
             finally:
                 shutil.rmtree(tmp, ignore_errors=True)
                 self.call_from_thread(lambda: setattr(bar, "display", False))
@@ -941,21 +913,21 @@ esc = sluiten"""), markup=False)
                 if act == "pack":
                     paths = self.paths(self.query_one("#ar-files", TextArea).text)
                     if not paths:
-                        raise ConversionError("Vul eerst bestanden of mappen in, één per regel.")
-                    ns = argparse.Namespace(actie="inpakken", paden=paths, uitvoer=None,
+                        raise ConversionError("Enter files or folders first, one per line.")
+                    ns = argparse.Namespace(actie="pack", paden=paths, uitvoer=None,
                                             formaat=self.query_one("#ar-fmt", Select).value)
                 else:
                     p = Path(self.clean(self.query_one("#ar-path", Input).value)).expanduser()
                     if not p.is_file():
-                        raise ConversionError("Kies eerst een archief.")
-                    ns = argparse.Namespace(actie="lijst" if act == "list" else "uitpakken", paden=[p], uitvoer=None,
+                        raise ConversionError("Choose an archive first.")
+                    ns = argparse.Namespace(actie="list" if act == "list" else "extract", paden=[p], uitvoer=None,
                                             formaat="zip")
                 buf = io.StringIO()
                 with contextlib.redirect_stdout(buf):
                     cli.cmd_archive(ns)
                 self.result("#ar-result", buf.getvalue().rstrip())
             except Exception as exc:  # noqa: BLE001
-                self.result("#ar-result", f"!! FOUT\n{exc}", True)
+                self.result("#ar-result", f"!! ERROR\n{exc}", True)
 
         # ------------------------------------------------------------ link & torrent
         @on(Button.Pressed, "#fetch")
@@ -991,26 +963,26 @@ esc = sluiten"""), markup=False)
                         else src
                     res = torrent.download(source, dl_dir, progress, cancelled=self.cancel.is_set)
                     target = dl_dir / res["files"][0]["path"] if len(res["files"]) == 1 else dl_dir / res["name"]
-                    lines = [f"TORRENT KLAAR: {res['name']} · {len(res['files'])} bestanden"]
+                    lines = [f"TORRENT DONE: {res['name']} · {len(res['files'])} files"]
                     for i, fl in enumerate(res["files"][:40]):
                         lines.append(f"{'└─' if i == len(res['files']) - 1 else '├─'} {fl['path']}  "
                                      f"{human_size(fl['size'])}")
                 else:
                     target = fetch.download(src, dl_dir, audio, progress)
-                    lines = [f"OPGEHAALD: {target}"]
+                    lines = [f"DOWNLOADED: {target}"]
                 if scan:
-                    progress(0.995, "controleren op virussen")
+                    progress(0.995, "checking for viruses")
                     v = virus.check(target, user_settings.load().get("vt_key"))
                     lines.append(cli.virus_line(v))
                     if v["status"] == "infected":
-                        lines.append("!! niet openen. verwijder dit bestand.")
+                        lines.append("!! do not open. delete this file.")
                 self.call_from_thread(out.update, A("\n".join(lines)))
                 if target.is_file() and not (v and v["status"] == "infected"):
                     self.call_from_thread(self.choose, target)
             except ConversionError as exc:
                 self.call_from_thread(out.update, A(f"!! {exc}"))
             except Exception as exc:  # noqa: BLE001
-                self.call_from_thread(out.update, A(f"!! er ging iets mis: {exc}"))
+                self.call_from_thread(out.update, A(f"!! something went wrong: {exc}"))
             finally:
                 self.call_from_thread(lambda: setattr(self.query_one("#fetch", Button), "disabled", False))
                 self.call_from_thread(lambda: setattr(bar, "display", False))
@@ -1022,7 +994,7 @@ esc = sluiten"""), markup=False)
             p = Path(self.clean(self.query_one("#scan-path", Input).value)).expanduser()
             out = self.query_one("#scan-result", Static)
             if not p.exists():
-                out.update("!! bestaat niet")
+                out.update("!! does not exist")
                 return
             out.update("> scannen…" if not ascii_mode else "> scannen...")
             self.scan_worker(p)
@@ -1038,7 +1010,7 @@ esc = sluiten"""), markup=False)
         def hash_pressed(self) -> None:
             p = Path(self.clean(self.query_one("#scan-path", Input).value)).expanduser()
             if not p.is_file():
-                self.query_one("#scan-result", Static).update("!! kies een bestand")
+                self.query_one("#scan-result", Static).update("!! choose a file")
                 return
             self.hash_worker(p, self.query_one("#hmac", Input).value.strip() or None)
 
@@ -1055,14 +1027,14 @@ esc = sluiten"""), markup=False)
         def vt_save(self) -> None:
             key = self.query_one("#vt", Input).value.strip()
             if key and (len(key) != 64 or any(c not in "0123456789abcdefABCDEF" for c in key)):
-                self.query_one("#scanner-info", Label).update("!! een virustotal-sleutel heeft 64 tekens (0-9, a-f)")
+                self.query_one("#scanner-info", Label).update("!! a virustotal key has 64 characters (0-9, a-f)")
                 return
             s = user_settings.load()
             s["vt_key"] = key
             user_settings.save(s)
             self.query_one("#vt", Input).value = ""
-            self.query_one("#scanner-info", Label).update(A("// sleutel opgeslagen ✓" if key else
-                                                            "// sleutel verwijderd"))
+            self.query_one("#scanner-info", Label).update(A("// key saved ✓" if key else
+                                                            "// key removed"))
 
         # ------------------------------------------------------------ ocr & web
         @on(Button.Pressed, "#ocr-go")
@@ -1070,15 +1042,15 @@ esc = sluiten"""), markup=False)
         def ocr_go(self) -> None:
             p = Path(self.clean(self.query_one("#ocr-path", Input).value)).expanduser()
             if not p.is_file():
-                self.status("kies een afbeelding of pdf")
+                self.status("choose an image or pdf")
                 return
-            self.query_one("#ocr-out", TextArea).text = "tekst herkennen…" if not ascii_mode else "bezig..."
+            self.query_one("#ocr-out", TextArea).text = "recognising text…" if not ascii_mode else "working..."
             self.ocr_worker(p, False)
 
         @on(Button.Pressed, "#ocr-screen")
         def ocr_screen(self) -> None:
-            self.query_one("#ocr-out", TextArea).text = "kies een gebied op je scherm…" if not ascii_mode else \
-                "kies een gebied op je scherm..."
+            self.query_one("#ocr-out", TextArea).text = "select an area of your screen…" if not ascii_mode else \
+                "select an area of your screen..."
             self.ocr_worker(None, True)
 
         @work(thread=True, group="ocr")
@@ -1087,7 +1059,7 @@ esc = sluiten"""), markup=False)
             try:
                 path = ocr.capture_screen() if screen else p
                 text = ocr.searchable_pdf_text(path) if path.suffix.lower() == ".pdf" else ocr.image(path)
-                text = text or "(geen tekst gevonden)"
+                text = text or "(no text found)"
             except ConversionError as exc:
                 text = f"!! {exc}"
             except Exception as exc:  # noqa: BLE001
@@ -1097,7 +1069,7 @@ esc = sluiten"""), markup=False)
         @on(Button.Pressed, "#ocr-copy")
         def ocr_copy(self) -> None:
             self.copy_to_clipboard(self.query_one("#ocr-out", TextArea).text)  # OSC 52: werkt ook via SSH
-            self.status("tekst gekopieerd naar het klembord")
+            self.status("text copied to the clipboard")
 
         @on(Button.Pressed, "#web-go")
         @on(Input.Submitted, "#web-url")
@@ -1131,14 +1103,14 @@ esc = sluiten"""), markup=False)
             ta = self.query_one("#ed-text", TextArea)
             msg = self.query_one("#ed-msg", Label)
             if p.is_dir() or not str(p).strip():
-                msg.update("!! geef een bestand op")
+                msg.update("!! enter a file")
                 return
             if p.exists() and p.stat().st_size > 5 * 1024 * 1024:
-                msg.update("!! te groot om hier te bewerken (max. 5 MB)")
+                msg.update("!! too large to edit here (max. 5 MB)")
                 return
             ta.text = read_text(p) if p.exists() else ""
             self.ed_file = p
-            msg.update(A(f"// {p.name}: {ta.document.line_count} regels" + ("" if p.exists() else " (nieuw bestand)")))
+            msg.update(A(f"// {p.name}: {ta.document.line_count} regels" + ("" if p.exists() else " (new file)")))
             ta.focus()
 
         @on(Button.Pressed, "#ed-check")
@@ -1146,7 +1118,7 @@ esc = sluiten"""), markup=False)
             from converter.dbtool import validate
             p = getattr(self, "ed_file", None)
             err = validate(self.query_one("#ed-text", TextArea).text, p.suffix.lower().lstrip(".") if p else "")
-            self.query_one("#ed-msg", Label).update(A("// geen fouten gevonden ✓" if not err else f"!! {err}"))
+            self.query_one("#ed-msg", Label).update(A("// no errors found ✓" if not err else f"!! {err}"))
 
         @on(Button.Pressed, "#ed-save")
         def ed_save(self) -> None:
@@ -1154,7 +1126,7 @@ esc = sluiten"""), markup=False)
             p = getattr(self, "ed_file", None)
             msg = self.query_one("#ed-msg", Label)
             if not p:
-                msg.update("!! open eerst een bestand (of typ een nieuwe naam en druk op openen)")
+                msg.update("!! open a file first (or type a new name and press open)")
                 return
             text = self.query_one("#ed-text", TextArea).text
             try:
@@ -1163,10 +1135,10 @@ esc = sluiten"""), markup=False)
                     shutil.copy2(p, bak)
                 p.write_text(text, encoding="utf-8", newline="")
             except OSError as exc:
-                msg.update(f"!! opslaan lukte niet: {exc}")
+                msg.update(f"!! saving failed: {exc}")
                 return
             err = validate(text, p.suffix.lower().lstrip("."))
-            msg.update(A(f"// opgeslagen ✓ {p}" + (f" — let op: {err}" if err else "")))
+            msg.update(A(f"// opgeslagen ✓ {p}" + (f" — note: {err}" if err else "")))
 
         def on_key(self, event) -> None:
             if event.key == "ctrl+s" and self.query_one("#tabs", TabbedContent).active == "tab-edit":
@@ -1202,7 +1174,7 @@ esc = sluiten"""), markup=False)
             from converter import dbtool
             res = dbtool.rows(self.db_file, name)
             self.db_fill("#db-rows", res["kolommen"], res["rijen"])
-            self.query_one("#db-msg", Label).update(A(f"// {name}: {res['totaal']} rijen"
+            self.query_one("#db-msg", Label).update(A(f"// {name}: {res['totaal']} rows"
                                                       + (" (eerste 200 getoond)" if res["totaal"] > 200 else "")))
 
         @on(Button.Pressed, "#db-open")
@@ -1212,7 +1184,7 @@ esc = sluiten"""), markup=False)
             p = Path(self.clean(self.query_one("#db-path", Input).value)).expanduser()
             msg = self.query_one("#db-msg", Label)
             if not p.is_file():
-                msg.update("!! bestand niet gevonden")
+                msg.update("!! file not found")
                 return
             work = Path(tempfile.mkdtemp(prefix="ac-db-"))
             try:
@@ -1230,14 +1202,14 @@ esc = sluiten"""), markup=False)
             self.query_one("#db-sql", TextArea).text = (
                 "CREATE TABLE klanten (id INTEGER PRIMARY KEY, naam TEXT NOT NULL, plaats TEXT);\n"
                 "INSERT INTO klanten (naam, plaats) VALUES ('Anna', 'Utrecht'), ('Bo', 'Gent');\nSELECT * FROM klanten;")
-            self.query_one("#db-msg", Label).update(A("// nieuwe lege database. druk op uitvoeren om het voorbeeld te draaien."))
+            self.query_one("#db-msg", Label).update(A("// new empty database. press run to execute the example."))
 
         @on(Button.Pressed, "#db-run")
         def db_run(self) -> None:
             from converter import dbtool
             msg = self.query_one("#db-msg", Label)
             if not getattr(self, "db_file", None):
-                msg.update("!! open eerst een database (of kies nieuw)")
+                msg.update("!! open a database first (or choose new)")
                 return
             try:
                 res = dbtool.query(self.db_file, self.query_one("#db-sql", TextArea).text)
@@ -1246,8 +1218,8 @@ esc = sluiten"""), markup=False)
                 self.db_fill("#db-result", [], [])
                 return
             self.db_fill("#db-result", res["kolommen"], res["rijen"])
-            msg.update(A(f"// {len(res['rijen'])}{'+' if res['meer'] else ''} rijen" if res["kolommen"] else
-                         f"// klaar ✓ {res['opdrachten']} opdracht(en), {res['gewijzigd']} rij(en) gewijzigd"))
+            msg.update(A(f"// {len(res['rijen'])}{'+' if res['meer'] else ''} rows" if res["kolommen"] else
+                         f"// done ✓ {res['opdrachten']} statement(s), {res['gewijzigd']} row(s) changed"))
             keep = self.query_one("#db-sql", TextArea).text
             self.db_load(self.db_file)
             self.query_one("#db-sql", TextArea).text = keep
@@ -1257,7 +1229,7 @@ esc = sluiten"""), markup=False)
             from converter import dbtool
             msg = self.query_one("#db-msg", Label)
             if not getattr(self, "db_file", None):
-                msg.update("!! open eerst een database")
+                msg.update("!! open a database first")
                 return
             fmt = self.query_one("#db-fmt", Select).value
             sql = self.query_one("#db-sql", TextArea).text if fmt.startswith("q-") else None
@@ -1280,13 +1252,13 @@ esc = sluiten"""), markup=False)
 def terminal_capable() -> tuple[bool, str]:
     """Kan deze terminal het volledige scherm aan? Zo niet: waarom."""
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
-        return False, "geen interactieve terminal (pijp of omleiding)"
+        return False, "not an interactive terminal (pipe or redirect)"
     term = os.environ.get("TERM", "")
     if os.name != "nt" and term in ("dumb", "unknown", "emacs") or os.environ.get("INSIDE_EMACS"):
-        return False, f"terminaltype '{term or 'emacs'}' kan geen volledig scherm"
+        return False, f"terminal type '{term or 'emacs'}' cannot do full screen"
     cols, rows = shutil.get_terminal_size((80, 24))
     if cols < 40 or rows < 12:
-        return False, f"venster te klein ({cols}x{rows})"
+        return False, f"window too small ({cols}x{rows})"
     return True, ""
 
 
@@ -1307,12 +1279,12 @@ def main(argv: list[str] | None = None) -> int:
     ok, why = terminal_capable()
     if args.simpel or not ok:
         if not ok and not args.simpel:
-            cli.say(f"(eenvoudige modus: {why}. volledig scherm forceren kan niet; --help voor opdrachten)")
+            cli.say(f"(simple mode: {why}. full screen cannot be forced; --help for commands)")
         return cli.simple(VERSION)
     try:
         app_cls = build_app(cli.ASCII)
     except Exception as exc:  # noqa: BLE001 - bijv. Textual ontbreekt
-        cli.say(f"(volledig scherm niet beschikbaar: {exc}; eenvoudige modus)")
+        cli.say(f"(full screen not available: {exc}; simple mode)")
         return cli.simple(VERSION)
     app_cls(args.bestand).run()
     return 0

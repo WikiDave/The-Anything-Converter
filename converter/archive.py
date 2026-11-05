@@ -25,7 +25,7 @@ def _py7zr():
     try:
         import py7zr
     except ImportError as e:
-        raise ConversionError("7z-ondersteuning ontbreekt (pip install py7zr).") from e
+        raise ConversionError("7z support is missing (pip install py7zr).") from e
     return py7zr
 
 
@@ -77,7 +77,7 @@ def _pack(items: list[Path], base: Path, dst: Path, fmt: str, level: int) -> Non
             for item in items:
                 t.add(item, arcname=str(item.relative_to(base)))
     else:
-        raise ConversionError(f"Archiefformaat .{fmt} wordt niet ondersteund.")
+        raise ConversionError(f"Archive format .{fmt} is not supported.")
 
 
 def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn] = None) -> Path:
@@ -86,7 +86,7 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
     src_ext = extension(src)
     stem = src.name[: -(len(src_ext) + 1)] if src_ext else src.name
     if progress:
-        progress(0.1, "Inpakken")
+        progress(0.1, "Packing")
 
     if _is_archive(src) and src_ext in ("zip", "7z", "tar", "tar.gz", "tar.bz2", "tar.xz", "tgz", "gz", "bz2", "xz"):
         work = out_dir / "_extract"
@@ -117,7 +117,6 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
                     return cand
                 cand.unlink()
         raise ConversionError(
-            f"Verliesvrij inpakken haalt {human_size(dst.stat().st_size)}, niet {human_size(target)}. "
-            "Dit bestandstype is al gecomprimeerd; alleen media/PDF's kunnen verder verkleind worden.")
+            f"Lossless packing reaches {human_size(dst.stat().st_size)}, not {human_size(target)}. This file type is already compressed; only media/PDFs can be made smaller.")
     shutil.rmtree(out_dir / "_extract", ignore_errors=True)
     return dst

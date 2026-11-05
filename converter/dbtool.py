@@ -47,7 +47,7 @@ def connect(db: Path) -> sqlite3.Connection:
 
 
 def _table_name(stem: str) -> str:
-    name = re.sub(r"\W+", "_", stem).strip("_") or "tabel"
+    name = re.sub(r"\W+", "_", stem).strip("_") or "table"
     return name if not name[0].isdigit() else "t_" + name
 
 
@@ -73,8 +73,7 @@ def prepare(src: Path | None, folder: Path) -> Path:
             except sqlite3.Error as e:
                 con.close()
                 db.unlink(missing_ok=True)
-                raise ConversionError(f"Deze SQL kan niet in SQLite geladen worden: {e}. (MySQL/PostgreSQL-dumps "
-                                      "met eigen opdrachten werken niet altijd.)") from e
+                raise ConversionError(f"This SQL cannot be loaded into SQLite: {e}. (MySQL/PostgreSQL dumps with their own commands do not always work.)") from e
         else:
             _import_table(con, src)
         con.commit()
@@ -93,7 +92,7 @@ def _import_table(con: sqlite3.Connection, src: Path) -> None:
             rows = [list(r) for r in ws.iter_rows(values_only=True)]
             rows = [r for r in rows if any(v is not None for v in r)]
             if rows:
-                sheets.append((ws.title, [str(c) if c is not None else f"kolom{i + 1}" for i, c in enumerate(rows[0])],
+                sheets.append((ws.title, [str(c) if c is not None else f"column{i + 1}" for i, c in enumerate(rows[0])],
                                rows[1:]))
     elif ext == "dbf":
         from .datafmt import read_dbf
@@ -102,7 +101,7 @@ def _import_table(con: sqlite3.Connection, src: Path) -> None:
     elif ext in ("json", "jsonl", "ndjson", "ods"):
         from .datafmt import load, table
         if ext == "ods":
-            raise ConversionError("Een .ods-bestand eerst omzetten naar .xlsx of .csv.")
+            raise ConversionError("Convert an .ods file to .xlsx or .csv first.")
         cols, rows = table(load(src))
         sheets.append((src.stem, cols, rows))
     else:
@@ -111,10 +110,10 @@ def _import_table(con: sqlite3.Connection, src: Path) -> None:
         dialect = "excel-tab" if ext == "tsv" else csv.Sniffer().sniff(text[:4096], ",;\t|")
         rows = list(csv.reader(io.StringIO(text), dialect))
         if not rows:
-            raise ConversionError("Dit bestand is leeg.")
+            raise ConversionError("This file is empty.")
         sheets.append((src.stem, rows[0], rows[1:]))
     for name, cols, rows in sheets:
-        cols = [re.sub(r"\s+", " ", str(c)).strip() or f"kolom{i + 1}" for i, c in enumerate(cols)]
+        cols = [re.sub(r"\s+", " ", str(c)).strip() or f"column{i + 1}" for i, c in enumerate(cols)]
         seen: dict[str, int] = {}
         for i, c in enumerate(cols):  # dubbele kolomnamen uniek maken
             if c.lower() in seen:
@@ -161,7 +160,7 @@ def rows(db: Path, table: str, offset: int = 0, limit: int = 200) -> dict:
     try:
         names = {r[0] for r in con.execute("select name from sqlite_master where type in ('table','view')")}
         if table not in names:
-            raise ConversionError("Tabel bestaat niet.")
+            raise ConversionError("Table does not exist.")
         cur = con.execute(f'select * from "{table}" limit ? offset ?', (min(limit, MAX_ROWS), max(0, offset)))
         total = con.execute(f'select count(*) from "{table}"').fetchone()[0]
         return {"kolommen": [d[0] for d in cur.description], "rijen": [[_clean(v) for v in r] for r in cur.fetchall()],
@@ -174,9 +173,9 @@ def query(db: Path, sql: str) -> dict:
     """Voer SQL uit. Meerdere opdrachten mogen; het resultaat van de laatste SELECT wordt getoond."""
     sql = (sql or "").strip()
     if not sql:
-        raise ConversionError("Typ eerst een SQL-opdracht.")
+        raise ConversionError("Type an SQL statement first.")
     if re.search(r"\b(attach|detach)\b", sql, re.I) or "load_extension" in sql.lower():
-        raise ConversionError("ATTACH en extensies laden zijn hier uitgeschakeld.")
+        raise ConversionError("ATTACH and loading extensions are disabled here.")
     con = connect(db)
     try:
         statements = [s for s in _split(sql) if s.strip()]
@@ -195,7 +194,7 @@ def query(db: Path, sql: str) -> dict:
         return result
     except sqlite3.Error as e:
         con.rollback()
-        raise ConversionError(f"SQL-fout: {e}") from e
+        raise ConversionError(f"SQL error: {e}") from e
     finally:
         con.close()
 
@@ -219,8 +218,8 @@ def export(db: Path, fmt: str, out_dir: Path, name: str, sql: str | None = None)
     if sql:
         res = query(db, sql)
         from .datafmt import write
-        return write([dict(zip(res["kolommen"], r)) for r in res["rijen"]], out_dir / f"{stem}_resultaat.{fmt}", fmt,
-                     "resultaat")
+        return write([dict(zip(res["kolommen"], r)) for r in res["rijen"]], out_dir / f"{stem}_result.{fmt}", fmt,
+                     "result")
     if fmt == "sqlite":
         dst = out_dir / f"{stem}.sqlite"
         src = connect(db)
@@ -282,7 +281,7 @@ def validate(text: str, ext: str) -> str | None:
                     try:
                         json.loads(line)
                     except ValueError as e:
-                        return f"regel {n}: {e}"
+                        return f"line {n}: {e}"
     except Exception as e:  # noqa: BLE001
         return str(e).splitlines()[0][:300]
     return None

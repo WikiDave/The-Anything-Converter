@@ -49,17 +49,17 @@ def download(source: str | bytes, out_dir: Path, progress: Optional[ProgressFn] 
             try:
                 ti = lt.torrent_info(lt.bdecode(bytes(source)))
             except Exception as exc:
-                raise ConversionError("Dit is geen geldig .torrent-bestand.") from exc
+                raise ConversionError("This is not a valid .torrent file.") from exc
             params = lt.add_torrent_params()
             params.ti = ti
         else:
             src = source.strip()
             if not src.lower().startswith("magnet:?"):
-                raise ConversionError("Plak een magnet-link (begint met magnet:?) of kies een .torrent-bestand.")
+                raise ConversionError("Paste a magnet link (starts with magnet:?) or choose a .torrent file.")
             try:
                 params = lt.parse_magnet_uri(src)
             except Exception as exc:
-                raise ConversionError("Deze magnet-link is ongeldig.") from exc
+                raise ConversionError("This magnet link is invalid.") from exc
         params.save_path = str(out_dir)
         h = ses.add_torrent(params)
         for host, port in peers or []:
@@ -71,10 +71,9 @@ def download(source: str | bytes, out_dir: Path, progress: Optional[ProgressFn] 
             if cancelled():
                 raise ConversionError("Gestopt.")
             if time.time() - start > METADATA_TIMEOUT:
-                raise ConversionError("Geen gegevens gevonden voor deze magnet-link (geen peers bereikbaar). "
-                                      "Probeer het later opnieuw of gebruik een .torrent-bestand.")
+                raise ConversionError("No data found for this magnet link (no peers reachable). Try again later or use a .torrent file.")
             if progress:
-                progress(0.01, f"Gegevens ophalen · {h.status().num_peers} peers")
+                progress(0.01, f"Fetching metadata · {h.status().num_peers} peers")
             time.sleep(0.5)
 
         ti = h.torrent_file()
@@ -93,12 +92,10 @@ def download(source: str | bytes, out_dir: Path, progress: Optional[ProgressFn] 
             if st.total_done != last_bytes:
                 last_bytes, last_change = st.total_done, time.time()
             elif time.time() - last_change > STALL_TIMEOUT:
-                raise ConversionError(f"Al {STALL_TIMEOUT // 60} minuten komt er niets binnen "
-                                      f"({human_size(st.total_done)} van {human_size(total)}). Te weinig peers.")
+                raise ConversionError(f"Nothing has arrived for {STALL_TIMEOUT // 60} minutes ({human_size(st.total_done)} of {human_size(total)}). Too few peers.")
             if progress:
                 progress(0.02 + 0.97 * st.progress,
-                         f"Downloaden {human_size(st.total_done)} van {human_size(total)} · "
-                         f"{_speed(st.download_rate)} · {st.num_peers} peers")
+                         f"Downloading {human_size(st.total_done)} of {human_size(total)} · {_speed(st.download_rate)} · {st.num_peers} peers")
             time.sleep(0.5)
 
         # Alles netjes naar schijf schrijven voor we de sessie sluiten
@@ -107,7 +104,7 @@ def download(source: str | bytes, out_dir: Path, progress: Optional[ProgressFn] 
         files = [{"idx": i, "path": fs.file_path(i), "size": fs.file_size(i)} for i in range(fs.num_files())
                  if not (fs.file_flags(i) & pad)]
         if progress:
-            progress(0.99, "Klaar")
+            progress(0.99, "Done")
         return {"root": out_dir, "files": files, "name": name}
     finally:
         try:

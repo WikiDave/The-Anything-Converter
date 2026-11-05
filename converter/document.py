@@ -24,7 +24,7 @@ def _soffice() -> str:
     for name in ("soffice", "libreoffice"):
         if have(name):
             return name
-    raise ConversionError("LibreOffice is niet geïnstalleerd; dit soort conversie is niet mogelijk.")
+    raise ConversionError("LibreOffice is not installed; this kind of conversion is not possible.")
 
 
 def libreoffice(src: Path, fmt: str, out_dir: Path, infilter: Optional[str] = None) -> Path:
@@ -39,13 +39,13 @@ def libreoffice(src: Path, fmt: str, out_dir: Path, infilter: Optional[str] = No
     shutil.rmtree(profile, ignore_errors=True)
     produced = conv_dir / f"{src.stem}.{fmt}"
     if not produced.exists():
-        raise ConversionError(f"LibreOffice kon dit bestand niet naar .{fmt} omzetten.")
+        raise ConversionError(f"LibreOffice could not convert this file to .{fmt}.")
     return produced
 
 
 def pandoc(src: Path, fmt: str, dst: Path, in_fmt: Optional[str] = None) -> Path:
     if not have("pandoc"):
-        raise ConversionError("pandoc is niet geïnstalleerd.")
+        raise ConversionError("pandoc is not installed.")
     cmd = ["pandoc", str(src), "-o", str(dst), "-t", PANDOC_OUT[fmt]]
     if in_fmt:
         cmd += ["-f", in_fmt]
@@ -65,7 +65,7 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
     fmt = (opts.get("format") or ext).lower()
     dst = _final(src, out_dir, fmt)
     if progress:
-        progress(0.1, "Converteren")
+        progress(0.1, "Converting")
 
     if category == "pdf":
         return _pdf(src, out_dir, fmt, dst, opts, progress)
@@ -79,8 +79,7 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
         return dst
 
     if opts.get("target_bytes") and fmt != "pdf":
-        raise ConversionError("Een doelgrootte kan bij documenten alleen voor PDF-uitvoer. "
-                              "Kies PDF, of gebruik 'zip' bij overige bestanden.")
+        raise ConversionError("For documents a target size only works with PDF output. Choose PDF, or use 'zip' for other files.")
 
     if category in ("spreadsheet", "presentation"):
         out = libreoffice(src, fmt, out_dir)
@@ -101,7 +100,7 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
             src_for_lo = pandoc(src, "docx", out_dir / f"{src.stem}.docx", PANDOC_IN[ext])
         out = libreoffice(src_for_lo, fmt, out_dir)
     else:
-        raise ConversionError(f"Conversie van .{ext} naar .{fmt} wordt niet ondersteund.")
+        raise ConversionError(f"Converting .{ext} to .{fmt} is not supported.")
 
     if out != dst:
         shutil.move(str(out), dst)
@@ -122,11 +121,11 @@ def _pdf(src, out_dir, fmt, dst, opts, progress) -> Path:
         return pdftools.convert_pdf(src, out_dir, fmt, opts, progress)
     if fmt in ("png", "jpg"):
         if not have("pdftoppm"):
-            raise ConversionError("pdftoppm (poppler-utils) is niet geïnstalleerd.")
+            raise ConversionError("pdftoppm (poppler-utils) is not installed.")
         pages_dir = out_dir / "_pages"
         pages_dir.mkdir(exist_ok=True)
         dpi = {"high": 200, "medium": 150, "low": 100}.get(opts.get("quality") or "medium", 150)
-        run(["pdftoppm", "-r", str(dpi), "-png" if fmt == "png" else "-jpeg", str(src), str(pages_dir / "pagina")],
+        run(["pdftoppm", "-r", str(dpi), "-png" if fmt == "png" else "-jpeg", str(src), str(pages_dir / "page")],
             timeout=900)
         pages = sorted(pages_dir.iterdir())
         if len(pages) == 1:
@@ -145,7 +144,7 @@ def _pdf(src, out_dir, fmt, dst, opts, progress) -> Path:
         out = libreoffice(src, fmt, out_dir, infilter="writer_pdf_import")
         shutil.move(str(out), dst)
         return dst
-    raise ConversionError(f"PDF naar .{fmt} wordt niet ondersteund.")
+    raise ConversionError(f"PDF to .{fmt} is not supported.")
 
 
 GS_PRESETS = [("/printer", 300), ("/ebook", 150), ("/screen", 72)]
@@ -181,8 +180,7 @@ def compress_pdf(src: Path, out_dir: Path, opts: dict, progress: Optional[Progre
         if target > original:
             shutil.copy(src, best)  # groter maken heeft bij PDF geen zin
             return best
-        raise ConversionError(f"Kleinst haalbaar is {human_size(best.stat().st_size)}; "
-                              f"{human_size(target)} lukt niet (veel tekst/vectoren).")
+        raise ConversionError(f"The smallest possible is {human_size(best.stat().st_size)}; {human_size(target)} cannot be reached (lots of text/vectors).")
     if best.stat().st_size >= original and not target:
         shutil.copy(src, best)  # niet groter maken dan het origineel
     return best
@@ -209,7 +207,7 @@ def _compress_pikepdf(src: Path, dst: Path, dpi: int, quality: int) -> None:
         from pikepdf import PdfImage
         from PIL import Image
     except ImportError as exc:
-        raise ConversionError("Installeer Ghostscript of pikepdf om PDF's te comprimeren.") from exc
+        raise ConversionError("Install Ghostscript or pikepdf to compress PDFs.") from exc
 
     max_side = int(dpi * 11.7)  # ~A4 lange zijde op deze dpi
     with pikepdf.open(src) as pdf:

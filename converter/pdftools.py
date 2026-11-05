@@ -29,7 +29,7 @@ def _fitz():
     try:
         import fitz  # PyMuPDF
     except ImportError as e:
-        raise ConversionError("PyMuPDF ontbreekt (pip install pymupdf).") from e
+        raise ConversionError("PyMuPDF is missing (pip install pymupdf).") from e
     return fitz
 
 
@@ -43,9 +43,9 @@ def convert_pdf(src: Path, out_dir: Path, fmt: str, opts: dict, progress: Option
     try:
         doc = fitz.open(src)
     except Exception as e:  # noqa: BLE001
-        raise ConversionError(f"PDF kan niet geopend worden: {e}") from e
+        raise ConversionError(f"PDF cannot be opened: {e}") from e
     if doc.needs_pass:
-        raise ConversionError("Deze PDF is met een wachtwoord beveiligd.")
+        raise ConversionError("This PDF is password-protected.")
     dst = out_dir / f"{src.stem}.{fmt}"
     fn = {"docx": _to_docx, "xlsx": _to_xlsx, "pptx": _to_pptx, "png": _to_images, "jpg": _to_images,
           "rtf": _to_rtf, "txt": _to_txt, "html": _to_html, "xml": _to_xml}[fmt]
@@ -70,7 +70,7 @@ def _to_txt(doc, src, dst, fmt, opts, progress):
     parts = []
     for i, page in enumerate(doc):
         parts.append(page_text(page).rstrip())
-        _tick(progress, i, len(doc), "pagina")
+        _tick(progress, i, len(doc), "page")
     dst.write_text("\n\n\f".join(parts).strip() + "\n", encoding="utf-8")
     return dst
 
@@ -79,7 +79,7 @@ def _to_html(doc, src, dst, fmt, opts, progress):
     body = []
     for i, page in enumerate(doc):
         body.append(f'<section class="page" id="p{i + 1}">{page.get_text("html")}</section>')
-        _tick(progress, i, len(doc), "pagina")
+        _tick(progress, i, len(doc), "page")
     dst.write_text(
         "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>" + html.escape(src.stem) + "</title>"
         "<style>body{background:#888;margin:0;padding:16px}.page{margin:0 auto 16px;box-shadow:0 2px 8px #0005}"
@@ -94,7 +94,7 @@ def _to_xml(doc, src, dst, fmt, opts, progress):
         xml = page.get_text("xml")
         xml = re.sub(r"^<\?xml[^>]*>\s*", "", xml)
         out.append(xml.replace("<page ", f'<page number="{i + 1}" ', 1))
-        _tick(progress, i, len(doc), "pagina")
+        _tick(progress, i, len(doc), "page")
     out.append("</document>")
     dst.write_text("\n".join(out) + "\n", encoding="utf-8")
     return dst
@@ -106,8 +106,8 @@ def _to_images(doc, src, dst, fmt, opts, progress):
     for i, page in enumerate(doc):
         pix = page.get_pixmap(dpi=dpi, alpha=False)
         data = pix.tobytes("png") if fmt == "png" else pix.tobytes("jpg", jpg_quality=88)
-        files.append((f"{src.stem}_pagina_{i + 1:03d}.{fmt}", data))
-        _tick(progress, i, len(doc), "pagina")
+        files.append((f"{src.stem}_page_{i + 1:03d}.{fmt}", data))
+        _tick(progress, i, len(doc), "page")
     if len(files) == 1:
         dst.write_bytes(files[0][1])
         return dst
@@ -150,7 +150,7 @@ def _to_docx(doc, src, dst, fmt, opts, progress):
         from docx.enum.text import WD_BREAK
         from docx.shared import Emu, Pt, RGBColor
     except ImportError as e:
-        raise ConversionError("python-docx ontbreekt (pip install python-docx).") from e
+        raise ConversionError("python-docx is missing (pip install python-docx).") from e
     out = Document()
     sec = out.sections[0]
     if len(doc):
@@ -214,7 +214,7 @@ def _to_docx(doc, src, dst, fmt, opts, progress):
                         run.font.color.rgb = RGBColor((col >> 16) & 255, (col >> 8) & 255, col & 255)
         if i < len(doc) - 1:
             out.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
-        _tick(progress, i, len(doc), "pagina")
+        _tick(progress, i, len(doc), "page")
     out.save(dst)
     return dst
 
@@ -226,7 +226,7 @@ def _to_xlsx(doc, src, dst, fmt, opts, progress):
         from openpyxl import Workbook
         from openpyxl.styles import Font
     except ImportError as e:
-        raise ConversionError("openpyxl ontbreekt (pip install openpyxl).") from e
+        raise ConversionError("openpyxl is missing (pip install openpyxl).") from e
     wb = Workbook()
     wb.remove(wb.active)
     found = 0
@@ -243,10 +243,10 @@ def _to_xlsx(doc, src, dst, fmt, opts, progress):
             for c in ws[1]:
                 c.font = Font(bold=True)
             _autowidth(ws)
-        _tick(progress, i, len(doc), "pagina")
+        _tick(progress, i, len(doc), "page")
     if not found:
         # Geen herkenbare tabellen: elke regel een rij, kolommen op grote witruimtes
-        ws = wb.create_sheet("Tekst")
+        ws = wb.create_sheet("Text")
         for i, page in enumerate(doc):
             for line in page_text(page).splitlines():
                 if line.strip():
@@ -288,7 +288,7 @@ def _to_pptx(doc, src, dst, fmt, opts, progress):
         from pptx import Presentation
         from pptx.util import Emu
     except ImportError as e:
-        raise ConversionError("python-pptx ontbreekt (pip install python-pptx).") from e
+        raise ConversionError("python-pptx is missing (pip install python-pptx).") from e
     prs = Presentation()
     if len(doc):
         w, h = doc[0].rect.width, doc[0].rect.height
@@ -346,7 +346,7 @@ def _to_rtf(doc, src, dst, fmt, opts, progress):
             parts.append(r"\pard " + "".join(runs).rstrip() + r"\par")
         if i < len(doc) - 1:
             parts.append(r"\page")
-        _tick(progress, i, len(doc), "pagina")
+        _tick(progress, i, len(doc), "page")
     parts.append("}")
     dst.write_text("\n".join(parts), encoding="ascii", errors="replace")
     return dst
@@ -453,7 +453,7 @@ def document_to_pdf(src: Path, dst: Path) -> Path:
     elif ext == "pptx":
         body, landscape = _pptx_html(src), True
     else:
-        raise ConversionError(f".{ext} naar PDF heeft LibreOffice nodig (gratis: libreoffice.org).")
+        raise ConversionError(f".{ext} to PDF needs LibreOffice (free: libreoffice.org).")
     return html_to_pdf(body, dst, landscape)
 
 
@@ -561,14 +561,14 @@ def text_to_document(text: str, dst: Path, fmt: str) -> Path:
         from openpyxl import Workbook
         wb = Workbook()
         ws = wb.active
-        ws.title = "Tekst"
+        ws.title = "Text"
         for line in text.splitlines():
             if line.strip():
                 ws.append([_cell(v) for v in re.split(r"\s{2,}|\t", line.strip())])
         _autowidth(ws)
         wb.save(dst)
     else:
-        raise ConversionError(f"Tekst naar .{fmt} wordt niet ondersteund.")
+        raise ConversionError(f"Text to .{fmt} is not supported.")
     return dst
 
 
@@ -590,7 +590,7 @@ def parse_pages(spec: str, count: int) -> list[int]:
         else:
             lo = hi = int(part)
         if lo < 1 or hi > count or lo > hi:
-            raise ConversionError(f"Pagina's '{part}' bestaan niet (1-{count}).")
+            raise ConversionError(f"Pages '{part}' do not exist (1-{count}).")
         out.extend(range(lo - 1, hi))
     return out
 
@@ -603,14 +603,14 @@ def merge(files: list[Path], dst: Path) -> Path:
         if f.suffix.lower() == ".pdf":
             with fitz.open(f) as d:
                 if d.needs_pass:
-                    raise ConversionError(f"{f.name} is met een wachtwoord beveiligd.")
+                    raise ConversionError(f"{f.name} is password-protected.")
                 out.insert_pdf(d)
         else:
             with fitz.open(f) as img:
                 pdf = fitz.open("pdf", img.convert_to_pdf())
                 out.insert_pdf(pdf)
     if not len(out):
-        raise ConversionError("Geen pagina's om samen te voegen.")
+        raise ConversionError("No pages to merge.")
     out.save(dst, garbage=3, deflate=True)
     return dst
 
@@ -620,7 +620,7 @@ def split(src: Path, out_dir: Path, spec: str = "") -> Path:
     fitz = _fitz()
     doc = fitz.open(src)
     if spec.strip():
-        dst = out_dir / f"{src.stem}_pagina-{spec.replace(',', '_')}.pdf"
+        dst = out_dir / f"{src.stem}_pages-{spec.replace(',', '_')}.pdf"
         new = fitz.open()
         for i in parse_pages(spec, len(doc)):
             new.insert_pdf(doc, from_page=i, to_page=i)
@@ -631,7 +631,7 @@ def split(src: Path, out_dir: Path, spec: str = "") -> Path:
         for i in range(len(doc)):
             one = fitz.open()
             one.insert_pdf(doc, from_page=i, to_page=i)
-            z.writestr(f"{src.stem}_pagina_{i + 1:03d}.pdf", one.tobytes(garbage=3, deflate=True))
+            z.writestr(f"{src.stem}_page_{i + 1:03d}.pdf", one.tobytes(garbage=3, deflate=True))
     return dst
 
 
@@ -644,6 +644,6 @@ def edit_pages(src: Path, dst: Path, delete: str = "", rotate: str = "", angle: 
     if delete.strip():
         doc.delete_pages(sorted(set(parse_pages(delete, len(doc)))))
     if not len(doc):
-        raise ConversionError("Er blijven geen pagina's over.")
+        raise ConversionError("No pages would be left.")
     doc.save(dst, garbage=3, deflate=True)
     return dst

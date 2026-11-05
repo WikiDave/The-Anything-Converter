@@ -21,7 +21,7 @@ def test_convert_command_and_errors(tmp_path):
     r = run("converteer", "a.png", "--naar", "webp", cwd=tmp_path)
     assert r.returncode == 0 and (tmp_path / "a.webp").exists(), r.stdout + r.stderr
     r = run("converteer", "a.png", "--naar", "xyz", cwd=tmp_path)
-    assert r.returncode == 1 and "kan niet naar .xyz" in r.stdout
+    assert r.returncode == 1 and "cannot become .xyz" in r.stdout
     assert "terminal" in run("--version").stdout
 
 
@@ -29,7 +29,7 @@ def test_simple_mode_works_without_a_terminal(tmp_path):
     Image.new("RGB", (100, 100), "white").save(tmp_path / "b.png")
     # niet interactief (pijp): start vanzelf de eenvoudige modus
     r = run(inp="1\nb.png\n1\n2\n\n9\n", cwd=tmp_path)
-    assert "eenvoudige modus" in r.stdout and "WAT WIL JE DOEN?" in r.stdout
+    assert "simple mode" in r.stdout and "WHAT DO YOU WANT TO DO?" in r.stdout
     assert (tmp_path / "b_bewerkt.png").exists() or (tmp_path / "b.png").exists()
     assert "OK:" in r.stdout, r.stdout[-800:]
 

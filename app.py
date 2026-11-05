@@ -77,7 +77,7 @@ def quit_app():
     """Desktop-app afsluiten vanuit de interface."""
     stop = app.config.get("SHUTDOWN")
     if not DESKTOP or not stop:
-        return jsonify(error="Alleen beschikbaar in de desktop-app."), 400
+        return jsonify(error="Only available in the desktop app."), 400
     import threading
     threading.Timer(0.3, stop).start()
     return jsonify(ok=True)
@@ -87,7 +87,7 @@ def quit_app():
 def open_terminal():
     """Terminalversie openen in een nieuw terminalvenster (desktop-app)."""
     if not DESKTOP:
-        return jsonify(error="Alleen beschikbaar in de desktop-app."), 400
+        return jsonify(error="Only available in the desktop app."), 400
     from converter.terminal import open_tui
     try:
         open_tui()
@@ -101,7 +101,7 @@ def upload():
     """Eén bestand, of meerdere die bij elkaar horen (CUE + BIN's, ROM + patch)."""
     files = [f for f in request.files.getlist("file") if f and f.filename]
     if not files:
-        return jsonify(error="Geen bestand ontvangen."), 400
+        return jsonify(error="No file received."), 400
     uid = uuid.uuid4().hex
     folder = WORK / uid
     folder.mkdir(parents=True)
@@ -196,7 +196,7 @@ def fetch_url():
     data = request.get_json(force=True, silent=True) or {}
     url = str(data.get("url") or "").strip()
     if not url:
-        return jsonify(error="Plak eerst een link."), 400
+        return jsonify(error="Paste a link first."), 400
     uid = uuid.uuid4().hex
     job = jobs.submit(WORK / uid, "fetch", {"url": url, "audio_only": bool(data.get("audio_only")),
                                             "scan": data.get("scan", True) is not False}, kind="fetch")
@@ -211,7 +211,7 @@ def webshot_start():
     url = str(data.get("url") or "").strip()
     fmt = str(data.get("format") or "pdf").lower()
     if not url or fmt not in ("pdf", "png", "jpg"):
-        return jsonify(error="Geef een websiteadres en kies pdf, png of jpg."), 400
+        return jsonify(error="Enter a website address and choose pdf, png or jpg."), 400
     job = jobs.submit(WORK / uuid.uuid4().hex, "webshot", {"url": url, "format": fmt}, kind="webshot")
     return jsonify(job.public())
 
@@ -222,7 +222,7 @@ def file_hashes(uid):
     from converter.hashes import compute
     up = uploads.get(uid)
     if not up or not up["path"].exists():
-        return jsonify(error="Bestand niet gevonden."), 404
+        return jsonify(error="File not found."), 404
     path = up["path"]
     data = request.get_json(force=True, silent=True) or {}
     return jsonify(name=path.name, hashes=compute(path, str(data.get("key") or "") or None))
@@ -246,7 +246,7 @@ def ocr_pasted():
     from converter import ocr
     f = request.files.get("file")
     if not f:
-        return jsonify(error="Geen afbeelding ontvangen."), 400
+        return jsonify(error="No image received."), 400
     try:
         text = ocr.image_bytes(f.read(), Path(f.filename or "x.png").suffix or ".png")
     except ConversionError as e:
@@ -285,13 +285,13 @@ def torrent_start():
     if f and f.filename:
         source = f.read()
         if len(source) > 20 * 1024 * 1024:
-            return jsonify(error="Dit .torrent-bestand is te groot."), 400
+            return jsonify(error="This .torrent file is too large."), 400
     else:
         data = request.get_json(force=True, silent=True) or {}
         source = str(data.get("magnet") or "").strip()
         scan = data.get("scan", True) is not False
         if not source.lower().startswith("magnet:?"):
-            return jsonify(error="Plak een magnet-link (begint met magnet:?) of kies een .torrent-bestand."), 400
+            return jsonify(error="Paste a magnet link (starts with magnet:?) or choose a .torrent file."), 400
     uid = uuid.uuid4().hex
     job = jobs.submit(WORK / uid, "torrent", {"source": source, "scan": scan}, kind="torrent")
     job.extra["uid"] = uid
@@ -302,7 +302,7 @@ def torrent_start():
 def job_cancel(job_id):
     job = jobs.get(job_id)
     if not job:
-        return jsonify(error="Taak niet gevonden."), 404
+        return jsonify(error="Task not found."), 404
     job.extra["cancel"] = True
     return jsonify(ok=True)
 
@@ -342,7 +342,7 @@ def job_delete(job_id):
     import shutil
     job = jobs.get(job_id)
     if not job or job.kind not in ("fetch", "torrent"):
-        return jsonify(error="Taak niet gevonden."), 404
+        return jsonify(error="Task not found."), 404
     target = job.src if job.src.is_dir() else job.src.parent
     if WORK.resolve() in target.resolve().parents:
         shutil.rmtree(target, ignore_errors=True)
@@ -356,7 +356,7 @@ def scan_upload(uid):
     """Een geopend bestand op verzoek controleren op virussen."""
     up = uploads.get(uid)
     if not up or not up["path"].exists():
-        return jsonify(error="Bestand niet gevonden."), 404
+        return jsonify(error="File not found."), 404
     return jsonify(virus.check(up["path"], user_settings.load().get("vt_key")))
 
 
@@ -373,7 +373,7 @@ def set_settings():
     if "vt_key" in data:
         key = str(data["vt_key"] or "").strip()
         if key and (len(key) != 64 or not all(c in "0123456789abcdefABCDEF" for c in key)):
-            return jsonify(error="Een VirusTotal-sleutel bestaat uit 64 tekens (0-9, a-f)."), 400
+            return jsonify(error="A VirusTotal key is 64 characters long (0-9, a-f)."), 400
         s["vt_key"] = key
     user_settings.save(s)
     return jsonify(vt_key_set=bool(s.get("vt_key")))
@@ -396,9 +396,9 @@ def text_get(uid):
     from converter.textfmt import read_text
     up = uploads.get(uid)
     if not up or not up["path"].exists():
-        return jsonify(error="Bestand niet gevonden."), 404
+        return jsonify(error="File not found."), 404
     if up["path"].stat().st_size > 5 * 1024 * 1024:
-        return jsonify(error="Te groot om hier te bewerken (max. 5 MB)."), 400
+        return jsonify(error="Too large to edit here (max. 5 MB)."), 400
     return jsonify(text=read_text(up["path"]), ext=extension(up["path"]), name=up["path"].name)
 
 
@@ -408,11 +408,11 @@ def text_save(uid):
     from converter.dbtool import validate
     up = uploads.get(uid)
     if not up or not up["path"].exists():
-        return jsonify(error="Bestand niet gevonden."), 404
+        return jsonify(error="File not found."), 404
     data = request.get_json(force=True, silent=True) or {}
     text = data.get("text")
     if not isinstance(text, str):
-        return jsonify(error="Geen tekst ontvangen."), 400
+        return jsonify(error="No text received."), 400
     problem = validate(text, extension(up["path"]))
     if data.get("check"):
         return jsonify(ok=problem is None, error=problem)
@@ -443,7 +443,7 @@ def _db_for(uid):
     from converter import dbtool
     up = uploads.get(uid)
     if not up or not up["path"].exists():
-        raise ConversionError("Bestand niet gevonden.")
+        raise ConversionError("File not found.")
     return dbtool.prepare(up["path"], up["path"].parent), up
 
 
@@ -499,7 +499,7 @@ def db_export(uid):
     from converter import dbtool
     fmt = request.args.get("fmt", "sqlite")
     if fmt not in ("sqlite", "sql", "xlsx", "json", "csv", "html"):
-        return jsonify(error="Onbekend formaat."), 400
+        return jsonify(error="Unknown format."), 400
     try:
         db, up = _db_for(uid)
         out_dir = Path(tempfile.mkdtemp(prefix="db-export-", dir=WORK))
@@ -514,7 +514,7 @@ def convert():
     data = request.get_json(force=True, silent=True) or {}
     up = uploads.get(data.get("id", ""))
     if not up or not up["path"].exists():
-        return jsonify(error="Upload niet gevonden of verlopen. Upload het bestand opnieuw."), 404
+        return jsonify(error="Upload not found or expired. Upload the file again."), 404
     opts = {k: v for k, v in (data.get("options") or {}).items() if v not in (None, "", False)}
     try:
         if opts.get("target_size"):
@@ -523,7 +523,7 @@ def convert():
     except ConversionError as exc:
         return jsonify(error=str(exc)), 400
     if opts.get("format") and opts["format"] not in up.get("targets", TARGETS.get(up["category"], [])):
-        return jsonify(error=f"Formaat .{opts['format']} is niet mogelijk voor dit bestand."), 400
+        return jsonify(error=f"Format .{opts['format']} is not possible for this file."), 400
     job = jobs.submit(up["path"], up["category"], opts)
     return jsonify(job.public())
 
@@ -532,7 +532,7 @@ def convert():
 def job_status(job_id):
     job = jobs.get(job_id)
     if not job:
-        return jsonify(error="Taak niet gevonden."), 404
+        return jsonify(error="Task not found."), 404
     data = job.public()
     infected = job.extra.get("virus", {}).get("status") == "infected"
     if job.kind == "fetch" and job.status == "done" and job.result and not infected:
@@ -552,11 +552,11 @@ def download(job_id):
 
 @app.errorhandler(413)
 def too_large(_):
-    return jsonify(error=f"Bestand is te groot (max {MAX_UPLOAD_MB} MB)."), 413
+    return jsonify(error=f"File is too large (max {MAX_UPLOAD_MB} MB)."), 413
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8000"))
     host = os.environ.get("HOST", "127.0.0.1")
-    print(f"The Anything Converter draait op http://{'localhost' if host in ('127.0.0.1', '0.0.0.0') else host}:{port}")
+    print(f"The Anything Converter is running at http://{'localhost' if host in ('127.0.0.1', '0.0.0.0') else host}:{port}")
     app.run(host=host, port=port, threaded=True)

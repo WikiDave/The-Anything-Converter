@@ -118,7 +118,7 @@ def native_window(url: str, base: Path, closers: list) -> bool:
         import window
         engine = window.check()
     except Exception as e:  # noqa: BLE001
-        print("eigen venster in dit proces lukt niet:", repr(e))
+        print("own window in this process failed:", repr(e))
         engine = None
     storage = str(data_dir() / "webview")
     icon = str(base / "icon-512.png")
@@ -140,7 +140,7 @@ def native_window(url: str, base: Path, closers: list) -> bool:
             print(py, "faalde:", repr(e))
             continue
         if ok.returncode != 0:
-            print(py, "heeft geen GTK/WebKit:", (ok.stderr or "").strip()[-300:])
+            print(py, "has no GTK/WebKit:", (ok.stderr or "").strip()[-300:])
             continue
         print("venster: gtk via", py)
         proc = subprocess.Popen([py, "-I", str(helper), url, storage, icon], env=env)
@@ -169,7 +169,7 @@ def browser_app_window(url: str, closers: list) -> bool:
     profile = data_dir() / "app-venster"
     args = [exe, f"--app={url}", f"--user-data-dir={profile}", "--window-size=1280,860", "--no-first-run",
             "--no-default-browser-check"]
-    print("venster: app-modus van", exe)
+    print("window: app mode of", exe)
     t0 = time.time()
     proc = subprocess.Popen(args)
     closers.append(proc.terminate)
@@ -195,7 +195,7 @@ def main() -> None:
     port = pick_port()
     server = make_server(HOST, port, app, threaded=True)
     url = f"http://{HOST}:{port}/"
-    print(f"draait op {url}")
+    print(f"running at {url}")
     threading.Thread(target=server.serve_forever, daemon=True).start()
 
     closers: list = []
@@ -220,7 +220,7 @@ def main() -> None:
             try:
                 shown = attempt()
             except Exception as e:  # noqa: BLE001
-                print(f"{name}-venster mislukt:", repr(e))
+                print(f"{name} window failed:", repr(e))
             if shown or stopped.is_set():
                 break
             closers.clear()

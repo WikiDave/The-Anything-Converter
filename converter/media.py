@@ -109,7 +109,7 @@ def _layout_fix(a) -> list[str]:
 
 
 def _run_ffmpeg(args: list[str], duration: float, progress: Optional[ProgressFn],
-                lo: float = 0.0, hi: float = 1.0, label: str = "Bezig") -> None:
+                lo: float = 0.0, hi: float = 1.0, label: str = "Working") -> None:
     cmd = ["ffmpeg", "-hide_banner", "-y", "-nostdin", "-progress", "pipe:1", "-nostats", *args]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                             encoding="utf-8", errors="replace", **NO_WINDOW)
@@ -165,12 +165,12 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
     end = parse_time(opts.get("trim_end"))
     full = info["duration"]
     if full and start >= full:
-        raise ConversionError("Het startpunt ligt na het einde van het bestand.")
+        raise ConversionError("The start point is after the end of the file.")
     if end is not None:
         if full:
             end = min(end, full)
         if end <= start:
-            raise ConversionError("Het eindpunt moet na het startpunt liggen.")
+            raise ConversionError("The end point must be after the start point.")
     duration = (end if end is not None else full) - start
     trimming = start > 0 or end is not None
 
@@ -189,19 +189,19 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
     # Snel knippen zonder hercoderen (zelfde formaat, geen andere wijzigingen)
     if opts.get("fast_trim") and fmt == src.suffix.lstrip(".").lower() and not target and not opts.get("height"):
         _run_ffmpeg([*trim_args, "-i", str(src), "-map", "0", "-c", "copy",
-                     "-avoid_negative_ts", "make_zero", str(dst)], duration, progress, label="Knippen")
+                     "-avoid_negative_ts", "make_zero", str(dst)], duration, progress, label="Trimming")
         return dst
 
     if fmt in AUDIO_ONLY:
         if not info["has_audio"]:
-            raise ConversionError("Dit bestand bevat geen audio.")
+            raise ConversionError("This file has no audio.")
         return _audio(src, dst, fmt, trim_args, duration, target, quality, progress, info)
     if fmt == "gif":
         return _gif(src, dst, trim_args, duration, info, opts, target, progress)
     if fmt not in VIDEO_CODEC:
-        raise ConversionError(f"Uitvoerformaat .{fmt} wordt niet ondersteund voor video.")
+        raise ConversionError(f"Output format .{fmt} is not supported for video.")
     if not info["has_video"]:
-        raise ConversionError("Dit bestand bevat geen videobeeld.")
+        raise ConversionError("This file has no video picture.")
     return _video(src, dst, fmt, trim_args, duration, info, opts, target, quality, progress, trimming)
 
 
@@ -213,15 +213,13 @@ def _audio(src, dst, fmt, trim_args, duration, target, quality, progress, info=N
     args = [*trim_args, "-i", str(src), "-vn", "-map", "0:a:0", *AUDIO_CODEC[fmt], *info.get("fix_layout", [])]
     if target:
         if fmt in FIXED_AUDIO:
-            raise ConversionError(f".{fmt} heeft een vaste kwaliteit; de grootte ligt vast. Kies mp3, m4a, ogg of opus "
-                                  "om een doelgrootte te halen.")
+            raise ConversionError(f".{fmt} has a fixed quality; its size is fixed. Choose mp3, m4a, ogg or opus to reach a target size.")
         if duration <= 0:
-            raise ConversionError("Kan de duur niet bepalen, dus geen doelgrootte mogelijk.")
+            raise ConversionError("Cannot determine the duration, so no target size is possible.")
         kbps = target * 8 * CONTAINER_OVERHEAD / duration / 1000
         lo, hi = AUDIO_LIMITS[fmt]
         if kbps < lo:
-            raise ConversionError(f"Doelgrootte te klein: minimaal ~{human_size(int(lo * 1000 * duration / 8))} "
-                                  f"nodig voor .{fmt} bij deze lengte.")
+            raise ConversionError(f"Target size too small: at least ~{human_size(int(lo * 1000 * duration / 8))} is needed for .{fmt} at this length.")
         kbps = min(int(kbps), hi)
         args += ["-b:a", f"{kbps}k"]
         if kbps < 64 and fmt in ("mp3", "m4a", "aac"):
@@ -281,14 +279,13 @@ def _video(src, dst, fmt, trim_args, duration, info, opts, target, quality, prog
 
     # ---- doelgrootte: 2-pass codering met berekende bitrate
     if duration <= 0:
-        raise ConversionError("Kan de duur niet bepalen, dus geen doelgrootte mogelijk.")
+        raise ConversionError("Cannot determine the duration, so no target size is possible.")
     total_kbps = target * 8 * CONTAINER_OVERHEAD / duration / 1000
     a_kbps = _audio_bitrate_for(total_kbps) if keep_audio else 0
     v_kbps = total_kbps - a_kbps
     if v_kbps < 30:
         need = int((30 + a_kbps) * 1000 * duration / 8 / CONTAINER_OVERHEAD)
-        raise ConversionError(f"Doelgrootte te klein voor deze videolengte. Minimaal ongeveer {human_size(need)}; "
-                              "knip de video korter of verwijder de audio.")
+        raise ConversionError(f"Target size too small for this video length. At least about {human_size(need)}; trim the video or remove the audio.")
     if not height and info["height"]:
         height = _auto_height(v_kbps, info["height"])
     filters = _scale_filter(height)
@@ -341,5 +338,5 @@ def _gif(src, dst, trim_args, duration, info, opts, target, progress) -> Path:
             colors = max(32, colors // 2) if width <= 200 else colors
             encode(width, fps, colors)
         if dst.stat().st_size > target:
-            raise ConversionError("GIF kon niet klein genoeg gemaakt worden. Knip de video korter.")
+            raise ConversionError("The GIF could not be made small enough. Trim the video.")
     return dst

@@ -93,7 +93,7 @@ def _ini(text: str) -> dict:
     try:
         cp.read_string(text if re.search(r"(?m)^\s*\[", text) else "[algemeen]\n" + text)
     except configparser.Error as e:
-        raise ConversionError(f"Dit configuratiebestand kan niet gelezen worden: {e}") from e
+        raise ConversionError(f"This configuration file cannot be read: {e}") from e
     return {s: dict(cp.items(s)) for s in cp.sections()}
 
 
@@ -115,7 +115,7 @@ def load(path: Path):
     from .textfmt import read_text
     ext = path.suffix.lower().lstrip(".")
     if ext in ("pkl", "pickle", "joblib"):
-        raise ConversionError("Python-pickles worden niet geopend: ze kunnen code uitvoeren op je computer.")
+        raise ConversionError("Python pickles are not opened: they can run code on your computer.")
     if ext == "plist":
         import plistlib
         return _plain(plistlib.loads(path.read_bytes()))
@@ -129,7 +129,7 @@ def load(path: Path):
         try:
             import msgpack
         except ImportError as e:
-            raise ConversionError("MessagePack-ondersteuning ontbreekt.") from e
+            raise ConversionError("MessagePack support is missing.") from e
         return msgpack.unpackb(path.read_bytes(), raw=False)
     text = read_text(path)
     if ext in ("json", "jsonld", "webmanifest", "geojson", "har", "ipynb"):
@@ -160,7 +160,7 @@ def load(path: Path):
     try:
         return json.loads(text)
     except ValueError as e:
-        raise ConversionError(f"Kan .{ext} niet als data lezen.") from e
+        raise ConversionError(f"Cannot read .{ext} as data.") from e
 
 
 def _plain(o):
@@ -188,13 +188,13 @@ def table(obj) -> tuple[list[str], list[list]]:
         elif all(isinstance(v, dict) for v in obj.values()) and obj:
             rows = [{"sectie": k, **v} for k, v in obj.items()]
         else:
-            rows = [{"sleutel": k, "waarde": v} for k, v in _flatten(obj).items()]
+            rows = [{"key": k, "value": v} for k, v in _flatten(obj).items()]
     if not isinstance(rows, list):
         rows = [rows]
     if rows and all(isinstance(r, list) for r in rows):
         width = max(len(r) for r in rows)
-        return [f"kolom{i + 1}" for i in range(width)], [list(r) + [""] * (width - len(r)) for r in rows]
-    flat = [_flatten(r) if isinstance(r, dict) else {"waarde": r} for r in rows]
+        return [f"column{i + 1}" for i in range(width)], [list(r) + [""] * (width - len(r)) for r in rows]
+    flat = [_flatten(r) if isinstance(r, dict) else {"value": r} for r in rows]
     cols: list[str] = []
     for r in flat:
         for k in r:
@@ -218,7 +218,7 @@ def _flatten(d, prefix=""):
         for i, v in enumerate(d):
             out.update(_flatten(v, f"{prefix}[{i}]"))
     else:
-        out[prefix or "waarde"] = d
+        out[prefix or "value"] = d
     return out
 
 
@@ -336,7 +336,7 @@ def write(obj, dst: Path, fmt: str, title: str = "data") -> Path:
         lines += ["  ".join(str(v)[:40].ljust(widths[i]) for i, v in enumerate(r)) for r in rows]
         dst.write_text("\n".join(lines) + "\n", encoding="utf-8")
     else:
-        raise ConversionError(f"Data naar .{fmt} wordt niet ondersteund.")
+        raise ConversionError(f"Data to .{fmt} is not supported.")
     return dst
 
 
@@ -351,7 +351,7 @@ def sqlite_tables(path: Path) -> dict[str, tuple[list[str], list[tuple]]]:
             out[name] = ([d[0] for d in cur.description], cur.fetchall())
         return out
     except sqlite3.DatabaseError as e:
-        raise ConversionError(f"Dit is geen leesbare SQLite-database: {e}") from e
+        raise ConversionError(f"This is not a readable SQLite database: {e}") from e
     finally:
         con.close()
 
@@ -359,7 +359,7 @@ def sqlite_tables(path: Path) -> dict[str, tuple[list[str], list[tuple]]]:
 def read_dbf(path: Path) -> tuple[list[str], list[list]]:
     data = path.read_bytes()
     if len(data) < 32:
-        raise ConversionError("Ongeldig dBase-bestand.")
+        raise ConversionError("Invalid dBase file.")
     n = int.from_bytes(data[4:8], "little")
     hlen = int.from_bytes(data[8:10], "little")
     rlen = int.from_bytes(data[10:12], "little")
@@ -396,7 +396,7 @@ def convert_db(src: Path, out_dir: Path, fmt: str) -> Path:
     ext = src.suffix.lower().lstrip(".")
     tables = {"data": read_dbf(src)} if ext == "dbf" else sqlite_tables(src)
     if not tables:
-        raise ConversionError("Deze database heeft geen tabellen.")
+        raise ConversionError("This database has no tables.")
     stem = src.stem
     if fmt == "xlsx":
         from openpyxl import Workbook
@@ -439,14 +439,14 @@ def convert_db(src: Path, out_dir: Path, fmt: str) -> Path:
             with open(dst, "w", newline="", encoding="utf-8-sig") as f:
                 csv.writer(f).writerows([cols, *rows])
             return dst
-        dst = out_dir / f"{stem}_tabellen.zip"
+        dst = out_dir / f"{stem}_tables.zip"
         with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
             for name, (cols, rows) in tables.items():
                 buf = io.StringIO()
                 csv.writer(buf).writerows([cols, *rows])
                 z.writestr(f"{name}.csv", "﻿" + buf.getvalue())
         return dst
-    raise ConversionError(f"Database naar .{fmt} wordt niet ondersteund.")
+    raise ConversionError(f"Database to .{fmt} is not supported.")
 
 
 # --------------------------------------------------------------------------- speciale soorten
@@ -490,9 +490,9 @@ def har_rows(src: Path) -> list[dict]:
     rows = []
     for e in har.get("log", {}).get("entries", []):
         req, res = e.get("request", {}), e.get("response", {})
-        rows.append({"tijd": e.get("startedDateTime"), "methode": req.get("method"), "url": req.get("url"),
+        rows.append({"time": e.get("startedDateTime"), "method": req.get("method"), "url": req.get("url"),
                      "status": res.get("status"), "type": res.get("content", {}).get("mimeType"),
-                     "grootte": res.get("content", {}).get("size"), "duur_ms": round(e.get("time", 0) or 0)})
+                     "size": res.get("content", {}).get("size"), "duration_ms": round(e.get("time", 0) or 0)})
     return rows
 
 
@@ -509,7 +509,7 @@ def feed_rows(src: Path) -> list[dict]:
                 if c.tag.split("}")[-1] in names:
                     return c.get("href") or (c.text or "").strip()
             return ""
-        rows.append({"titel": g("title"), "link": g("link"), "datum": g("pubDate", "updated", "published"),
+        rows.append({"title": g("title"), "link": g("link"), "date": g("pubDate", "updated", "published"),
                      "samenvatting": re.sub(r"<[^>]+>", "", g("description", "summary", "content"))[:500]})
     return rows
 
@@ -540,8 +540,8 @@ def finance_rows(src: Path) -> list[dict]:
                 m = re.search(rf"<{t}>([^<\r\n]*)", tx, re.I)
                 return m.group(1).strip() if m else ""
             d = tag("DTPOSTED")
-            rows.append({"datum": f"{d[:4]}-{d[4:6]}-{d[6:8]}" if len(d) >= 8 else d, "bedrag": _num(tag("TRNAMT")),
-                         "omschrijving": tag("NAME") or tag("MEMO"), "memo": tag("MEMO"), "type": tag("TRNTYPE"),
+            rows.append({"date": f"{d[:4]}-{d[4:6]}-{d[6:8]}" if len(d) >= 8 else d, "amount": _num(tag("TRNAMT")),
+                         "description": tag("NAME") or tag("MEMO"), "memo": tag("MEMO"), "type": tag("TRNTYPE"),
                          "id": tag("FITID")})
     elif ext == "qif" or text.startswith("!Type"):
         cur: dict = {}
@@ -554,11 +554,11 @@ def finance_rows(src: Path) -> list[dict]:
                     rows.append(cur)
                 cur = {}
             elif code == "D":
-                cur["datum"] = val
+                cur["date"] = val
             elif code in "TU":
-                cur["bedrag"] = _num(val)
+                cur["amount"] = _num(val)
             elif code == "P":
-                cur["omschrijving"] = val
+                cur["description"] = val
             elif code == "M":
                 cur["memo"] = val
             elif code == "L":
@@ -575,25 +575,25 @@ def finance_rows(src: Path) -> list[dict]:
                 if m:
                     d = m.group(1)
                     amount = _num(m.group(5))
-                    last = {"datum": f"20{d[:2]}-{d[2:4]}-{d[4:]}", "bedrag": -amount if "D" in m.group(3) else amount,
-                            "omschrijving": ""}
+                    last = {"date": f"20{d[:2]}-{d[2:4]}-{d[4:]}", "amount": -amount if "D" in m.group(3) else amount,
+                            "description": ""}
                     rows.append(last)
             elif ln.startswith("86:") and last is not None:
-                last["omschrijving"] = " ".join(ln[3:].split())
+                last["description"] = " ".join(ln[3:].split())
     elif ext == "cod" or text.startswith("0000"):
         for line in text.splitlines():
             if line.startswith("21"):
                 sign = -1 if line[31:32] == "1" else 1
                 amount = int(line[32:47] or 0) / 1000 * sign
                 d = line[47:53]
-                rows.append({"datum": f"20{d[4:6]}-{d[2:4]}-{d[0:2]}", "bedrag": amount,
-                             "omschrijving": line[62:115].strip()})
+                rows.append({"date": f"20{d[4:6]}-{d[2:4]}-{d[0:2]}", "amount": amount,
+                             "description": line[62:115].strip()})
             elif line.startswith("22") and rows:
                 rows[-1]["tegenpartij"] = line[10:63].strip()
             elif line.startswith("23") and rows:
-                rows[-1]["rekening"] = line[10:47].strip()
+                rows[-1]["account"] = line[10:47].strip()
     if not rows:
-        raise ConversionError("Geen transacties gevonden in dit bankbestand.")
+        raise ConversionError("No transactions found in this bank file.")
     return rows
 
 
@@ -623,7 +623,7 @@ def convert(src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
     if ext in ("rss", "atom"):
         rows = feed_rows(src)
         if fmt == "md":
-            dst.write_text("\n".join(f"- [{r['titel']}]({r['link']}) {r['datum']}" for r in rows) + "\n",
+            dst.write_text("\n".join(f"- [{r['title']}]({r['link']}) {r['date']}" for r in rows) + "\n",
                            encoding="utf-8")
             return dst
         return write(rows, dst, fmt, src.stem)
@@ -635,7 +635,7 @@ def convert(src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
                                                                                                        else ""))
                                      for d, t, u in items) + "\n", encoding="utf-8")
             return dst
-        return write([{"niveau": d, "tekst": t, "url": u} for d, t, u in items], dst, fmt, src.stem)
+        return write([{"level": d, "text": t, "url": u} for d, t, u in items], dst, fmt, src.stem)
     if ext in FINANCE:
         return write(finance_rows(src), dst, fmt, src.stem)
     return write(load(src), dst, fmt, src.stem)

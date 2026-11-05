@@ -83,4 +83,4 @@ def test_pickles_are_never_opened(tmp_path):
     out = tmp_path / "uit"
     out.mkdir()
     report = run_conversion(p, out, cat, {"format": "txt"}).read_text()
-    assert "niet geopend" in report
+    assert "not opened" in report

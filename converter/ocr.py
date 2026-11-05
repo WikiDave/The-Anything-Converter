@@ -42,12 +42,10 @@ def available() -> bool:
 
 def missing_message() -> str:
     if sys.platform.startswith("linux"):
-        return ("Geen OCR gevonden. Installeer Tesseract: sudo apt install tesseract-ocr tesseract-ocr-nld "
-                "(Fedora: sudo dnf install tesseract tesseract-langpack-nld).")
+        return ("No OCR found. Install Tesseract: sudo apt install tesseract-ocr tesseract-ocr-eng (Fedora: sudo dnf install tesseract tesseract-langpack-eng).")
     if sys.platform == "win32":
-        return ("Windows-tekstherkenning is niet beschikbaar. Voeg een taal met 'Optische tekenherkenning' toe "
-                "via Instellingen → Tijd en taal → Taal, of installeer Tesseract.")
-    return "Geen OCR beschikbaar op dit systeem."
+        return ("Windows text recognition is not available. Add a language with 'Optical character recognition' via Settings → Time & language → Language, or install Tesseract.")
+    return "No OCR available on this system."
 
 
 def image(path: Path) -> str:
@@ -88,7 +86,7 @@ def _normalise(path: Path) -> Path:
             im.convert("RGB").save(out)
             return out
     except Exception as e:  # noqa: BLE001
-        raise ConversionError(f"Afbeelding kan niet gelezen worden: {e}") from e
+        raise ConversionError(f"Image cannot be read: {e}") from e
 
 
 def _vision(path: Path) -> str:
@@ -103,7 +101,7 @@ def _vision(path: Path) -> str:
         req.setAutomaticallyDetectsLanguage_(True)
     ok, err = handler.performRequests_error_([req], None)
     if not ok:
-        raise ConversionError(f"Tekstherkenning mislukt: {err}")
+        raise ConversionError(f"Text recognition failed: {err}")
     lines = []
     for obs in req.results() or []:
         cand = obs.topCandidates_(1)
@@ -174,7 +172,7 @@ def searchable_pdf_text(path: Path, progress=None) -> str:
     for i, page in enumerate(doc):
         parts.append(page_text(page).rstrip())
         if progress:
-            progress(0.1 + 0.85 * (i + 1) / len(doc), f"pagina {i + 1}/{len(doc)}")
+            progress(0.1 + 0.85 * (i + 1) / len(doc), f"page {i + 1}/{len(doc)}")
     return "\n\n".join(parts).strip()
 
 
@@ -198,10 +196,9 @@ def capture_screen() -> Path:
                 if region:
                     subprocess.run(["grim", "-g", region, str(out)], timeout=60)
             else:
-                raise ConversionError("Geen schermafbeeldingsprogramma gevonden (bijv. gnome-screenshot). "
-                                      "Maak zelf een schermafbeelding en plak die met Ctrl+V.")
+                raise ConversionError("No screenshot program found (e.g. gnome-screenshot). Take a screenshot yourself and paste it with Ctrl+V.")
     if not out.exists() or out.stat().st_size == 0:
-        raise ConversionError("Geen schermafbeelding gemaakt (geannuleerd).")
+        raise ConversionError("No screenshot taken (cancelled).")
     return out
 
 
@@ -221,5 +218,5 @@ def _capture_windows(out: Path) -> Path:
         if isinstance(im, Image.Image) and im.tobytes()[:4096] != before_sig:
             im.save(out)
             return out
-    raise ConversionError("Geen schermafbeelding ontvangen (binnen 2 minuten).")
+    raise ConversionError("No screenshot received (within 2 minutes).")
 

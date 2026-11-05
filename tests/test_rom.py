@@ -132,7 +132,7 @@ def test_patches(tmp_path):
     ups += struct.pack("<II", zlib.crc32(src), zlib.crc32(want))
     ups += struct.pack("<I", zlib.crc32(bytes(ups)))
     assert rom.apply_ups(src, bytes(ups)) == want
-    with pytest.raises(Exception, match="andere versie"):
+    with pytest.raises(Exception, match="different version"):
         rom.apply_bps(b"anders", bps)
 
 

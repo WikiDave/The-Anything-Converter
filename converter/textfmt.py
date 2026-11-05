@@ -140,7 +140,7 @@ def markdown_html(md: str) -> str:
         t = re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
         t = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", t)
         t = re.sub(r"(?<!\*)\*(?!\*)(.+?)\*", r"<i>\1</i>", t)
-        t = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", r"[afbeelding: \1]", t)
+        t = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", "[image: \\1]", t)
         return re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', t)
 
     def flush_table():
@@ -225,7 +225,7 @@ def web_html(path: Path) -> str:
         msg = email.message_from_bytes(path.read_bytes(), policy=policy.default)
         part = next((p for p in msg.walk() if p.get_content_type() == "text/html"), None)
         if not part:
-            raise ConversionError("Geen webpagina gevonden in dit MHTML-bestand.")
+            raise ConversionError("No web page found in this MHTML file.")
         return part.get_content()
     if ext == "webarchive":
         import plistlib
@@ -293,12 +293,12 @@ def convert(src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
             tmp.write_text(page, encoding="utf-8")
             if not chrome_pdf(tmp if ext in ("mhtml", "mht", "webarchive") else src, dst, fmt):
                 if fmt == "png":
-                    raise ConversionError("Een afbeelding van een webpagina maken vraagt Chrome of Edge.")
+                    raise ConversionError("Making an image of a web page needs Chrome or Edge.")
                 body = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", "", page)
                 html_to_pdf(body, dst)
             tmp.unlink(missing_ok=True)
         else:
-            raise ConversionError(f"Webpagina naar .{fmt} wordt niet ondersteund.")
+            raise ConversionError(f"Web page to .{fmt} is not supported.")
         return dst
 
     if ext in MAN:
@@ -351,7 +351,7 @@ def convert(src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
         return html_to_pdf(highlight_html(text[:400000], src.name, full=False), dst)
     if fmt == "docx":
         return text_to_document(text, dst, "docx")
-    raise ConversionError(f".{ext} naar .{fmt} wordt niet ondersteund.")
+    raise ConversionError(f".{ext} to .{fmt} is not supported.")
 
 
 def _html_docx(body: str, dst: Path) -> Path:
