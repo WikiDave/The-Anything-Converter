@@ -5,6 +5,7 @@ Start:  python app.py   en open http://localhost:8000
 from __future__ import annotations
 
 import os
+import sys
 import tempfile
 import uuid
 from pathlib import Path
@@ -22,7 +23,10 @@ from converter.util import ConversionError, parse_size
 BASE = Path(os.environ.get("CONVERTER_BASE") or Path(__file__).parent)
 DESKTOP = os.environ.get("CONVERTER_DESKTOP") == "1"
 def _read_version() -> str:
-    for cand in (BASE / "VERSION", Path(__file__).parent / "VERSION"):
+    exe = Path(sys.executable).resolve().parent
+    # macOS-app: bestanden kunnen in Contents/MacOS of Contents/Resources staan
+    for cand in (BASE / "VERSION", Path(__file__).parent / "VERSION", exe / "VERSION",
+                 exe.parent / "Resources" / "VERSION"):
         try:
             return cand.read_text().strip()
         except OSError:
@@ -94,27 +98,88 @@ def open_terminal():
 
 @app.post("/api/upload")
 def upload():
-    f = request.files.get("file")
-    if not f or not f.filename:
+    """Eén bestand, of meerdere die bij elkaar horen (CUE + BIN's, ROM + patch)."""
+    files = [f for f in request.files.getlist("file") if f and f.filename]
+    if not files:
         return jsonify(error="Geen bestand ontvangen."), 400
     uid = uuid.uuid4().hex
     folder = WORK / uid
     folder.mkdir(parents=True)
-    name = secure_filename(f.filename) or "bestand"
-    if "." not in name and "." in f.filename:  # secure_filename kan niet-ASCII namen leegmaken
-        name = "bestand." + f.filename.rsplit(".", 1)[-1].lower()
-    path = folder / name
-    f.save(path)
-    return jsonify(register_upload(uid, path))
+    paths = []
+    for f in files:
+        name = safe_name(f.filename)
+        path = folder / name
+        n = 2
+        while path.exists():
+            path = folder / f"{Path(name).stem}_{n}{Path(name).suffix}"
+            n += 1
+        f.save(path)
+        paths.append(path)
+    return jsonify(register_upload(uid, pick_main(folder, paths)))
+
+
+def safe_name(raw: str) -> str:
+    """Bestandsnaam veilig maken maar herkenbaar houden (spaties, haakjes en accenten blijven;
+    belangrijk voor ROM-namen en .cue-verwijzingen)."""
+    import re
+    import unicodedata
+    name = unicodedata.normalize("NFC", raw.replace("\\", "/").rsplit("/", 1)[-1])
+    name = re.sub(r'[\x00-\x1f<>:"|?*]', "_", name).strip().lstrip(".")
+    if not name or name in (".", ".."):
+        name = secure_filename(raw) or "bestand"
+    return name[:200]
+
+
+def pick_main(folder: Path, paths: list[Path]) -> Path:
+    """Welk bestand is 'het' bestand: de .cue bij BIN's, de ROM bij een patch, een zip met een schijf erin."""
+    from converter import rom
+    if len(paths) == 1 and paths[0].suffix.lower() in (".zip", ".7z"):
+        inner = archive_listing(paths[0])
+        if any(n.lower().endswith(tuple("." + e for e in rom.CUE_LIKE)) for n in inner):
+            from converter.archive import _safe_extract
+            _safe_extract(paths[0], folder)
+            paths[0].unlink()
+            paths = [p for p in folder.rglob("*") if p.is_file()]
+    for ext in rom.CUE_LIKE:
+        hit = next((p for p in paths if p.suffix.lower() == "." + ext), None)
+        if hit:
+            return hit
+    rest = [p for p in paths if p.suffix.lower().lstrip(".") not in rom.PATCH_EXT]
+    return rest[0] if rest else paths[0]
+
+
+def archive_listing(path: Path) -> list[str]:
+    import zipfile
+    try:
+        if zipfile.is_zipfile(path):
+            return zipfile.ZipFile(path).namelist()
+        import py7zr
+        with py7zr.SevenZipFile(path) as z:
+            return z.getnames()
+    except Exception:  # noqa: BLE001
+        return []
 
 
 def register_upload(uid: str, path: Path) -> dict:
     """Maak een bestand beschikbaar voor conversie en geef de info voor de interface."""
     category = detect(path)
     info = media_info(path) if category in ("video", "audio", "image") else {}
+    targets = TARGETS[category]
+    from converter import rom
+    patches = [p for p in path.parent.iterdir() if p.suffix.lower().lstrip(".") in rom.PATCH_EXT and p != path]
+    if patches and category not in ("disc", "rom"):
+        category = "rom"  # bijv. een .bin-cartridge met een patch erbij
+    if category in ("disc", "rom"):
+        targets = rom.targets(path, category, patches)
+        extra = [p.name for p in (rom.disc_files(path) if category == "disc" else [path, *patches])
+                 if p != path]
+        if extra:
+            info = dict(info, files=extra)
     uploads[uid] = {"path": path, "category": category}
-    return dict(id=uid, name=path.name, size=path.stat().st_size, ext=extension(path), category=category,
-                label=LABELS[category], targets=TARGETS[category], info=info)
+    size = sum(p.stat().st_size for p in path.parent.iterdir() if p.is_file()) if category == "disc" \
+        else path.stat().st_size
+    return dict(id=uid, name=path.name, size=size, ext=extension(path), category=category,
+                label=LABELS[category], targets=targets, info=info)
 
 
 @app.post("/api/fetch")
@@ -129,6 +194,77 @@ def fetch_url():
                                             "scan": data.get("scan", True) is not False}, kind="fetch")
     job.extra["uid"] = uid
     return jsonify(job.public())
+
+
+@app.post("/api/webshot")
+def webshot_start():
+    """Website opslaan als PDF/PNG/JPG (headless Chrome/Edge)."""
+    data = request.get_json(force=True, silent=True) or {}
+    url = str(data.get("url") or "").strip()
+    fmt = str(data.get("format") or "pdf").lower()
+    if not url or fmt not in ("pdf", "png", "jpg"):
+        return jsonify(error="Geef een websiteadres en kies pdf, png of jpg."), 400
+    job = jobs.submit(WORK / uuid.uuid4().hex, "webshot", {"url": url, "format": fmt}, kind="webshot")
+    return jsonify(job.public())
+
+
+@app.post("/api/hash/<uid>")
+def file_hashes(uid):
+    """Checksums van een geüpload bestand (optioneel HMAC met een sleutel)."""
+    from converter.hashes import compute
+    up = uploads.get(uid)
+    if not up or not up["path"].exists():
+        return jsonify(error="Bestand niet gevonden."), 404
+    path = up["path"]
+    data = request.get_json(force=True, silent=True) or {}
+    return jsonify(name=path.name, hashes=compute(path, str(data.get("key") or "") or None))
+
+
+@app.post("/api/ocr/screen")
+def ocr_screen():
+    """Schermafbeelding maken (gebied kiezen) en de tekst herkennen. Alleen in de desktop-app/lokaal."""
+    from converter import ocr
+    try:
+        shot = ocr.capture_screen()
+        text = ocr.image(shot)
+    except ConversionError as e:
+        return jsonify(error=str(e)), 400
+    return jsonify(text=text)
+
+
+@app.post("/api/ocr/image")
+def ocr_pasted():
+    """Tekst herkennen in een geplakte/gesleepte afbeelding (klembord)."""
+    from converter import ocr
+    f = request.files.get("file")
+    if not f:
+        return jsonify(error="Geen afbeelding ontvangen."), 400
+    try:
+        text = ocr.image_bytes(f.read(), Path(f.filename or "x.png").suffix or ".png")
+    except ConversionError as e:
+        return jsonify(error=str(e)), 400
+    return jsonify(text=text)
+
+
+@app.get("/api/capabilities")
+def capabilities():
+    """Welke extra hulpprogramma's zijn er (voor uitleg in de interface)."""
+    from converter import ebook, ocr, pdftools, webshot
+    from converter.document import have
+    speech_error = None
+    try:
+        import pywhispercpp.model  # noqa: F401
+        speech = True
+    except Exception as e:  # noqa: BLE001
+        speech, speech_error = False, f"{type(e).__name__}: {e}"
+    try:
+        import py7zr  # noqa: F401
+        sevenzip = True
+    except Exception:  # noqa: BLE001
+        sevenzip = False
+    return jsonify(ocr=ocr.engine(), calibre=bool(ebook.calibre()), pymupdf=pdftools.have_pymupdf(),
+                   speech=speech, speech_error=speech_error, sevenzip=sevenzip,
+                   libreoffice=have("soffice") or have("libreoffice"), chrome=bool(webshot.chromium()))
 
 
 @app.post("/api/torrent")

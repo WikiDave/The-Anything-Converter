@@ -33,7 +33,8 @@ from converter.util import ConversionError, human_size, parse_size  # noqa: E402
 
 
 def _version() -> str:
-    for cand in (Path(__file__).resolve().parent / "VERSION", Path(sys.executable).resolve().parent / "VERSION"):
+    exe = Path(sys.executable).resolve().parent
+    for cand in (Path(__file__).resolve().parent / "VERSION", exe / "VERSION", exe.parent / "Resources" / "VERSION"):
         try:
             return cand.read_text().strip()
         except OSError:

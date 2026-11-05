@@ -7,6 +7,7 @@ import zipfile
 from pathlib import Path
 from typing import Optional
 
+from . import pdftools
 from .util import ConversionError, ProgressFn, have, run, human_size
 
 OFFICE_IN = {"doc", "docx", "odt", "rtf", "xls", "xlsx", "ods", "csv", "tsv", "ppt", "pptx", "odp", "key"}
@@ -66,6 +67,14 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
     if category == "pdf":
         return _pdf(src, out_dir, fmt, dst, opts, progress)
 
+    # Naar PDF zonder LibreOffice: eenvoudige opmaak via PyMuPDF
+    if fmt == "pdf" and ext in pdftools.FALLBACK_IN and not (have("soffice") or have("libreoffice")):
+        pdftools.document_to_pdf(src, dst)
+        if opts.get("target_bytes") or opts.get("quality") in ("medium", "low"):
+            compressed = compress_pdf(dst, out_dir, opts, progress)
+            shutil.move(str(compressed), dst)
+        return dst
+
     if opts.get("target_bytes") and fmt != "pdf":
         raise ConversionError("Een doelgrootte kan bij documenten alleen voor PDF-uitvoer. "
                               "Kies PDF, of gebruik 'zip' bij overige bestanden.")
@@ -101,6 +110,8 @@ def _pdf(src, out_dir, fmt, dst, opts, progress) -> Path:
         out = compress_pdf(src, out_dir, opts, progress)
         shutil.move(str(out), dst)
         return dst
+    if fmt in pdftools.PDF_OUT and pdftools.have_pymupdf():
+        return pdftools.convert_pdf(src, out_dir, fmt, opts, progress)
     if fmt in ("png", "jpg"):
         if not have("pdftoppm"):
             raise ConversionError("pdftoppm (poppler-utils) is niet geïnstalleerd.")

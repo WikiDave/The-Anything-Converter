@@ -57,6 +57,13 @@ def sample_png():
     return buf.getvalue()
 
 
+def sample_pdf():
+    import fitz
+    doc = fitz.open()
+    doc.new_page().insert_text((72, 72), "Anything Converter rooktest", fontsize=18)
+    return doc.tobytes()
+
+
 def sample_wav():
     buf = io.BytesIO()
     with wave.open(buf, "wb") as w:
@@ -86,6 +93,16 @@ def main():
         if want:
             assert info.get("window") == want, f"verwacht venster '{want}', kreeg '{info.get('window')}'"
         convert("test.png", sample_png(), "jpg")
+        caps = call("/api/capabilities")
+        print("  mogelijkheden:", caps)
+        assert caps["pymupdf"] and caps["sevenzip"], "PDF-gereedschap of 7z ontbreekt"
+        # Intel-Macs: pywhispercpp heeft daar alleen een oude versie; spraak is daar optioneel
+        if not caps["speech"]:
+            print("  LET OP: spraakherkenning niet beschikbaar:", caps.get("speech_error"))
+            assert os.environ.get("ALLOW_NO_SPEECH") == "1", "spraakherkenning ontbreekt"
+        convert("test.pdf", sample_pdf(), "docx")
+        convert("test.pdf", sample_pdf(), "xlsx")
+        convert("test.png", sample_png(), "svg")
         convert("test.wav", sample_wav(), "mp3")
         # libtorrent aanwezig? Een kapot .torrent-bestand moet "geen geldig" geven, niet "vereisen libtorrent".
         job = call("/api/torrent", files=("kapot.torrent", b"geen torrent"))

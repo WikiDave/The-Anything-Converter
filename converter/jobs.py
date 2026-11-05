@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from . import archive, document, fetch, image, media, settings, torrent, virus
+from . import archive, document, fetch, image, media, ocr, settings, torrent, transcribe, virus
 from .util import ConversionError
 
 
@@ -36,7 +36,8 @@ class Job:
         elif self.result:
             d.update(filename=self.result.name, size=self.result.stat().st_size)
             if self.src.is_file():
-                d["original_size"] = self.src.stat().st_size
+                d["original_size"] = (sum(p.stat().st_size for p in self.src.parent.iterdir() if p.is_file())
+                                      if self.category == "disc" else self.src.stat().st_size)
         if self.error:
             d["error"] = self.error
         if "virus" in self.extra:
@@ -45,6 +46,33 @@ class Job:
 
 
 def run_conversion(src: Path, out_dir: Path, category: str, opts: dict, progress=None) -> Path:
+    fmt = (opts.get("format") or "").lower()
+    if category in ("video", "audio") and fmt in transcribe.TEXT_FORMATS:
+        from .util import parse_time
+        start = parse_time(opts.get("trim_start")) or 0.0
+        end = parse_time(opts.get("trim_end"))
+        return transcribe.transcribe(src, out_dir / f"{src.stem}.{fmt}", fmt, opts, progress, start, end)
+    if category == "image" and fmt in ("txt", "docx", "rtf", "xlsx"):
+        if progress:
+            progress(0.2, "tekst herkennen (OCR)")
+        text = ocr.image(src)
+        if not text.strip():
+            raise ConversionError("Er is geen tekst gevonden in deze afbeelding.")
+        if progress:
+            progress(0.9, "opslaan")
+        from .pdftools import text_to_document
+        return text_to_document(text, out_dir / f"{src.stem}.{fmt}", fmt)
+    if category in ("disc", "rom"):
+        from . import rom
+        return rom.process(src, out_dir, category, opts, progress)
+    if category == "ebook" or (category == "document" and fmt in ("mobi", "azw3", "fb2", "epub")):
+        from . import ebook
+        return ebook.convert(src, out_dir, fmt, opts, progress)
+    if category == "presentation" and fmt in ("png", "jpg"):
+        # eerst naar PDF, dan elke dia als afbeelding
+        pdf = document.process(src, out_dir, category, dict(opts, format="pdf"), progress)
+        from .pdftools import convert_pdf
+        return convert_pdf(pdf, out_dir, fmt, opts, progress)
     if category in ("video", "audio"):
         return media.process(src, out_dir, opts, progress)
     if category == "image":
@@ -91,11 +119,15 @@ class JobManager:
                     job.extra.update(name=res["name"], files=res["files"])
                     job.result = res["root"]
                     self._scan(job, res["root"], progress)
+                elif job.kind == "webshot":
+                    from . import webshot
+                    job.result = webshot.capture(job.opts["url"], out_dir, job.opts["format"], progress)
                 elif job.kind == "fetch":
                     job.result = fetch.download(job.opts["url"], out_dir, bool(job.opts.get("audio_only")), progress)
                     self._scan(job, job.result, progress)
                 else:
-                    job.result = run_conversion(job.src, out_dir, job.category, job.opts, progress)
+                    opts = dict(job.opts, _cancelled=lambda: job.extra.get("cancel", False))
+                    job.result = run_conversion(job.src, out_dir, job.category, opts, progress)
                 job.status, job.progress, job.message = "done", 1.0, "Klaar"
             except ConversionError as exc:
                 job.status, job.error, job.message = "error", str(exc), "Mislukt"
