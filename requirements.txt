@@ -21,3 +21,20 @@ winrt-Windows.Foundation>=2.3; sys_platform == "win32"
 winrt-Windows.Foundation.Collections>=2.3; sys_platform == "win32"
 winrt-Windows.Globalization>=2.3; sys_platform == "win32"
 pyyaml>=6.0
+# bestandsformaten (catalogus): camera-RAW, HEIC, lettertypes, 3D, CAD, DICOM, mail, GPS, compressie, info
+rawpy>=0.21
+pillow-heif>=0.18
+fonttools>=4.50
+brotli>=1.1
+trimesh>=4.0
+ezdxf>=1.3
+pydicom>=2.4
+extract-msg>=0.48
+tnefparse>=1.4
+cryptography>=42
+asn1crypto>=1.5
+fitdecode>=0.10
+zstandard>=0.22
+lz4>=4.3
+pefile>=2023.2
+pygments>=2.17

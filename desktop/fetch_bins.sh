@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Haalt ffmpeg, ffprobe en deno op voor één platform en zet ze in desktop/bin/.
+# Haalt ffmpeg, ffprobe, deno en 7-Zip op voor één platform en zet ze in desktop/bin/.
 # Gebruik: desktop/fetch_bins.sh win-x64 | mac-arm64 | mac-x64 | linux-x64
 set -euo pipefail
 PLATFORM="$1"
 DENO_VERSION="v2.5.6"
+SEVENZIP_VERSION="25.01"   # 7-Zip: RAR, CAB, DMG, WIM, VHD(X), VMDK, MSI, CHM, RPM, ... uitpakken
 HERE="$(cd "$(dirname "$0")" && pwd)"
 BIN="$HERE/bin"
 TMP="$(mktemp -d)"
@@ -40,6 +41,27 @@ case "$PLATFORM" in
     exit 1
     ;;
 esac
+
+# 7-Zip (officiële builds van 7-zip.org, via GitHub). Mislukt dit, dan werkt de rest gewoon.
+SZ="https://github.com/ip7z/7zip/releases/download/$SEVENZIP_VERSION"
+SZV="${SEVENZIP_VERSION//./}"
+(
+  case "$PLATFORM" in
+    win-x64)
+      get "$SZ/7zr.exe" "$TMP/7zr.exe"
+      get "$SZ/7z$SZV-x64.exe" "$TMP/7z-setup.exe"
+      "$TMP/7zr.exe" x -y "-o$TMP/7z" "$TMP/7z-setup.exe" > /dev/null
+      cp "$TMP/7z/7z.exe" "$TMP/7z/7z.dll" "$BIN/" ;;
+    mac-*)
+      get "$SZ/7z$SZV-mac.tar.xz" "$TMP/7z.tar.xz"
+      mkdir -p "$TMP/7z" && tar -xJf "$TMP/7z.tar.xz" -C "$TMP/7z"
+      cp "$TMP/7z/7zz" "$BIN/" ;;
+    linux-x64)
+      get "$SZ/7z$SZV-linux-x64.tar.xz" "$TMP/7z.tar.xz"
+      mkdir -p "$TMP/7z" && tar -xJf "$TMP/7z.tar.xz" -C "$TMP/7z"
+      cp "$TMP/7z/7zz" "$BIN/" ;;
+  esac
+) || echo "::warning::7-Zip ophalen mislukt; exotische archieven werken dan alleen als 7-Zip los geïnstalleerd is."
 
 get "https://github.com/denoland/deno/releases/download/$DENO_VERSION/deno-$DENO_TARGET.zip" "$TMP/deno.zip"
 unzip_to "$TMP/deno.zip" "$BIN"

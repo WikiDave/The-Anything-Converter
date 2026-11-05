@@ -5,20 +5,36 @@ from pathlib import Path
 
 from .util import ffprobe, ConversionError
 
-VIDEO = {"mp4", "m4v", "mov", "mkv", "webm", "avi", "wmv", "flv", "mpg", "mpeg", "3gp", "ts", "mts", "m2ts", "ogv", "vob"}
-AUDIO = {"mp3", "wav", "flac", "aac", "m4a", "ogg", "oga", "opus", "wma", "aiff", "aif", "amr", "alac"}
-IMAGE = {"jpg", "jpeg", "png", "webp", "gif", "bmp", "tif", "tiff", "ico", "avif", "heic", "heif", "jfif", "tga", "ppm", "psd", "svg"}
+VIDEO = {"mp4", "m4v", "mov", "mkv", "webm", "avi", "wmv", "flv", "mpg", "mpeg", "3gp", "3g2", "ts", "mts", "m2ts",
+         "ogv", "vob", "qt", "mk3d", "asf", "f4v", "swf", "mpe", "m1v", "m2v", "evo", "rm", "rmvb", "divx", "dv", "vro",
+         "mxf", "h264", "h265", "hevc", "y4m", "ivf", "insv", "360", "lrv", "dav", "bik"}
+AUDIO = {"mp3", "wav", "flac", "aac", "m4a", "ogg", "oga", "opus", "wma", "aiff", "aif", "amr", "alac", "aifc", "m4b",
+         "m4p", "m4r", "ape", "wv", "tta", "mpc", "dsf", "dff", "mka", "ac3", "eac3", "thd", "dts", "awb", "3ga", "gsm",
+         "spx", "au", "snd", "ra", "weba", "caf", "bwf", "w64", "rf64", "voc", "mod", "xm", "it", "s3m", "mmf"}
+RAW = {"dng", "cr2", "cr3", "crw", "nef", "nrw", "arw", "srf", "sr2", "raf", "orf", "rw2", "pef", "srw", "rwl", "3fr",
+       "fff", "iiq", "x3f", "erf", "mrw", "kdc", "dcr", "mos", "gpr", "raw"}
+IMAGE = {"jpg", "jpeg", "png", "webp", "gif", "bmp", "tif", "tiff", "ico", "avif", "heic", "heif", "jfif", "tga", "ppm",
+         "psd", "jpe", "apng", "jxl", "jp2", "j2k", "jpx", "jxr", "wdp", "hdp", "mpo", "dib", "cur", "icns", "pcx",
+         "pbm", "pgm", "pnm", "xbm", "xpm", "wbmp", "pict", "pct", "sgi", "rgb", "ras", "qoi", "hdr", "exr", "dds",
+         "psb", "xcf", "kra", "ora", "fits", "fit-beeld", "thm", "insp", "procreate", "blp", "pcd", "msp"} | RAW
 PDF = {"pdf"}
-DOCUMENT = {"doc", "docx", "odt", "rtf", "txt", "md", "markdown", "html", "htm", "tex", "rst", "wpd", "pages"}
-EBOOK = {"epub", "mobi", "azw", "azw3", "azw4", "fb2", "lit", "lrf", "pdb", "tcr", "prc", "snb", "cbz", "cbr"}
-SPREADSHEET = {"xls", "xlsx", "ods", "csv", "tsv"}
-PRESENTATION = {"ppt", "pptx", "odp", "key"}
-ARCHIVE = {"zip", "tar", "gz", "tgz", "bz2", "tbz2", "xz", "txz", "7z"}
+DOCUMENT = {"doc", "docx", "odt", "rtf", "txt", "tex", "rst", "wpd", "pages", "docm", "dot", "dotx", "dotm", "ott",
+            "sxw", "wps", "abw", "lwp", "hwp"}
+EBOOK = {"epub", "mobi", "azw", "azw3", "azw4", "fb2", "lit", "lrf", "pdb", "tcr", "prc", "snb", "kfx", "ibooks",
+         "djvu", "fbz"}
+SPREADSHEET = {"xls", "xlsx", "ods", "csv", "tsv", "xlsm", "xlsb", "xlt", "xltx", "xltm", "ots", "sxc", "numbers",
+               "123", "wk1", "wks", "qpw", "slk", "dif"}
+PRESENTATION = {"ppt", "pptx", "odp", "key", "pptm", "pps", "ppsx", "ppsm", "pot", "potx", "potm", "otp", "sxi"}
+ARCHIVE = {"zip", "tar", "tgz", "tbz2", "txz", "7z"}
+KNOWN_EXT = VIDEO | AUDIO | IMAGE | PDF | DOCUMENT | EBOOK | SPREADSHEET | PRESENTATION | ARCHIVE | {"tar.gz", "tar.bz2",
+                                                                                                   "tar.xz"}
 
 TARGETS = {
-    "video": ["mp4", "webm", "mkv", "mov", "avi", "wmv", "flv", "mpg", "ogv", "3gp", "3g2", "gif",
-              "mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "aiff", "wma", "m4r", "mmf", "txt", "srt", "vtt"],
-    "audio": ["mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "aiff", "wma", "m4r", "mmf", "txt", "srt", "vtt"],
+    "video": ["mp4", "webm", "mkv", "mov", "avi", "m4v", "wmv", "asf", "flv", "mpg", "ts", "m2ts", "mxf", "divx",
+              "ogv", "3gp", "3g2", "gif", "mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "aiff", "wma", "ac3",
+              "mka", "m4r", "mmf", "txt", "srt", "vtt"],
+    "audio": ["mp3", "m4a", "aac", "wav", "flac", "alac", "ogg", "opus", "aiff", "wma", "ac3", "eac3", "wv", "tta",
+              "au", "caf", "mka", "m4b", "spx", "m4r", "mmf", "txt", "srt", "vtt"],
     "image": ["jpg", "png", "webp", "avif", "gif", "bmp", "tiff", "ico", "pdf", "svg", "eps", "tga", "wbmp",
               "exr", "hdr", "txt", "docx", "rtf", "xlsx"],
     "pdf": ["pdf", "docx", "xlsx", "pptx", "png", "jpg", "rtf", "txt", "html", "xml", "odt"],
@@ -40,6 +56,7 @@ LABELS = {
 }
 
 
+
 def extension(path: Path | str) -> str:
     name = Path(path).name.lower()
     for multi in ("tar.gz", "tar.bz2", "tar.xz"):
@@ -48,9 +65,28 @@ def extension(path: Path | str) -> str:
     return Path(name).suffix.lstrip(".")
 
 
-def detect(path: Path) -> str:
-    from . import rom
+def analyse_path(path: Path) -> tuple[str, str]:
+    """(categorie, effectieve extensie). De extensie kan afwijken bij half gedownloade/hernoemde bestanden."""
+    from .families import classify
     ext = extension(path)
+    try:
+        r = classify(path) if Path(path).exists() else None
+    except Exception:  # noqa: BLE001 - herkennen mag nooit de upload laten mislukken
+        r = None
+    if r is None:
+        return _detect_ext(path, ext), ext
+    cat, eff = r
+    if cat is None:
+        return _detect_ext(path, eff), eff
+    return cat, eff
+
+
+def detect(path: Path) -> str:
+    return analyse_path(path)[0]
+
+
+def _detect_ext(path: Path, ext: str) -> str:
+    from . import rom
     if ext in rom.DISC_EXT or (ext == "bin" and rom.is_disc_bin(path)):
         return "disc"
     if ext in rom.ROM_EXT or ext == "bin":
@@ -62,6 +98,8 @@ def detect(path: Path) -> str:
             return cat
     if ext in ARCHIVE or ext in ("tar.gz", "tar.bz2", "tar.xz"):
         return "archive"
+    if ext in ("gz", "bz2", "xz"):
+        return "compressed"
     # Onbekende extensie: laat ffprobe kijken of het media is.
     try:
         info = ffprobe(path)
@@ -92,3 +130,24 @@ def media_info(path: Path) -> dict:
         elif s.get("codec_type") == "audio" and "acodec" not in out:
             out.update(acodec=s.get("codec_name"))
     return out
+
+
+def targets_for(path: Path, patches=()) -> tuple[str, str, list[str]]:
+    """(categorie, effectieve extensie, mogelijke uitvoer) voor één bestand."""
+    from . import families, rom
+    cat, eff = analyse_path(path)
+    if patches and cat not in ("disc", "rom"):
+        cat = "rom"
+    if cat in families.FAMILY_LABELS:
+        return cat, eff, families.targets(Path(path), cat, eff)
+    if cat in ("disc", "rom"):
+        return cat, eff, rom.targets(Path(path), cat, list(patches))
+    out = list(TARGETS.get(cat, TARGETS["other"]))
+    if eff in ("csv", "tsv"):
+        out += ["json", "yaml", "xml", "txt"]
+    return cat, eff, out
+
+
+# Labels van de extra families (na alle definities: voorkomt een kringverwijzing bij het importeren)
+from .families import FAMILY_LABELS  # noqa: E402
+LABELS.update(FAMILY_LABELS)

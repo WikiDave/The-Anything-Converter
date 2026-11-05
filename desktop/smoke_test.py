@@ -103,6 +103,15 @@ def main():
         convert("test.pdf", sample_pdf(), "docx")
         convert("test.pdf", sample_pdf(), "xlsx")
         convert("test.png", sample_png(), "svg")
+        # nieuwe formaten uit de catalogus (zonder extra programma's)
+        convert("test.json", b'{"naam": "Anna", "lijst": [1, 2]}', "yaml")
+        convert("test.srt", b"1\n00:00:01,000 --> 00:00:02,000\nHallo\n", "vtt")
+        convert("test.gpx", b"<?xml version='1.0'?><gpx version='1.1' xmlns='http://www.topografix.com/GPX/1/1'>"
+                b"<trk><trkseg><trkpt lat='52.1' lon='5.1'/><trkpt lat='52.2' lon='5.2'/></trkseg></trk></gpx>", "kml")
+        convert("test.svg", b"<svg xmlns='http://www.w3.org/2000/svg' width='40' height='20'>"
+                b"<rect width='40' height='20' fill='red'/></svg>", "png")
+        convert("test.py", b"print('hallo')\n", "html")
+        assert caps.get("sevenzip_tool"), "7-Zip ontbreekt in de app"
         convert("test.wav", sample_wav(), "mp3")
         # libtorrent aanwezig? Een kapot .torrent-bestand moet "geen geldig" geven, niet "vereisen libtorrent".
         job = call("/api/torrent", files=("kapot.torrent", b"geen torrent"))

@@ -604,6 +604,12 @@ esc = sluiten"""), markup=False)
                 meta.append(f"{minfo['width']}×{minfo['height']}")
             if minfo.get("duration") and self.cat != "image":
                 meta.append(f"{int(minfo['duration'] // 60)}:{minfo['duration'] % 60:04.1f}")
+            from converter.catalog import describe
+            kind = describe(path)
+            if kind:
+                meta.append(kind)
+            if info.get("ext") and info["ext"] != path.suffix.lower().lstrip("."):
+                meta.append(f"eigenlijk .{info['ext']}")
             self.query_one("#fileinfo", Label).update(A(f"NAAM  {path.name}\nINFO  {' · '.join(meta)}"))
             self.query_one("#path", Input).value = str(path)
             ext = path.suffix.lower().lstrip(".")
@@ -631,7 +637,9 @@ esc = sluiten"""), markup=False)
             speech = media and fmt in ("txt", "srt", "vtt")
             texty = speech or (cat == "image" and fmt in ("txt", "docx", "rtf", "xlsx", "svg", "wbmp", "exr", "hdr",
                                                           "eps", "tga")) or \
-                (cat == "pdf" and fmt not in (None, "pdf", "png", "jpg")) or cat in ("disc", "rom", "ebook")
+                (cat == "pdf" and fmt not in (None, "pdf", "png", "jpg")) or cat in ("disc", "rom", "ebook") or \
+                (cat is not None and cat not in ("video", "audio", "image", "pdf", "document", "spreadsheet",
+                                                 "presentation", "archive", "other"))
             self.query_one("#f-size").display = bool(cat) and not texty
             self.query_one("#f-trim").display = media
             self.query_one("#video-row").display = cat == "video" and not speech

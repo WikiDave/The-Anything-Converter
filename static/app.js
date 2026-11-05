@@ -18,6 +18,7 @@ const FMT_LABEL = {
   m4r: "iPhone-beltoon", mmf: "beltoon (SMAF)", wma: "Windows Media Audio", aiff: "Apple-audio",
   wmv: "Windows Media Video", flv: "Flash-video", mpg: "MPEG-2", ogv: "Ogg-video", "3gp": "oude telefoons",
   "3g2": "oude telefoons", srt: "ondertitels", vtt: "ondertitels (web)", "7z": "7-Zip",
+  "uitpakken": "uitpakken (origineel bestand)", "json-mooi": "JSON netjes ingesprongen", "yaml-mooi": "YAML netjes", "xml-mooi": "XML netjes ingesprongen", "sql": "SQL-dump", "py": "Python", "plist": "macOS-plist", "lrc": "songtekst", "sbv": "YouTube-ondertitels", "ttml": "XML-ondertitels", "ass": "opgemaakte ondertitels", "m3u8": "afspeellijst (UTF-8)", "pls": "afspeellijst", "xspf": "afspeellijst (XML)", "wpl": "Windows-afspeellijst", "kml": "Google Earth", "kmz": "Google Earth (zip)", "gpx": "GPS-route", "geojson": "geodata", "tcx": "Garmin", "stl": "3D-printen", "obj": "3D-model", "ply": "3D-model / scan", "glb": "3D voor web/AR", "off": "3D-model", "3mf": "3D-printproject", "woff": "weblettertype", "woff2": "weblettertype (klein)", "ttf": "TrueType", "otf": "OpenType", "pem": "tekst (PEM)", "der": "binair (DER)", "eml": "e-mailbericht", "qcow2": "QEMU/Proxmox", "vmdk": "VMware", "vdi": "VirtualBox", "vhdx": "Hyper-V", "vhd": "Hyper-V (oud)", "raw": "ruwe schijf", "cbz": "stripboek", "yaml": "YAML", "toml": "TOML", "json": "JSON", "eac3": "Dolby Digital Plus", "ac3": "Dolby Digital", "wv": "WavPack (verliesvrij)", "tta": "True Audio (verliesvrij)", "au": "Unix-audio", "caf": "Apple Core Audio", "mka": "Matroska-audio", "m4b": "audioboek", "spx": "Speex-spraak", "alac": "Apple Lossless (.m4a)", "m4v": "Apple-video", "asf": "Windows Media", "ts": "MPEG-transportstream", "m2ts": "Blu-ray/AVCHD", "mxf": "broadcast", "divx": "DivX", "rapport": "inforapport",
 };
 function fmtLabel(cat, t) {
   if (TEXT_OUT.includes(t) && (cat === "video" || cat === "audio")) return t === "txt" ? "spraak naar tekst" : "spraak naar ondertitels";
@@ -25,6 +26,10 @@ function fmtLabel(cat, t) {
   if (cat === "pdf" && t === "pdf") return "PDF comprimeren / verkleinen";
   if (cat === "disc" && t === "wav") return "audiosporen als WAV";
   if (cat === "rom" && t === "md") return "Mega Drive (gewoon)";
+  if (cat === "info" && t === "txt") return "inforapport (wat is het, details, checksums)";
+  if (["archive2", "compressed", "vmdisk"].includes(cat) && t === "txt") return "lijst met de inhoud";
+  if (cat === "text" && t === "png") return "als afbeelding (bijv. NFO-art)";
+  if (cat === "text" && t === "html") return "webpagina met kleuren";
   if (cat === "pdf" && ["png", "jpg"].includes(t)) return "elke pagina als afbeelding";
   return FMT_LABEL[t] || "";
 }
@@ -340,6 +345,8 @@ function setup(data) {
   if (i.width) meta.push(`${i.width}×${i.height}`);
   if (i.duration && data.category !== "image") meta.push(fmtTime(i.duration));
   if (i.files && i.files.length) meta.push("+ " + i.files.join(", "));
+  if (i.kind) meta.push(i.kind);
+  if (i.real_ext) meta.push("eigenlijk ." + i.real_ext);
   $("fMeta").textContent = meta.join(" · ");
   duration = i.duration || 0;
 
@@ -386,7 +393,8 @@ function refresh() {
   const speech = isMedia && TEXT_OUT.includes(fmt);
   const textual = speech || (cat === "image" && ["txt", "docx", "rtf", "xlsx", "svg", "wbmp", "exr", "hdr", "eps", "tga"].includes(fmt)) ||
     (cat === "pdf" && fmt !== "pdf" && !["png", "jpg"].includes(fmt)) || (cat === "ebook" && fmt !== "pdf") ||
-    cat === "disc" || cat === "rom";
+    cat === "disc" || cat === "rom" || !["video", "audio", "image", "pdf", "document", "spreadsheet",
+      "presentation", "archive", "other"].includes(cat);
   const toVideo = cat === "video" && !AUDIO_OUT.includes(fmt) && fmt !== "gif" && !speech;
   const target = radio("sizeMode") === "target";
 

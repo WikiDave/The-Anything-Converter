@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .detect import LABELS, TARGETS, detect
+from .detect import LABELS
 
 FMT_LABEL = {
     "docx": "Word", "doc": "Word 97-2003", "odt": "OpenDocument-tekst", "xlsx": "Excel", "xls": "Excel 97-2003",
@@ -24,6 +24,66 @@ FMT_LABEL = {
     "flac": "FLAC (verliesvrij)", "ogg": "Ogg Vorbis", "opus": "Opus", "jpg": "JPEG", "png": "PNG", "webp": "WebP",
     "avif": "AVIF", "bmp": "BMP", "tiff": "TIFF", "tar": "tar", "tar.gz": "tar + gzip", "tar.bz2": "tar + bzip2",
     "tar.xz": "tar + xz", "bin": "Mega Drive (gewoon)",
+    "uitpakken": "uitpakken (origineel bestand)",
+    "json-mooi": "JSON netjes ingesprongen",
+    "yaml-mooi": "YAML netjes",
+    "xml-mooi": "XML netjes ingesprongen",
+    "sql": "SQL-dump",
+    "py": "Python",
+    "plist": "macOS-plist",
+    "lrc": "songtekst",
+    "sbv": "YouTube-ondertitels",
+    "ttml": "XML-ondertitels",
+    "ass": "opgemaakte ondertitels",
+    "m3u8": "afspeellijst (UTF-8)",
+    "pls": "afspeellijst",
+    "xspf": "afspeellijst (XML)",
+    "wpl": "Windows-afspeellijst",
+    "kml": "Google Earth",
+    "kmz": "Google Earth (zip)",
+    "gpx": "GPS-route",
+    "geojson": "geodata",
+    "tcx": "Garmin",
+    "stl": "3D-printen",
+    "obj": "3D-model",
+    "ply": "3D-model / scan",
+    "glb": "3D voor web/AR",
+    "off": "3D-model",
+    "3mf": "3D-printproject",
+    "woff": "weblettertype",
+    "woff2": "weblettertype (klein)",
+    "ttf": "TrueType",
+    "otf": "OpenType",
+    "pem": "tekst (PEM)",
+    "der": "binair (DER)",
+    "eml": "e-mailbericht",
+    "qcow2": "QEMU/Proxmox",
+    "vmdk": "VMware",
+    "vdi": "VirtualBox",
+    "vhdx": "Hyper-V",
+    "vhd": "Hyper-V (oud)",
+    "raw": "ruwe schijf",
+    "cbz": "stripboek",
+    "yaml": "YAML",
+    "toml": "TOML",
+    "json": "JSON",
+    "eac3": "Dolby Digital Plus",
+    "ac3": "Dolby Digital",
+    "wv": "WavPack (verliesvrij)",
+    "tta": "True Audio (verliesvrij)",
+    "au": "Unix-audio",
+    "caf": "Apple Core Audio",
+    "mka": "Matroska-audio",
+    "m4b": "audioboek",
+    "spx": "Speex-spraak",
+    "alac": "Apple Lossless (.m4a)",
+    "m4v": "Apple-video",
+    "asf": "Windows Media",
+    "ts": "MPEG-transportstream",
+    "m2ts": "Blu-ray/AVCHD",
+    "mxf": "broadcast",
+    "divx": "DivX",
+    "rapport": "inforapport",
 }
 
 
@@ -40,15 +100,19 @@ def fmt_label(cat: str, t: str) -> str:
         return "audiosporen als WAV"
     if cat == "rom" and t == "md":
         return "Mega Drive (gewoon)"
+    if cat == "info" and t == "txt":
+        return "inforapport (wat is het, details, checksums)"
+    if cat in ("archive2", "compressed", "vmdisk") and t == "txt":
+        return "lijst met de inhoud"
+    if cat == "text" and t == "png":
+        return "als afbeelding (bijv. NFO-art)"
+    if cat == "text" and t == "html":
+        return "webpagina met kleuren"
     return FMT_LABEL.get(t, "")
 
 
 def analyse(path: Path, patch: Path | None = None) -> dict:
     """Categorie, label en mogelijke uitvoer van een bestand (zoals de web-interface ze krijgt)."""
-    from . import rom
-    cat = detect(path)
-    patches = [patch] if patch else []
-    if patches and cat not in ("disc", "rom"):
-        cat = "rom"
-    targets = rom.targets(path, cat, patches) if cat in ("disc", "rom") else list(TARGETS[cat])
-    return {"category": cat, "label": LABELS[cat], "targets": targets}
+    from .detect import targets_for
+    cat, eff, targets = targets_for(path, [patch] if patch else [])
+    return {"category": cat, "label": LABELS.get(cat, cat), "targets": targets, "ext": eff}

@@ -162,24 +162,27 @@ def archive_listing(path: Path) -> list[str]:
 
 def register_upload(uid: str, path: Path) -> dict:
     """Maak een bestand beschikbaar voor conversie en geef de info voor de interface."""
-    category = detect(path)
-    info = media_info(path) if category in ("video", "audio", "image") else {}
-    targets = TARGETS[category]
     from converter import rom
+    from converter.catalog import describe
+    from converter.detect import targets_for
     patches = [p for p in path.parent.iterdir() if p.suffix.lower().lstrip(".") in rom.PATCH_EXT and p != path]
-    if patches and category not in ("disc", "rom"):
-        category = "rom"  # bijv. een .bin-cartridge met een patch erbij
+    category, eff, targets = targets_for(path, patches)
+    info = media_info(path) if category in ("video", "audio", "image") and category != "rom" else {}
+    desc = describe(path)
+    if desc:
+        info = dict(info, kind=desc)
+    if eff and eff != extension(path):
+        info = dict(info, real_ext=eff)
     if category in ("disc", "rom"):
-        targets = rom.targets(path, category, patches)
         extra = [p.name for p in (rom.disc_files(path) if category == "disc" else [path, *patches])
                  if p != path]
         if extra:
             info = dict(info, files=extra)
-    uploads[uid] = {"path": path, "category": category}
+    uploads[uid] = {"path": path, "category": category, "targets": targets}
     size = sum(p.stat().st_size for p in path.parent.iterdir() if p.is_file()) if category == "disc" \
         else path.stat().st_size
     return dict(id=uid, name=path.name, size=size, ext=extension(path), category=category,
-                label=LABELS[category], targets=targets, info=info)
+                label=LABELS.get(category, category), targets=targets, info=info)
 
 
 @app.post("/api/fetch")
@@ -251,6 +254,7 @@ def capabilities():
     """Welke extra hulpprogramma's zijn er (voor uitleg in de interface)."""
     from converter import ebook, ocr, pdftools, webshot
     from converter.document import have
+    from converter.unpack import sevenzip as sevenzip_tool
     speech_error = None
     try:
         import pywhispercpp.model  # noqa: F401
@@ -264,6 +268,7 @@ def capabilities():
         sevenzip = False
     return jsonify(ocr=ocr.engine(), calibre=bool(ebook.calibre()), pymupdf=pdftools.have_pymupdf(),
                    speech=speech, speech_error=speech_error, sevenzip=sevenzip,
+                   sevenzip_tool=bool(sevenzip_tool()),
                    libreoffice=have("soffice") or have("libreoffice"), chrome=bool(webshot.chromium()))
 
 
@@ -392,7 +397,7 @@ def convert():
         opts.pop("target_unit", None)
     except ConversionError as exc:
         return jsonify(error=str(exc)), 400
-    if opts.get("format") and opts["format"] not in TARGETS[up["category"]]:
+    if opts.get("format") and opts["format"] not in up.get("targets", TARGETS.get(up["category"], [])):
         return jsonify(error=f"Formaat .{opts['format']} is niet mogelijk voor dit bestand."), 400
     job = jobs.submit(up["path"], up["category"], opts)
     return jsonify(job.public())

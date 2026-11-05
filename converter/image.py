@@ -8,7 +8,9 @@ from typing import Optional
 
 from PIL import Image, ImageOps, ImageSequence
 
-from .util import ConversionError, ProgressFn, have, run, human_size
+import subprocess
+
+from .util import NO_WINDOW, ConversionError, ProgressFn, have, run, human_size
 
 LOSSY = {"jpg", "webp", "avif"}
 PIL_FORMAT = {"jpg": "JPEG", "png": "PNG", "webp": "WEBP", "avif": "AVIF", "gif": "GIF",
@@ -20,25 +22,67 @@ MAX_PIXELS = 20000  # maximale breedte/hoogte bij vergroten
 Image.MAX_IMAGE_PIXELS = 400_000_000
 
 
-def _load(src: Path, work: Path) -> list[Image.Image]:
-    """Laad alle frames. Valt terug op ImageMagick voor exotische formaten (heic, svg, psd...)."""
+def _open_any(src: Path, work: Path) -> Image.Image:
+    """Open bijna elk beeldformaat: Pillow, HEIC, camera-RAW, Krita/OpenRaster/Procreate, ffmpeg, ImageMagick."""
+    ext = src.suffix.lower().lstrip(".")
+    from .detect import RAW
+    if ext in RAW:
+        try:
+            import rawpy
+            with rawpy.imread(str(src)) as raw:
+                rgb = raw.postprocess(use_camera_wb=True, no_auto_bright=False, output_bps=8)
+            return Image.fromarray(rgb)
+        except ImportError as e:
+            raise ConversionError("Camera-RAW lezen vraagt rawpy.") from e
+        except Exception as e:  # noqa: BLE001
+            raise ConversionError(f"Dit RAW-bestand kan niet gelezen worden: {e}") from e
     try:
         im = Image.open(src)
         im.load()
-    except Exception:
-        try:
-            import pillow_heif  # type: ignore
-            pillow_heif.register_heif_opener()
-            im = Image.open(src)
-            im.load()
-        except Exception:
-            magick = "magick" if have("magick") else "convert"
-            if not have(magick):
-                raise ConversionError("Dit afbeeldingsformaat kan niet gelezen worden (ImageMagick ontbreekt).")
-            tmp = work / "_tmp_input.png"
-            run([magick, f"{src}[0]", str(tmp)], timeout=300)
+        return im
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        import pillow_heif  # type: ignore
+        pillow_heif.register_heif_opener()
+        im = Image.open(src)
+        im.load()
+        return im
+    except Exception:  # noqa: BLE001
+        pass
+    import zipfile
+    if zipfile.is_zipfile(src):  # Krita, OpenRaster, Procreate: samengevoegd beeld of voorbeeld in de zip
+        with zipfile.ZipFile(src) as z:
+            names = z.namelist()
+            for cand in ("mergedimage.png", "QuickLook/Thumbnail.png", "QuickLook/Preview.jpg", "Thumbnails/thumbnail.png",
+                         "preview.png", "Thumbnails/thumbnail.jpg"):
+                if cand in names:
+                    import io as _io
+                    im = Image.open(_io.BytesIO(z.read(cand)))
+                    im.load()
+                    return im
+    tmp = work / "_tmp_input.png"
+    if have("ffmpeg"):  # o.a. JPEG XL, EXR, HDR, DDS, QOI
+        r = subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(src), "-frames:v", "1", str(tmp)],
+                           capture_output=True, **NO_WINDOW)
+        if r.returncode == 0 and tmp.exists():
             im = Image.open(tmp)
             im.load()
+            return im
+    magick = "magick" if have("magick") else "convert"
+    if not have(magick):
+        raise ConversionError("Dit afbeeldingsformaat kan niet gelezen worden (ImageMagick ontbreekt).")
+    run([magick, f"{src}[0]", str(tmp)], timeout=300)
+    im = Image.open(tmp)
+    im.load()
+    return im
+
+
+def _load(src: Path, work: Path) -> list[Image.Image]:
+    """Laad alle frames."""
+    im = _open_any(src, work)
+    if im.mode in ("I;16", "I;16B", "I", "F"):
+        im = im.point(lambda v: v / 256).convert("L") if im.mode != "F" else im.convert("L")
     frames = [ImageOps.exif_transpose(f.copy()) for f in ImageSequence.Iterator(im)]
     for f, orig in zip(frames, ImageSequence.Iterator(im)):
         f.info["duration"] = orig.info.get("duration", 100)

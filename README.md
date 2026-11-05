@@ -20,6 +20,30 @@ bestanden worden na 1 uur automatisch opgeruimd. De interface heeft een retro te
 > Let op: "groter maken" werkt voor video's, audio en afbeeldingen (meer bitrate/kwaliteit/resolutie).
 > Al gecomprimeerde bestanden (zip, jpg in een zip, …) kunnen verliesvrij nauwelijks kleiner.
 
+## Alle bestandsformaten (±1000)
+
+De app kent ruim 1000 extensies, elk met een Nederlandse omschrijving (`converter/formaten.txt`), en kiest per
+bestand de juiste omzetter. Wat elk formaat kan worden en of dat getest is, staat in
+**[docs/FORMATEN.md](docs/FORMATEN.md)** (automatisch gemaakt: per formaat een voorbeeldbestand en elke omzetting echt
+uitgevoerd met `python tools/formaten_rapport.py`).
+
+- **Herkenning aan de inhoud:** dubbelzinnige extensies (`.ts` video of TypeScript, `.stl` 3D of ondertitels,
+  `.key` Keynote of sleutel, `.pub` Publisher of SSH-sleutel, `.md`, `.vcf`, `.gpx`, `.dot`, `.vhd`) en half
+  gedownloade of hernoemde bestanden (`.crdownload`, `.part`, `.tmp`, zonder extensie).
+- **Nieuwe families:** tekst en code (met kleuren naar HTML/PDF/PNG, NFO-art), data (JSON, YAML, TOML, XML, CSV,
+  INI, plist, SQLite, dBase, Jupyter, HAR, RSS, OPML), bankbestanden (OFX/QFX/QBO, QIF, MT940, CODA), ondertitels
+  (SRT, VTT, ASS/SSA, SBV, TTML, SAMI, MicroDVD, LRC), afspeellijsten (M3U, PLS, XSPF, WPL, ASX), MIDI, lettertypes
+  (TTF, OTF, WOFF, WOFF2, TTC), e-mail (EML, EMLX, MSG, MBOX, winmail.dat, S/MIME), contacten (vCard), agenda (iCal),
+  GPS (GPX, KML/KMZ, GeoJSON, TCX, Garmin FIT, IGC), 3D (STL, OBJ, PLY, GLB, OFF, 3MF), CAD (DXF), vector (SVG, AI,
+  EPS/PS, Visio, Publisher, CorelDRAW, EMF/WMF, Graphviz), certificaten en sleutels, DICOM, camera-RAW (Canon, Nikon,
+  Sony, Fuji, ... via LibRaw), stripboeken, archieven en pakketten (RAR, CAB, DMG, WIM, MSI, DEB, RPM, APK, JAR, ...),
+  losse compressie (gz, bz2, xz, zst, lz4, br) en VM-schijven (qcow2, vmdk, vdi, vhd(x)).
+- **Niet om te zetten** (programma's, projectbestanden van andere apps, versleutelde bestanden, AI-modellen):
+  een inforapport met wat het is, details (bijv. versie van een .exe, metadata van een .gguf) en checksums.
+- 7-Zip zit in de desktop-app. Voor sommige formaten is een extra (gratis) programma nodig: LibreOffice (oude Office,
+  Pages/Numbers/Keynote, Visio, Publisher), Calibre (Kindle), chdman (CHD), Ghostscript (EPS/PS), qemu-img
+  (VM-schijven), FluidSynth (MIDI naar geluid) en Graphviz. De app zegt het als iets ontbreekt.
+
 ## Gereedschap en formaten (desktop-app en lokale versie)
 
 Op het startscherm staat **[ GEREEDSCHAP ]** met snelle keuzes: kies een tegel, kies een bestand, klaar.
