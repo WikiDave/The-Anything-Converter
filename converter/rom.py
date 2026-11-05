@@ -604,7 +604,8 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
         progress(0.05, "lezen")
 
     if fmt == "patch":
-        patch = next((p for p in src.parent.iterdir() if p.suffix.lower().lstrip(".") in PATCH_EXT), None)
+        patch = Path(opts["patch"]) if opts.get("patch") else \
+            next((p for p in src.parent.iterdir() if p.suffix.lower().lstrip(".") in PATCH_EXT), None)
         if not patch:
             raise ConversionError("Geen patch (.ips, .ups of .bps) gevonden; kies de ROM en de patch samen.")
         kind = patch.suffix.lower().lstrip(".")

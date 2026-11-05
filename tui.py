@@ -1,13 +1,17 @@
-"""Anything Converter - terminalversie (TUI).
+"""Anything Converter - terminalversie.
 
-Dezelfde ASCII-layout als de web-app, maar in je terminal: Windows Terminal/PowerShell, macOS/Linux
-(bash, zsh) en via SSH op een server. Muis en toetsenbord werken allebei.
+Volledig scherm (Textual) met dezelfde ASCII-stijl als de web-app: Windows Terminal, PowerShell, cmd,
+macOS Terminal/iTerm, Linux-terminals, tmux/screen en via SSH. Muis en toetsenbord werken allebei.
+Kan de terminal dat niet aan (geen echte terminal, TERM=dumb, invoer via een pijp), dan start de
+eenvoudige modus met genummerde menu's. Daarnaast zijn er opdrachten voor scripts.
 
-Start:  python tui.py [bestand]
+Start:  python tui.py [bestand]          volledig scherm
+        python tui.py --simpel           eenvoudige modus (elke terminal)
+        python tui.py --ascii            alleen ASCII-tekens (oude consoles)
+        python tui.py converteer a.mov --naar mp4      (zie --help)
 """
 from __future__ import annotations
 
-import argparse
 import os
 import shutil
 import sys
@@ -15,20 +19,8 @@ import tempfile
 import threading
 from pathlib import Path
 
-from textual import on, work
-from textual.app import App, ComposeResult
-from textual.binding import Binding
-from textual.containers import Horizontal, Vertical, VerticalScroll
-from textual.theme import Theme
-from textual.content import Content as E  # kale tekst: [ ... ] is geen opmaak
-from textual.widgets import (Button, Checkbox, DirectoryTree, Footer, Input, Label, ProgressBar, RadioButton,
-                             RadioSet, Select, Static, TabbedContent, TabPane)
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from converter import settings as user_settings  # noqa: E402
-from converter import virus  # noqa: E402
-from converter.detect import LABELS, TARGETS, detect, extension, media_info  # noqa: E402
-from converter.jobs import run_conversion  # noqa: E402
+from converter import cli  # noqa: E402
 from converter.util import ConversionError, human_size, parse_size  # noqa: E402
 
 
@@ -59,469 +51,1071 @@ LOGO = r"""
  ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝""".strip("\n")
 LOGO_SMALL = "▄▀█ █▄ █ █▄█ ▀█▀ █ █ █ █▄ █ █▀▀   █▀▀ █▀█ █▄ █ █ █ █▀▀ █▀█ ▀█▀ █▀▀ █▀█\n" \
              "█▀█ █ ▀█  █   █  █▀█ █ █ ▀█ █▄█   █▄▄ █▄█ █ ▀█ ▀▄▀ ██▄ █▀▄  █  ██▄ █▀▄"
+LOGO_ASCII = r"""
+   _              _   _     _                  ___                     _
+  /_\  _ _ _  _ _| |_| |_  (_)_ _  __ _       / __|___ _ ___ _____ _ _| |_ ___ _ _
+ / _ \| ' \ || |  _| ' \ | | ' \/ _` |     | (__/ _ \ ' \ V / -_) '_|  _/ -_) '_|
+/_/ \_\_||_\_, |\__|_||_||_|_||_\__, |      \___\___/_||_\_/\___|_|  \__\___|_|
+           |__/                 |___/""".strip("\n")
+
+# Gereedschap: (icoon links, icoon rechts, naam, actie, waarde)
+TOOLS = [
+    ("PDF", "DOC", "PDF naar Word", "fmt", "docx"), ("PDF", "XLS", "PDF naar Excel", "fmt", "xlsx"),
+    ("PDF", "PPT", "PDF naar PPT", "fmt", "pptx"), ("PDF", "PNG", "PDF naar PNG", "fmt", "png"),
+    ("PDF", "JPG", "PDF naar JPEG", "fmt", "jpg"), ("PDF", "TXT", "PDF naar TXT", "fmt", "txt"),
+    ("PDF", "RTF", "PDF naar RTF", "fmt", "rtf"), ("PDF", "HTM", "PDF naar HTML", "fmt", "html"),
+    ("PDF", "XML", "PDF naar XML", "fmt", "xml"), ("DOC", "PDF", "Word naar PDF", "fmt", "pdf"),
+    ("XLS", "PDF", "Excel naar PDF", "fmt", "pdf"), ("PPT", "PDF", "PPT naar PDF", "fmt", "pdf"),
+    ("IMG", "PDF", "Afbeelding naar PDF", "fmt", "pdf"), ("TXT", "PDF", "TXT/RTF naar PDF", "fmt", "pdf"),
+    ("PDF", "+", "PDF samenvoegen", "tab", "tab-pdf"), ("PDF", "/", "PDF splitsen", "tab", "tab-pdf"),
+    ("PDF", "v", "PDF comprimeren", "fmt", "pdf"), ("IMG", "TXT", "Bestands-OCR", "fmt", "txt"),
+    ("[ ]", "TXT", "Screenshot-OCR", "screen", ""), ("~", "TXT", "Audio/video naar tekst", "fmt", "txt"),
+    ("~", "SRT", "Ondertitels maken", "fmt", "srt"), ("DOC", "EPUB", "E-book maken", "fmt", "epub"),
+    ("EPUB", "AZW", "E-book voor Kindle", "fmt", "azw3"), ("~", "M4R", "iPhone-beltoon", "fmt", "m4r"),
+    ("IMG", "IG", "Social media formaat", "tab", "tab-social"), ("WWW", "PDF", "Website opslaan", "web", ""),
+    ("BIN", "ISO", "CUE/BIN naar ISO", "fmt", "iso"), ("BIN", "1x", "BIN-sporen samenvoegen", "fmt", "cue"),
+    ("ISO", "CHD", "Naar CHD", "fmt", "chd"), ("ISO", "CSO", "PSP ISO naar CSO", "fmt", "cso"),
+    ("ROM", "IPS", "ROM patchen", "fmt", "patch"), ("N64", "Z64", "N64-ROM omzetten", "fmt", "z64"),
+    ("#", "SHA", "Checksum / hash", "tab", "tab-check"), ("ZIP", "7Z", "Archief", "tab", "tab-arch"),
+    ("URL", "MP4", "Video-link / torrent", "tab", "tab-fetch"), ("!", "AV", "Virusscan", "tab", "tab-check"),
+]
 
 
-def _theme(name: str, fg: str, hi: str, dim: str) -> Theme:
-    return Theme(name=name, primary=fg, secondary=dim, accent=hi, foreground=fg, background="#000000",
-                 surface="#000000", panel="#0a0a0a", success=hi, warning="#ffb000", error="#ff5f56", dark=True,
-                 variables={"block-cursor-foreground": "#000000", "block-cursor-background": fg,
-                            "input-selection-background": f"{fg} 35%", "footer-key-foreground": hi,
-                            "footer-description-foreground": dim, "border": dim, "border-blurred": dim})
+def build_app(ascii_mode: bool = False):
+    """Bouwt de Textual-app. Apart, zodat de eenvoudige modus zonder Textual kan starten."""
+    from textual import on, work
+    from textual.app import App, ComposeResult
+    from textual.binding import Binding
+    from textual.containers import Grid, Horizontal, Vertical, VerticalScroll
+    from textual.content import Content as E  # kale tekst: [ ... ] is geen opmaak
+    from textual.screen import ModalScreen
+    from textual.theme import Theme
+    from textual.widgets import (Button, Checkbox, DirectoryTree, Footer, Input, Label, ProgressBar, RadioButton,
+                                 RadioSet, Select, Static, TabbedContent, TabPane, TextArea)
 
+    from converter import settings as user_settings
+    from converter import social, virus
+    from converter.formats import analyse, fmt_label
+    from converter.jobs import run_conversion
 
-THEMES = [_theme("ac-groen", "#a6ff5c", "#d9ffb8", "#5b8a3a"), _theme("ac-amber", "#ffb000", "#ffd98a", "#9a6c17"),
-          _theme("ac-cyaan", "#5ff5d0", "#c4fff0", "#36897a")]
+    A = cli.t if ascii_mode else (lambda s: s)  # tekst ASCII-veilig maken
 
-CSS = """
-Screen { background: #000000; }
-* { scrollbar-color: $secondary; scrollbar-background: #000000; }
-#top { height: 1; color: $secondary; }
-#top .name { color: $primary; width: auto; }
-#logo { color: $primary; height: auto; margin: 1 0 0 0; }
-#tagline { color: $secondary; margin: 0 0 1 0; }
-#menubar { height: 3; border: solid $secondary; padding: 0 1; }
-#menubar Label { width: auto; color: $secondary; padding: 0 1; margin: 0 3 0 0; }
-#menubar Label.on { color: #000000; background: $primary; }
-#menubar Label.done { color: $primary; }
-.frame { border: solid $secondary; border-title-color: $accent; border-title-style: bold; padding: 0 1; height: auto; margin: 0 0 1 0; }
-.prompt { color: $secondary; width: auto; padding: 1 1 0 0; }
-.dim { color: $secondary; }
-.row { height: auto; }
-Input { background: #000000; border: tall $secondary; color: $accent; }
-Input:focus { border: tall $primary; }
-Select > SelectCurrent { background: #000000; border: tall $secondary; }
-Select:focus > SelectCurrent { border: tall $primary; }
-Button { background: #000000; color: $primary; border: none; min-width: 10; height: 1; margin: 1 1 0 0; text-style: none; }
-Button:hover, Button:focus { background: $primary; color: #000000; text-style: bold; }
-Button.go { width: 100%; height: 3; border: solid $primary; text-style: bold; }
-RadioSet { background: #000000; border: none; height: auto; }
-RadioButton, Checkbox { background: #000000; }
-DirectoryTree { height: 14; background: #000000; border: solid $secondary; }
-DirectoryTree:focus { border: solid $primary; }
-ProgressBar { margin: 1 0 0 0; }
-Bar > .bar--bar { color: $primary; background: #1a2712; }
-Bar > .bar--complete { color: $accent; }
-TabbedContent ContentTabs { background: #000000; }
-Tab { color: $secondary; }
-Tab.-active { color: $accent; text-style: bold; }
-#result { border: solid $primary; padding: 0 1; height: auto; display: none; }
-#result.show { display: block; }
-#result.err { border: solid $error; color: $error; }
-.cols { height: auto; }
-.cols > Vertical { width: 1fr; height: auto; }
-#status { dock: bottom; height: 1; color: $primary; background: #000000; padding: 0 1; }
+    class Files(DirectoryTree):
+        """Mappenlijst zonder emoji (die verschuiven in veel terminals), en in ASCII-modus zonder lijntjes."""
+        ICON_NODE = "+ " if ascii_mode else "▸ "
+        ICON_NODE_EXPANDED = "- " if ascii_mode else "▾ "
+        ICON_FILE = "  "
+        if ascii_mode:
+            LINES = {k: ("  ", "| ", "`-", "|-") for k in ("default", "bold", "double")}
+
+    if ascii_mode:
+        RadioButton.BUTTON_INNER = "*"
+        RadioButton.BUTTON_LEFT = "("
+        RadioButton.BUTTON_RIGHT = ")"
+        Checkbox.BUTTON_INNER = "x"
+        Checkbox.BUTTON_LEFT = "["
+        Checkbox.BUTTON_RIGHT = "]"
+
+    def theme(name: str, fg: str, hi: str, dim: str) -> Theme:
+        return Theme(name=name, primary=fg, secondary=dim, accent=hi, foreground=fg, background="#000000",
+                     surface="#000000", panel="#0a0a0a", success=hi, warning="#ffb000", error="#ff5f56", dark=True,
+                     variables={"block-cursor-foreground": "#000000", "block-cursor-background": fg,
+                                "input-selection-background": f"{fg} 35%", "footer-key-foreground": hi,
+                                "footer-description-foreground": dim, "border": dim, "border-blurred": dim})
+
+    themes = [theme("ac-groen", "#a6ff5c", "#d9ffb8", "#5b8a3a"), theme("ac-amber", "#ffb000", "#ffd98a", "#9a6c17"),
+              theme("ac-cyaan", "#5ff5d0", "#c4fff0", "#36897a"), theme("ac-wit", "#e8e8e8", "#ffffff", "#7a7a7a")]
+
+    line = "ascii" if ascii_mode else "solid"
+    tall = "ascii" if ascii_mode else "tall"
+    css = f"""
+Screen {{ background: #000000; }}
+* {{ scrollbar-color: $secondary; scrollbar-background: #000000; scrollbar-size-vertical: 1; }}
+#top {{ height: 1; color: $secondary; }}
+#top .name {{ color: $primary; width: auto; text-style: bold; }}
+#top .dim {{ width: 1fr; }}
+#logo {{ color: $primary; height: auto; margin: 1 0 0 0; }}
+#tagline {{ color: $secondary; margin: 0 0 1 0; }}
+#menubar {{ height: 3; border: {line} $secondary; padding: 0 1; }}
+#menubar Label {{ width: auto; color: $secondary; padding: 0 1; margin: 0 3 0 0; }}
+#menubar Label.on {{ color: #000000; background: $primary; }}
+#menubar Label.done {{ color: $primary; }}
+.frame {{ border: {line} $secondary; border-title-color: $accent; border-title-style: bold; padding: 0 1;
+          height: auto; margin: 0 0 1 0; }}
+.frame:focus-within {{ border: {line} $primary; }}
+.prompt {{ color: $secondary; width: auto; padding: 1 1 0 0; }}
+.dim {{ color: $secondary; }}
+.hint {{ color: $secondary; margin: 0 0 0 0; }}
+.row {{ height: auto; }}
+.row Input {{ width: 1fr; }}
+Input {{ background: #000000; border: {tall} $secondary; color: $accent; }}
+Input:focus {{ border: {tall} $primary; }}
+Select {{ width: 1fr; }}
+Select > SelectCurrent {{ background: #000000; border: {tall} $secondary; }}
+Select:focus > SelectCurrent {{ border: {tall} $primary; }}
+SelectOverlay {{ background: #000000; border: {line} $primary; }}
+Button {{ background: #000000; color: $primary; border: none; min-width: 10; height: 1; margin: 1 1 0 0;
+          text-style: none; }}
+Button:hover, Button:focus {{ background: $primary; color: #000000; text-style: bold; }}
+Button.go {{ width: 100%; height: 3; border: {line} $primary; text-style: bold; margin: 0 0 1 0; }}
+Button.go:disabled {{ color: $secondary; border: {line} $secondary; }}
+RadioSet {{ background: #000000; border: none; height: auto; }}
+RadioButton, Checkbox {{ background: #000000; }}
+DirectoryTree {{ height: 12; background: #000000; border: {line} $secondary; }}
+DirectoryTree:focus {{ border: {line} $primary; }}
+ProgressBar {{ margin: 0 0 1 0; }}
+Bar > .bar--bar {{ color: $primary; background: #1a2712; }}
+Bar > .bar--complete {{ color: $accent; }}
+TabbedContent ContentTabs {{ background: #000000; }}
+Tab {{ color: $secondary; padding: 0 1; }}
+Tab.-active {{ color: $accent; text-style: bold; }}
+.result {{ border: {line} $primary; padding: 0 1; height: auto; display: none; }}
+.result.show {{ display: block; }}
+.result.err {{ border: {line} $error; color: $error; }}
+TextArea {{ height: 12; background: #000000; border: {line} $secondary; }}
+.cols {{ height: auto; }}
+.cols > Vertical {{ width: 1fr; height: auto; }}
+.cols.stack {{ layout: vertical; }}
+#tool-grid {{ grid-size: 4; grid-gutter: 0 1; grid-rows: 3; height: auto; }}
+#tool-grid.n3 {{ grid-size: 3; }}
+#tool-grid.n2 {{ grid-size: 2; }}
+#tool-grid.n1 {{ grid-size: 1; }}
+.tool {{ width: 100%; height: 3; border: {line} $secondary; margin: 0; padding: 0 1; content-align: left middle;
+         text-wrap: nowrap; text-overflow: ellipsis; }}
+.tool:hover, .tool:focus {{ border: {line} $primary; background: #000000; color: $accent; }}
+#status {{ dock: bottom; height: 1; color: $primary; background: #000000; padding: 0 1; }}
+HelpScreen {{ align: center middle; background: #000000 70%; }}
+#help {{ width: 84; max-width: 100%; height: auto; max-height: 90%; border: {line} $primary; background: #000000;
+         padding: 1 2; }}
 """
 
+    def bars(before: int, after: int, width: int = 26) -> str:
+        return A(cli.bars(before, after, width).replace("  ORIGINEEL", "ORIGINEEL").replace("\n  ", "\n"))
 
-def bars(before: int, after: int, width: int = 26) -> str:
-    m = max(before, after, 1)
-    b = lambda n: "█" * max(1, round(n / m * width)) + "░" * (width - max(1, round(n / m * width)))  # noqa: E731
-    d = (after - before) / before * 100 if before else 0
-    arrow = "▼" if d <= 0 else "▲"
-    return (f"ORIGINEEL  {b(before)} {human_size(before)}\n"
-            f"NIEUW      {b(after)} {human_size(after)}\n"
-            f"VERSCHIL   {arrow} {abs(d):.1f}% {'kleiner' if d <= 0 else 'groter'}")
+    class HelpScreen(ModalScreen):
+        BINDINGS = [Binding("escape,f1,question_mark,q", "dismiss", "sluiten")]
 
+        def compose(self) -> ComposeResult:
+            with VerticalScroll(id="help"):
+                yield Static(A(f"""ANYTHING CONVERTER {VERSION} · TERMINAL · HULP
 
-class Converter(App):
-    TITLE = "Anything Converter"
-    CSS = CSS
-    BINDINGS = [
-        Binding("ctrl+s", "start", "start"),
-        Binding("ctrl+t", "skin", "kleur"),
-        Binding("ctrl+o", "focus_path", "pad"),
-        Binding("ctrl+q", "quit", "afsluiten"),
-    ]
+TOETSEN
+  tab / shift+tab   naar het volgende / vorige veld
+  pijltjes + enter  kiezen in lijsten, mappen en tabbladen
+  ctrl+s            start (op het tabblad waar je bent)
+  ctrl+o            pad typen of plakken
+  ctrl+t            kleur wisselen (groen, amber, cyaan, wit)
+  f1 of ?           deze hulp          ctrl+q   afsluiten
+  1 t/m 8           naar tabblad 1-8 (als je niet in een tekstveld staat)
 
-    def __init__(self, start_file: str | None = None):
-        super().__init__()
-        self.src: Path | None = Path(start_file).expanduser().resolve() if start_file else None
-        self.cancel = threading.Event()
+TIPS
+  · sleep een bestand in het terminalvenster om het pad te plakken
+  · resultaten komen naast het origineel; er wordt nooit iets overschreven
+  · CUE/BIN: kies de .cue, de .bin-bestanden in dezelfde map gaan vanzelf mee
+  · ROM patchen: kies de ROM en vul bij PATCH> het .ips/.ups/.bps-bestand in
+  · kopieer tekst uit het tekstvak met ctrl+c (werkt ook via SSH in de meeste terminals)
 
-    # ---------------------------------------------------------------- opbouw
-    def compose(self) -> ComposeResult:
-        with Horizontal(id="top"):
-            yield Label("ANYTHING CONVERTER (TM)", classes="name")
-            yield Label(f"   VER {VERSION} · TERMINAL   ctrl+t = kleur   ctrl+q = afsluiten", classes="dim")
-        yield Static(LOGO, id="logo")
-        yield Label("> converteer · verklein · vergroot · knip · links · torrents · viruscheck", id="tagline")
-        with Horizontal(id="menubar"):
-            for i, t in enumerate(("01 BESTAND", "02 FORMAAT", "03 GROOTTE", "04 UITVOER"), 1):
-                yield Label(t, id=f"step{i}", classes="on" if i == 1 else "")
-        with TabbedContent(initial="tab-convert"):
-            with TabPane(E("[ CONVERTEREN ]"), id="tab-convert"):
-                yield from self.compose_convert()
-            with TabPane(E("[ LINK & TORRENT ]"), id="tab-fetch"):
-                yield from self.compose_fetch()
-            with TabPane(E("[ VIRUSSCAN ]"), id="tab-scan"):
-                yield from self.compose_scan()
-        yield Label("> gereed", id="status", markup=False)
-        yield Footer()
+ANDERE MANIEREN
+  anything-converter-tui --simpel     menu's met nummers, werkt in elke terminal
+  anything-converter-tui --ascii      alleen ASCII-tekens (oude consoles)
+  anything-converter-tui --help       opdrachten voor scripts, bijv.
+      anything-converter-tui converteer *.heic --naar jpg
 
-    def compose_convert(self) -> ComposeResult:
-        with VerticalScroll():
-            with Vertical(classes="frame", id="f-file") as f:
-                f.border_title = "BESTAND"
-                with Horizontal(classes="row"):
-                    yield Label("PAD>", classes="prompt")
-                    yield Input(placeholder="typ of plak een pad, of kies hieronder", id="path")
-                yield DirectoryTree(str(self.src.parent if self.src else Path.cwd()), id="tree")
-                yield Label("// kies een bestand met de pijltjes en enter, of klik erop", id="fileinfo", markup=False, classes="dim")
-            with Horizontal(classes="cols"):
-                with Vertical(classes="frame") as f:
-                    f.border_title = "FORMAAT"
-                    yield Select([], prompt="eerst een bestand kiezen", id="format", allow_blank=True)
-                    yield Label("UITVOER-MAP>", classes="prompt")
-                    yield Input(placeholder="(zelfde map als het bestand)", id="outdir")
-                with Vertical(classes="frame") as f:
-                    f.border_title = "GROOTTE"
-                    with RadioSet(id="mode"):
-                        yield RadioButton("Kwaliteit", value=True, id="m-quality")
-                        yield RadioButton("Doelgrootte", id="m-target")
-                    with RadioSet(id="quality"):
-                        yield RadioButton("Hoog", id="q-high")
-                        yield RadioButton("Normaal", value=True, id="q-medium")
-                        yield RadioButton("Laag", id="q-low")
+esc = sluiten"""), markup=False)
+
+    class Converter(App):
+        TITLE = "Anything Converter"
+        CSS = css
+        BINDINGS = [
+            Binding("ctrl+s", "start", "start"),
+            Binding("ctrl+o", "focus_path", "pad"),
+            Binding("ctrl+t", "skin", "kleur"),
+            Binding("f1", "help", "hulp"),
+            Binding("question_mark", "help", "hulp", show=False),
+            Binding("ctrl+q", "quit", "afsluiten"),
+        ] + [Binding(str(i), f"tab({i})", show=False) for i in range(1, 9)]
+        TABS = ["tab-convert", "tab-tools", "tab-pdf", "tab-social", "tab-arch", "tab-fetch", "tab-check",
+                "tab-web"]
+
+        def __init__(self, start_file: str | None = None):
+            super().__init__()
+            self.src: Path | None = Path(start_file).expanduser().resolve() if start_file else None
+            self.cat = "other"
+            self.targets: list[str] = []
+            self.preset: str | None = None
+            self.cancel = threading.Event()
+
+        # ------------------------------------------------------------ opbouw
+        def compose(self) -> ComposeResult:
+            with Horizontal(id="top"):
+                yield Label("ANYTHING CONVERTER (TM)", classes="name")
+                yield Label(A(f"   VER {VERSION} · TERMINAL"), classes="dim")
+                yield Label(A("f1 hulp · ctrl+q stop"), classes="dim", id="keys")
+            yield Static(LOGO_ASCII if ascii_mode else LOGO, id="logo")
+            yield Label(A("> converteer · verklein · vergroot · knip · pdf · ocr · spraak · rom's · social"),
+                        id="tagline")
+            with Horizontal(id="menubar"):
+                for i, txt in enumerate(("01 BESTAND", "02 FORMAAT", "03 OPTIES", "04 UITVOER"), 1):
+                    yield Label(txt, id=f"step{i}", classes="on" if i == 1 else "")
+            with TabbedContent(initial="tab-convert", id="tabs"):
+                with TabPane(E("1 OMZETTEN"), id="tab-convert"):
+                    yield from self.compose_convert()
+                with TabPane(E("2 TOOLS"), id="tab-tools"):
+                    yield from self.compose_tools()
+                with TabPane(E("3 PDF"), id="tab-pdf"):
+                    yield from self.compose_pdf()
+                with TabPane(E("4 SOCIAL"), id="tab-social"):
+                    yield from self.compose_social()
+                with TabPane(E("5 ARCHIEF"), id="tab-arch"):
+                    yield from self.compose_archive()
+                with TabPane(E("6 LINK"), id="tab-fetch"):
+                    yield from self.compose_fetch()
+                with TabPane(E("7 CONTROLE"), id="tab-check"):
+                    yield from self.compose_check()
+                with TabPane(E("8 OCR/WEB"), id="tab-web"):
+                    yield from self.compose_web()
+            yield Label("> gereed", id="status", markup=False)
+            yield Footer()
+
+        def frame(self, title: str, **kw):
+            v = Vertical(classes="frame", **kw)
+            v.border_title = A(title)
+            return v
+
+        def compose_convert(self) -> ComposeResult:
+            with VerticalScroll():
+                with self.frame("01 · BESTAND", id="f-file"):
                     with Horizontal(classes="row"):
-                        yield Label("DOEL>", classes="prompt")
-                        yield Input(placeholder="bijv. 8 MB of 500 KB", id="target")
-            with Vertical(classes="frame", id="f-trim") as f:
-                f.border_title = "KNIPPEN · VIDEO"
-                with Horizontal(classes="row"):
-                    yield Label("IN>", classes="prompt")
-                    yield Input(placeholder="0:00", id="t-start")
-                    yield Label("UIT>", classes="prompt")
-                    yield Input(placeholder="einde", id="t-end")
-                with Horizontal(classes="row"):
-                    yield Label("RESOLUTIE>", classes="prompt")
-                    yield Select([(f"{h}p", str(h)) for h in (2160, 1440, 1080, 720, 480, 360)],
-                                 prompt="origineel / automatisch", id="height", allow_blank=True)
+                        yield Label("PAD>", classes="prompt")
+                        yield Input(placeholder=A("typ of plak een pad (of sleep een bestand hierheen)"), id="path")
+                    yield Files(str(self.src.parent if self.src else Path.cwd()), id="tree")
+                    yield Label(A("// kies een bestand met de pijltjes en enter, of klik erop"), id="fileinfo",
+                                markup=False, classes="dim")
+                with Horizontal(classes="cols", id="cols"):
+                    with self.frame("02 · FORMAAT"):
+                        yield Select([], prompt="eerst een bestand kiezen", id="format", allow_blank=True)
+                        yield Label("", id="fmt-hint", classes="hint", markup=False)
+                        yield Label("UITVOER-MAP>", classes="prompt")
+                        yield Input(placeholder="(zelfde map als het bestand)", id="outdir")
+                        yield Checkbox(A("Alle bestanden van dit type in deze map"), id="batch")
+                    with self.frame("03 · GROOTTE", id="f-size"):
+                        with RadioSet(id="mode"):
+                            yield RadioButton("Kwaliteit", value=True, id="m-quality")
+                            yield RadioButton("Doelgrootte", id="m-target")
+                        with RadioSet(id="quality"):
+                            yield RadioButton("Hoog", id="q-high")
+                            yield RadioButton("Normaal", value=True, id="q-medium")
+                            yield RadioButton("Laag", id="q-low")
+                        with Horizontal(classes="row"):
+                            yield Label("DOEL>", classes="prompt")
+                            yield Input(placeholder="bijv. 8 MB of 500 KB", id="target")
+                with self.frame("KNIPPEN · VIDEO", id="f-trim"):
+                    with Horizontal(classes="row"):
+                        yield Label("IN>", classes="prompt")
+                        yield Input(placeholder="0:00", id="t-start")
+                        yield Label("UIT>", classes="prompt")
+                        yield Input(placeholder="einde", id="t-end")
+                    with Horizontal(classes="row", id="video-row"):
+                        yield Select([(f"{h}p", str(h)) for h in (2160, 1440, 1080, 720, 480, 360)],
+                                     prompt="resolutie: origineel", id="height", allow_blank=True)
+                        yield Select([(n, v) for v, n in (("iphone", "iPhone"), ("ipad", "iPad"),
+                                                          ("android", "Android"), ("ipod", "iPod"),
+                                                          ("playstation", "PlayStation"), ("psp", "PSP"),
+                                                          ("xbox", "Xbox"), ("nintendo-switch", "Nintendo Switch"),
+                                                          ("nintendo-3ds", "Nintendo 3DS"), ("wii", "Wii"),
+                                                          ("kindle-fire", "Kindle Fire"), ("blackberry", "BlackBerry"))],
+                                     prompt="apparaat: geen voorkeur", id="device", allow_blank=True)
                     yield Checkbox("Geluid verwijderen", id="noaudio")
-            yield Button(E("[ ▶ START ]  (ctrl+s)"), id="go", classes="go")
-            yield ProgressBar(total=100, show_eta=False, id="progress")
-            yield Static("", id="result", markup=False)
+                with self.frame("SPRAAK NAAR TEKST", id="f-speech"):
+                    with Horizontal(classes="row"):
+                        yield Select([(n, v) for v, n in (("auto", "taal: automatisch"), ("nl", "Nederlands"),
+                                                          ("en", "Engels"), ("de", "Duits"), ("fr", "Frans"),
+                                                          ("es", "Spaans"), ("it", "Italiaans"), ("pt", "Portugees"),
+                                                          ("ru", "Russisch"), ("tr", "Turks"), ("ar", "Arabisch"),
+                                                          ("hi", "Hindi"), ("zh", "Chinees"), ("ja", "Japans"))],
+                                     value="auto", id="lang", allow_blank=False)
+                        yield Select([("snel (base, 150 MB)", "base"), ("nauwkeurig (small, 480 MB)", "small"),
+                                      ("zeer nauwkeurig (medium, 1,5 GB)", "medium")], value="base", id="model",
+                                     allow_blank=False)
+                    yield Checkbox("Vertalen naar Engels", id="translate")
+                    yield Label(A("// lokaal op je computer. het model wordt de eerste keer gedownload."),
+                                classes="hint")
+                with self.frame("AFMETINGEN", id="f-image"):
+                    with Horizontal(classes="row"):
+                        yield Label("SCHAAL %>", classes="prompt")
+                        yield Input(placeholder="100", id="scale")
+                        yield Label("BREEDTE>", classes="prompt")
+                        yield Input(placeholder="auto", id="img-w")
+                        yield Label("HOOGTE>", classes="prompt")
+                        yield Input(placeholder="auto", id="img-h")
+                with self.frame("ROM-PATCH", id="f-patch"):
+                    with Horizontal(classes="row"):
+                        yield Label("PATCH>", classes="prompt")
+                        yield Input(placeholder=".ips, .ups of .bps", id="patch")
+                yield Button(E("[ > START ]  (ctrl+s)") if ascii_mode else E("[ ▶ START ]  (ctrl+s)"), id="go",
+                             classes="go")
+                yield ProgressBar(total=100, show_eta=False, id="progress")
+                yield Static("", id="result", classes="result", markup=False)
+                yield TextArea("", id="text-out", read_only=True)
 
-    def compose_fetch(self) -> ComposeResult:
-        with VerticalScroll():
-            with Vertical(classes="frame") as f:
-                f.border_title = "LINK · MAGNET · .TORRENT"
-                with Horizontal(classes="row"):
-                    yield Label("LINK>", classes="prompt")
-                    yield Input(placeholder="https://www.youtube.com/watch?v=…  of  magnet:?…  of pad naar .torrent",
-                                id="url")
-                with Horizontal(classes="row"):
-                    yield Checkbox("Alleen geluid", id="audio")
-                    yield Checkbox("Controleren op virussen", value=True, id="scan")
-                with Horizontal(classes="row"):
-                    yield Label("OPSLAAN IN>", classes="prompt")
-                    yield Input(value=str(Path.home() / "Downloads"), id="dl-dir")
-                with Horizontal(classes="row"):
-                    yield Button(E("[ OPHALEN ]"), id="fetch")
-                    yield Button(E("[ STOP ]"), id="stop")
-                yield ProgressBar(total=100, show_eta=False, id="f-progress")
-                yield Static("// alleen voor eigen bestanden, vrije licenties of met toestemming van de maker.",
-                             id="f-result", markup=False, classes="dim")
+        def compose_tools(self) -> ComposeResult:
+            with VerticalScroll():
+                with self.frame("GEREEDSCHAP · KIES EN GA"):
+                    with Grid(id="tool-grid"):
+                        for i, (a, b, name, _, _) in enumerate(TOOLS):
+                            icon = f"{a}>{b}" if ascii_mode else f"{a}→{b}"
+                            yield Button(E(f"{icon:<9} {name}"), id=f"tool-{i}", classes="tool")
+                    yield Label(A("// pdf-, ocr- en spraakgereedschap kiest het formaat voor je; daarna kies je "
+                                  "het bestand."), classes="hint")
 
-    def compose_scan(self) -> ComposeResult:
-        with VerticalScroll():
-            with Vertical(classes="frame") as f:
-                f.border_title = "VIRUSSCAN"
-                with Horizontal(classes="row"):
-                    yield Label("PAD>", classes="prompt")
-                    yield Input(placeholder="bestand of map", id="scan-path")
-                    yield Button(E("[ SCANNEN ]"), id="scan-go")
-                yield Static("", id="scan-result", markup=False)
-            with Vertical(classes="frame") as f:
-                f.border_title = "VIRUSTOTAL (OPTIONEEL)"
-                with Horizontal(classes="row"):
-                    yield Label("SLEUTEL>", classes="prompt")
-                    yield Input(password=True, placeholder="gratis api-sleutel van virustotal.com", id="vt")
-                    yield Button(E("[ OPSLAAN ]"), id="vt-save")
-                yield Label("", id="scanner-info", markup=False, classes="dim")
+        def compose_pdf(self) -> ComposeResult:
+            with VerticalScroll():
+                with self.frame("PDF-WERKBANK"):
+                    yield Label(A("BESTANDEN> één per regel, in volgorde (pdf's en/of foto's)"), classes="prompt")
+                    yield TextArea("", id="pdf-files")
+                    with Horizontal(classes="row"):
+                        yield Label("PAGINA'S>", classes="prompt")
+                        yield Input(placeholder="bijv. 1-3,5  (leeg = alles)", id="pdf-pages")
+                        yield Select([("90° rechtsom", "90"), ("180°", "180"), ("90° linksom", "270")], value="90",
+                                     id="pdf-angle", allow_blank=False)
+                    with Horizontal(classes="row"):
+                        yield Button(E("[ SAMENVOEGEN ]"), id="pdf-merge")
+                        yield Button(E("[ SPLITSEN ]"), id="pdf-split")
+                        yield Button(E("[ DRAAIEN ]"), id="pdf-rotate")
+                        yield Button(E("[ VERWIJDEREN ]"), id="pdf-delete")
+                        yield Button(E("[ COMPRIMEREN ]"), id="pdf-compress")
+                    yield Label(A("// splitsen zonder pagina's = elke pagina apart (zip). met pagina's = alleen "
+                                  "die pagina's als één pdf."), classes="hint")
+                yield Static("", id="pdf-result", classes="result", markup=False)
 
-    def on_mount(self) -> None:
-        for t in THEMES:
-            self.register_theme(t)
-        try:
-            skin = user_settings.load().get("tui_skin", "ac-groen")
-        except Exception:
-            skin = "ac-groen"
-        self.theme = skin if skin in [t.name for t in THEMES] else "ac-groen"
-        self.query_one("#progress", ProgressBar).display = False
-        self.query_one("#f-progress", ProgressBar).display = False
-        self.query_one("#f-trim").display = False
-        eng = virus.available_engine()
-        self.query_one("#scanner-info", Label).update(
-            f"// scanner op deze computer: {eng}" if eng else
-            "// geen scanner gevonden. windows: defender staat er standaard op. mac/linux: installeer clamav.")
-        self.fit_logo(self.size.width)
-        if self.src:
-            self.choose(self.src)
+        def compose_social(self) -> ComposeResult:
+            opts = [(A(social.label(p[1])), p[1]) for p in social.PRESETS]
+            with VerticalScroll():
+                with self.frame("SOCIAL MEDIA · EXACT FORMAAT"):
+                    with Horizontal(classes="row"):
+                        yield Label("FOTO/VIDEO>", classes="prompt")
+                        yield Input(placeholder="pad naar foto of video", id="so-path")
+                    yield Select(opts, value="ig-portrait", id="so-preset", allow_blank=False)
+                    with RadioSet(id="so-fit"):
+                        yield RadioButton("Vullen (bijsnijden vanuit het midden)", value=True, id="so-cover")
+                        yield RadioButton("Passend (alles zichtbaar, vage rand)", id="so-contain")
+                    yield Button(E("[ MAKEN ]"), id="so-go", classes="go")
+                    yield Label(A("// panorama-carrousel: een brede foto in stukken om te swipen op instagram, "
+                                  "facebook en threads."), classes="hint")
+                yield ProgressBar(total=100, show_eta=False, id="so-progress")
+                yield Static("", id="so-result", classes="result", markup=False)
 
-    def on_resize(self, event) -> None:
-        self.fit_logo(event.size.width)
+        def compose_archive(self) -> ComposeResult:
+            with VerticalScroll():
+                with self.frame("ARCHIEF BEKIJKEN / UITPAKKEN"):
+                    with Horizontal(classes="row"):
+                        yield Label("ARCHIEF>", classes="prompt")
+                        yield Input(placeholder=".zip, .7z, .tar.gz, ...", id="ar-path")
+                    with Horizontal(classes="row"):
+                        yield Button(E("[ BEKIJKEN ]"), id="ar-list")
+                        yield Button(E("[ UITPAKKEN ]"), id="ar-extract")
+                with self.frame("INPAKKEN"):
+                    yield Label(A("PADEN> bestanden of mappen, één per regel"), classes="prompt")
+                    yield TextArea("", id="ar-files")
+                    with Horizontal(classes="row"):
+                        yield Select([(x, x) for x in ("zip", "7z", "tar.gz", "tar.xz", "tar.bz2", "tar")],
+                                     value="zip", id="ar-fmt", allow_blank=False)
+                        yield Button(E("[ INPAKKEN ]"), id="ar-pack")
+                yield Static("", id="ar-result", classes="result", markup=False)
 
-    def fit_logo(self, width: int) -> None:
-        logo = self.query_one("#logo", Static)
-        logo.update(LOGO if width >= 82 else LOGO_SMALL if width >= 74 else "ANYTHING CONVERTER")
+        def compose_fetch(self) -> ComposeResult:
+            with VerticalScroll():
+                with self.frame("LINK · MAGNET · .TORRENT"):
+                    with Horizontal(classes="row"):
+                        yield Label("LINK>", classes="prompt")
+                        yield Input(placeholder=A("https://www.youtube.com/watch?v=…  of  magnet:?…  of .torrent"),
+                                    id="url")
+                    with Horizontal(classes="row"):
+                        yield Checkbox("Alleen geluid", id="audio")
+                        yield Checkbox("Controleren op virussen", value=True, id="scan")
+                    with Horizontal(classes="row"):
+                        yield Label("OPSLAAN IN>", classes="prompt")
+                        yield Input(value=str(Path.home() / "Downloads"), id="dl-dir")
+                    with Horizontal(classes="row"):
+                        yield Button(E("[ OPHALEN ]"), id="fetch")
+                        yield Button(E("[ STOP ]"), id="stop")
+                    yield ProgressBar(total=100, show_eta=False, id="f-progress")
+                    yield Static(A("// alleen voor eigen bestanden, vrije licenties of met toestemming van de maker."),
+                                 id="f-result", markup=False, classes="dim")
 
-    # ---------------------------------------------------------------- hulpjes
-    def status(self, msg: str) -> None:
-        self.query_one("#status", Label).update("> " + msg)
+        def compose_check(self) -> ComposeResult:
+            with VerticalScroll():
+                with self.frame("VIRUSSCAN & CHECKSUM"):
+                    with Horizontal(classes="row"):
+                        yield Label("PAD>", classes="prompt")
+                        yield Input(placeholder="bestand of map", id="scan-path")
+                    with Horizontal(classes="row"):
+                        yield Label("HMAC>", classes="prompt")
+                        yield Input(placeholder="sleutel (optioneel, alleen voor checksum)", id="hmac")
+                    with Horizontal(classes="row"):
+                        yield Button(E("[ VIRUSSCAN ]"), id="scan-go")
+                        yield Button(E("[ CHECKSUM ]"), id="hash-go")
+                    yield Static("", id="scan-result", markup=False)
+                with self.frame("VIRUSTOTAL (OPTIONEEL)"):
+                    with Horizontal(classes="row"):
+                        yield Label("SLEUTEL>", classes="prompt")
+                        yield Input(password=True, placeholder="gratis api-sleutel van virustotal.com", id="vt")
+                        yield Button(E("[ OPSLAAN ]"), id="vt-save")
+                    yield Label("", id="scanner-info", markup=False, classes="dim")
 
-    def step(self, n: int) -> None:
-        for i in range(1, 5):
-            lbl = self.query_one(f"#step{i}", Label)
-            lbl.set_class(i == n or (n == 2 and i == 3), "on")
-            lbl.set_class(i < n, "done")
+        def compose_web(self) -> ComposeResult:
+            with VerticalScroll():
+                with self.frame("TEKST HERKENNEN (OCR)"):
+                    with Horizontal(classes="row"):
+                        yield Label("BESTAND>", classes="prompt")
+                        yield Input(placeholder="afbeelding of gescande pdf", id="ocr-path")
+                    with Horizontal(classes="row"):
+                        yield Button(E("[ HERKENNEN ]"), id="ocr-go")
+                        yield Button(E("[ SCHERMAFBEELDING ]"), id="ocr-screen")
+                        yield Button(E("[ KOPIEER ]"), id="ocr-copy")
+                    yield TextArea("", id="ocr-out", read_only=True)
+                with self.frame("WEBSITE OPSLAAN"):
+                    with Horizontal(classes="row"):
+                        yield Label("URL>", classes="prompt")
+                        yield Input(placeholder="https://voorbeeld.nl", id="web-url")
+                        yield Select([(".pdf", "pdf"), (".png", "png"), (".jpg", "jpg")], value="pdf", id="web-fmt",
+                                     allow_blank=False)
+                        yield Button(E("[ OPSLAAN ]"), id="web-go")
+                    yield Static("", id="web-result", markup=False, classes="dim")
 
-    def action_skin(self) -> None:
-        names = [t.name for t in THEMES]
-        self.theme = names[(names.index(self.theme) + 1) % len(names)] if self.theme in names else names[0]
-        try:
-            s = user_settings.load(); s["tui_skin"] = self.theme; user_settings.save(s)
-        except Exception:
-            pass
+        def on_mount(self) -> None:
+            for th in themes:
+                self.register_theme(th)
+            try:
+                skin = user_settings.load().get("tui_skin", "ac-groen")
+            except Exception:  # noqa: BLE001
+                skin = "ac-groen"
+            self.theme = skin if skin in [x.name for x in themes] else "ac-groen"
+            for wid in ("#progress", "#f-progress", "#so-progress", "#text-out"):
+                self.query_one(wid).display = False
+            self.show_options(None, None)
+            eng = virus.available_engine()
+            self.query_one("#scanner-info", Label).update(A(
+                f"// scanner op deze computer: {eng}" if eng else
+                "// geen scanner gevonden. windows: defender staat er standaard op. mac/linux: installeer clamav."))
+            self.relayout(self.size.width)
+            if self.src:
+                self.choose(self.src)
 
-    def action_focus_path(self) -> None:
-        self.query_one(TabbedContent).active = "tab-convert"
-        self.query_one("#path", Input).focus()
+        def on_resize(self, event) -> None:
+            self.relayout(event.size.width)
 
-    # ---------------------------------------------------------------- bestand kiezen
-    @on(DirectoryTree.FileSelected, "#tree")
-    def tree_pick(self, event: DirectoryTree.FileSelected) -> None:
-        self.choose(Path(event.path))
+        def relayout(self, width: int) -> None:
+            logo = self.query_one("#logo", Static)
+            tall = self.size.height >= 56  # groot logo alleen als er ruimte over is
+            if ascii_mode:
+                logo.update(LOGO_ASCII if width >= 84 and self.size.height >= 40 else "ANYTHING CONVERTER")
+            else:
+                logo.update(LOGO if width >= 82 and tall else LOGO_SMALL if width >= 74 else "ANYTHING CONVERTER")
+            h = self.size.height
+            logo.display = h >= 30
+            self.query_one("#tagline").display = h >= 34
+            self.query_one("#menubar").display = h >= 30
+            self.query_one("#tree").styles.height = max(5, min(12, h - 20))
+            self.query_one("#cols").set_class(width < 96, "stack")
+            self.query_one("#keys").display = width >= 70
+            grid = self.query_one("#tool-grid")
+            for n in ("n1", "n2", "n3"):
+                grid.remove_class(n)
+            if width < 60:
+                grid.add_class("n1")
+            elif width < 100:
+                grid.add_class("n2")
+            elif width < 150:
+                grid.add_class("n3")
 
-    @on(Input.Submitted, "#path")
-    def path_typed(self, event: Input.Submitted) -> None:
-        p = Path(event.value.strip().strip('"').strip("'")).expanduser()
-        if p.is_dir():
-            self.query_one("#tree", DirectoryTree).path = p
-        elif p.is_file():
-            self.choose(p.resolve())
-        else:
-            self.status("bestaat niet: " + event.value)
+        # ------------------------------------------------------------ hulpjes
+        def status(self, msg: str) -> None:
+            self.query_one("#status", Label).update(A("> " + msg))
 
-    def choose(self, path: Path) -> None:
-        if not path.is_file():
-            return
-        self.src = path
-        cat = detect(path)
-        self.cat = cat
-        info = media_info(path) if cat in ("video", "audio", "image") else {}
-        meta = [LABELS[cat], human_size(path.stat().st_size)]
-        if info.get("width"):
-            meta.append(f"{info['width']}×{info['height']}")
-        if info.get("duration") and cat != "image":
-            meta.append(f"{int(info['duration'] // 60)}:{info['duration'] % 60:04.1f}")
-        self.query_one("#fileinfo", Label).update(f"NAAM  {path.name}\nINFO  {' · '.join(meta)}")
-        self.query_one("#path", Input).value = str(path)
-        targets = TARGETS[cat]
-        ext = extension(path)
-        sel = self.query_one("#format", Select)
-        sel.set_options([(f".{t}" + ("  (zelfde formaat)" if t == ext else ""), t) for t in targets])
-        sel.value = ext if ext in targets else targets[0]
-        self.query_one("#f-trim").display = cat in ("video", "audio")
-        self.step(2)
-        self.status(f"geladen: {path.name} [{LABELS[cat].lower()}]")
+        def step(self, n: int) -> None:
+            for i in range(1, 5):
+                lbl = self.query_one(f"#step{i}", Label)
+                lbl.set_class(i == n or (n == 2 and i == 3), "on")
+                lbl.set_class(i < n, "done")
 
-    # ---------------------------------------------------------------- converteren
-    def action_start(self) -> None:
-        if self.query_one(TabbedContent).active == "tab-convert":
+        def result(self, wid: str, text: str, err: bool = False) -> None:
+            res = self.query_one(wid, Static)
+            res.set_classes("result show err" if err else "result show")
+            res.update(A(text))
+
+        def action_skin(self) -> None:
+            names = [x.name for x in themes]
+            self.theme = names[(names.index(self.theme) + 1) % len(names)] if self.theme in names else names[0]
+            try:
+                s = user_settings.load()
+                s["tui_skin"] = self.theme
+                user_settings.save(s)
+            except Exception:  # noqa: BLE001
+                pass
+
+        def action_help(self) -> None:
+            self.push_screen(HelpScreen())
+
+        def action_tab(self, n: int) -> None:
+            if isinstance(self.focused, (Input, TextArea)):
+                return
+            self.query_one("#tabs", TabbedContent).active = self.TABS[n - 1]
+
+        def action_focus_path(self) -> None:
+            self.query_one("#tabs", TabbedContent).active = "tab-convert"
+            self.query_one("#path", Input).focus()
+
+        @staticmethod
+        def clean(raw: str) -> str:
+            """Pad uit invoer: aanhalingstekens en '\\ '-escapes van slepen verwijderen."""
+            raw = raw.strip().strip('"').strip("'")
+            return raw.replace("\\ ", " ") if os.sep == "/" else raw
+
+        def paths(self, text: str) -> list[Path]:
+            return [Path(self.clean(x)).expanduser() for x in text.splitlines() if x.strip()]
+
+        # ------------------------------------------------------------ bestand kiezen
+        @on(DirectoryTree.FileSelected, "#tree")
+        def tree_pick(self, event) -> None:
+            self.choose(Path(event.path))
+
+        @on(Input.Submitted, "#path")
+        def path_typed(self, event) -> None:
+            p = Path(self.clean(event.value)).expanduser()
+            if p.is_dir():
+                self.query_one("#tree", DirectoryTree).path = p
+            elif p.is_file():
+                self.choose(p.resolve())
+            else:
+                self.status("bestaat niet: " + event.value)
+
+        def choose(self, path: Path) -> None:
+            if not path.is_file():
+                return
+            from converter.detect import media_info
+            self.src = path
+            patch_raw = self.query_one("#patch", Input).value.strip()
+            info = analyse(path, Path(self.clean(patch_raw)).expanduser() if patch_raw else None)
+            self.cat, self.targets = info["category"], info["targets"]
+            minfo = media_info(path) if self.cat in ("video", "audio", "image") else {}
+            meta = [info["label"], human_size(path.stat().st_size)]
+            if minfo.get("width"):
+                meta.append(f"{minfo['width']}×{minfo['height']}")
+            if minfo.get("duration") and self.cat != "image":
+                meta.append(f"{int(minfo['duration'] // 60)}:{minfo['duration'] % 60:04.1f}")
+            self.query_one("#fileinfo", Label).update(A(f"NAAM  {path.name}\nINFO  {' · '.join(meta)}"))
+            self.query_one("#path", Input).value = str(path)
+            ext = path.suffix.lower().lstrip(".")
+            sel = self.query_one("#format", Select)
+            sel.set_options([(A(f".{x}  {fmt_label(self.cat, x)}".rstrip() +
+                                ("  (zelfde formaat)" if x == ext else "")), x) for x in self.targets])
+            want = self.preset if self.preset in self.targets else (ext if ext in self.targets else self.targets[0])
+            self.preset = None
+            sel.value = want
+            self.show_options(self.cat, want)
+            # handig voor de andere tabbladen
+            for wid in ("#so-path", "#ar-path", "#scan-path", "#ocr-path"):
+                inp = self.query_one(wid, Input)
+                if not inp.value:
+                    inp.value = str(path)
+            self.step(2)
+            self.status(f"geladen: {path.name} [{info['label'].lower()}]")
+
+        @on(Select.Changed, "#format")
+        def fmt_changed(self, event) -> None:
+            self.show_options(self.cat if self.src else None, event.value if isinstance(event.value, str) else None)
+
+        def show_options(self, cat, fmt) -> None:
+            media = cat in ("video", "audio")
+            speech = media and fmt in ("txt", "srt", "vtt")
+            texty = speech or (cat == "image" and fmt in ("txt", "docx", "rtf", "xlsx", "svg", "wbmp", "exr", "hdr",
+                                                          "eps", "tga")) or \
+                (cat == "pdf" and fmt not in (None, "pdf", "png", "jpg")) or cat in ("disc", "rom", "ebook")
+            self.query_one("#f-size").display = bool(cat) and not texty
+            self.query_one("#f-trim").display = media
+            self.query_one("#video-row").display = cat == "video" and not speech
+            self.query_one("#noaudio").display = cat == "video" and not speech
+            self.query_one("#f-speech").display = speech
+            self.query_one("#f-image").display = cat == "image" and not texty
+            self.query_one("#f-patch").display = cat in ("rom",)
+            hint = {"disc": "// cue/bin: de .bin-bestanden in dezelfde map gaan vanzelf mee. chd vraagt chdman.",
+                    "rom": "// patch: vul hieronder het .ips/.ups/.bps-bestand in en kies .patch.",
+                    "ebook": "// mobi/azw3 en meer: installeer calibre (gratis), dan werkt het vanzelf."}.get(cat, "")
+            if speech:
+                hint = "// spraak wordt lokaal herkend; lange opnames duren even."
+            self.query_one("#fmt-hint", Label).update(A(hint))
+
+        @on(Input.Submitted, "#patch")
+        def patch_typed(self) -> None:
+            if self.src:
+                self.choose(self.src)
+
+        # ------------------------------------------------------------ gereedschap
+        @on(Button.Pressed, ".tool")
+        def tool_pressed(self, event) -> None:
+            _, _, name, kind, value = TOOLS[int(event.button.id.split("-")[1])]
+            tabs = self.query_one("#tabs", TabbedContent)
+            if kind == "tab":
+                tabs.active = value
+            elif kind == "screen":
+                tabs.active = "tab-web"
+                self.ocr_screen()
+            elif kind == "web":
+                tabs.active = "tab-web"
+                self.query_one("#web-url", Input).focus()
+            else:
+                self.preset = value
+                tabs.active = "tab-convert"
+                self.query_one("#path", Input).focus()
+                if self.src and value in self.targets:
+                    self.query_one("#format", Select).value = value
+                    self.preset = None
+                self.status(f"{name.lower()}: kies een bestand (pijltjes + enter, of plak een pad)")
+
+        # ------------------------------------------------------------ converteren
+        def action_start(self) -> None:
+            tab = self.query_one("#tabs", TabbedContent).active
+            if tab == "tab-convert":
+                self.start_convert()
+            elif tab == "tab-social":
+                self.social_go()
+            elif tab == "tab-fetch":
+                self.fetch_pressed()
+
+        @on(Button.Pressed, "#go")
+        def go_pressed(self) -> None:
             self.start_convert()
 
-    @on(Button.Pressed, "#go")
-    def go_pressed(self) -> None:
-        self.start_convert()
+        def options(self) -> dict:
+            opts: dict = {}
+            fmt = self.query_one("#format", Select).value
+            if isinstance(fmt, str):
+                opts["format"] = fmt
+            if self.query_one("#f-size").display and self.query_one("#m-target", RadioButton).value:
+                raw = self.query_one("#target", Input).value.strip()
+                if not raw:
+                    raise ConversionError("Vul een doelgrootte in, bijvoorbeeld 8 MB of 500 KB.")
+                opts["target_bytes"] = parse_size(raw, "mb")
+            else:
+                q = self.query_one("#quality", RadioSet).pressed_button
+                opts["quality"] = {"q-high": "high", "q-low": "low"}.get(q.id if q else "", "medium")
+            if self.cat in ("video", "audio"):
+                for key, wid in (("trim_start", "#t-start"), ("trim_end", "#t-end")):
+                    v = self.query_one(wid, Input).value.strip()
+                    if v:
+                        opts[key] = v
+                for key, wid in (("height", "#height"), ("device", "#device")):
+                    v = self.query_one(wid, Select).value
+                    if isinstance(v, str):
+                        opts[key] = int(v) if key == "height" else v
+                if self.query_one("#noaudio", Checkbox).value:
+                    opts["remove_audio"] = True
+                opts["language"] = self.query_one("#lang", Select).value
+                opts["speech_model"] = self.query_one("#model", Select).value
+                opts["translate"] = self.query_one("#translate", Checkbox).value
+            if self.cat == "image":
+                for key, wid in (("scale_percent", "#scale"), ("width", "#img-w"), ("height", "#img-h")):
+                    v = self.query_one(wid, Input).value.strip()
+                    if v:
+                        opts[key] = v
+            return opts
 
-    def options(self) -> dict:
-        opts: dict = {}
-        fmt = self.query_one("#format", Select).value
-        if isinstance(fmt, str):
-            opts["format"] = fmt
-        if self.query_one("#m-target", RadioButton).value:
-            raw = self.query_one("#target", Input).value.strip()
-            if not raw:
-                raise ConversionError("Vul een doelgrootte in, bijvoorbeeld 8 MB of 500 KB.")
-            opts["target_bytes"] = parse_size(raw, "mb")
-        else:
-            q = self.query_one("#quality", RadioSet).pressed_button
-            opts["quality"] = {"q-high": "high", "q-low": "low"}.get(q.id if q else "", "medium")
-        if self.cat in ("video", "audio"):
-            for key, wid in (("trim_start", "#t-start"), ("trim_end", "#t-end")):
-                v = self.query_one(wid, Input).value.strip()
-                if v:
-                    opts[key] = v
-            h = self.query_one("#height", Select).value
-            if isinstance(h, str):
-                opts["height"] = int(h)
-            if self.query_one("#noaudio", Checkbox).value:
-                opts["remove_audio"] = True
-        return opts
+        def start_convert(self) -> None:
+            if not self.src:
+                self.result("#result", "!! FOUT\nKies eerst een bestand.", True)
+                return
+            try:
+                opts = self.options()
+            except ConversionError as exc:
+                self.result("#result", f"!! FOUT\n{exc}", True)
+                return
+            patch_raw = self.query_one("#patch", Input).value.strip()
+            patch = Path(self.clean(patch_raw)).expanduser() if patch_raw and self.cat == "rom" else None
+            out_raw = self.query_one("#outdir", Input).value.strip()
+            out_dir = Path(self.clean(out_raw)).expanduser() if out_raw else None
+            files = [self.src]
+            if self.query_one("#batch", Checkbox).value:
+                from converter.detect import detect
+                files = sorted(p for p in self.src.parent.iterdir() if p.is_file() and not p.name.startswith(".")
+                               and detect(p) == self.cat)
+            self.query_one("#go", Button).disabled = True
+            self.query_one("#progress", ProgressBar).display = True
+            self.query_one("#result").set_classes("result")
+            self.query_one("#text-out").display = False
+            self.step(4)
+            self.cancel.clear()
+            self.convert_worker(files, out_dir, opts, patch)
 
-    def start_convert(self) -> None:
-        res = self.query_one("#result", Static)
-        if not self.src:
-            res.set_classes("show err"); res.update("!! FOUT\nKies eerst een bestand."); return
-        try:
-            opts = self.options()
-        except ConversionError as exc:
-            res.set_classes("show err"); res.update(f"!! FOUT\n{exc}"); return
-        out_dir = self.query_one("#outdir", Input).value.strip() or str(self.src.parent)
-        self.query_one("#go", Button).disabled = True
-        self.query_one("#progress", ProgressBar).display = True
-        res.set_classes(""); self.step(4)
-        self.convert_worker(self.src, Path(out_dir).expanduser(), self.cat, opts)
-
-    @work(thread=True, exclusive=True)
-    def convert_worker(self, src: Path, out_dir: Path, cat: str, opts: dict) -> None:
-        bar = self.query_one("#progress", ProgressBar)
-
-        def progress(f: float, msg: str) -> None:
-            self.call_from_thread(bar.update, progress=round(f * 100, 1))
-            self.call_from_thread(self.status, f"{msg.lower()} {round(f * 100)}%")
-
-        tmp = Path(tempfile.mkdtemp(prefix="ac-tui-"))
-        try:
-            made = run_conversion(src, tmp, cat, opts, progress)
-            out_dir.mkdir(parents=True, exist_ok=True)
-            dst = out_dir / made.name
-            n = 2
-            while dst.exists():
-                dst = out_dir / f"{made.stem}_{n}{made.suffix}"; n += 1
-            shutil.move(str(made), dst)
-            text = f"STATUS: OK\nBESTAND    {dst}\n" + bars(src.stat().st_size, dst.stat().st_size)
-            self.call_from_thread(self.show_result, text, False)
-            self.call_from_thread(self.status, f"klaar: {dst.name} ({human_size(dst.stat().st_size)})")
-        except ConversionError as exc:
-            self.call_from_thread(self.show_result, f"!! FOUT\n{exc}", True)
-        except Exception as exc:  # onverwacht
-            self.call_from_thread(self.show_result, f"!! FOUT\nEr ging iets mis: {exc}", True)
-        finally:
-            shutil.rmtree(tmp, ignore_errors=True)
+        @work(thread=True, exclusive=True)
+        def convert_worker(self, files: list[Path], out_dir, opts: dict, patch) -> None:
+            bar = self.query_one("#progress", ProgressBar)
+            done_lines, errors, last = [], 0, None
+            for k, src in enumerate(files):
+                def progress(f: float, msg: str, k=k) -> None:
+                    total = (k + f) / len(files)
+                    self.call_from_thread(bar.update, progress=round(total * 100, 1))
+                    prefix = f"[{k + 1}/{len(files)}] " if len(files) > 1 else ""
+                    self.call_from_thread(self.status, f"{prefix}{msg.lower()} {round(f * 100)}%")
+                try:
+                    dst = cli.convert_file(src, out_dir, dict(opts), progress, patch)
+                    last = (src, dst)
+                    done_lines.append(f"✓ {src.name} → {dst.name} ({human_size(dst.stat().st_size)})")
+                except ConversionError as exc:
+                    errors += 1
+                    done_lines.append(f"!! {src.name}: {exc}")
+                except Exception as exc:  # noqa: BLE001
+                    errors += 1
+                    done_lines.append(f"!! {src.name}: er ging iets mis: {exc}")
+            if len(files) == 1 and last:
+                src, dst = last
+                text = f"STATUS: OK\nBESTAND    {dst}\n" + bars(src.stat().st_size, dst.stat().st_size)
+                self.call_from_thread(self.result, "#result", text, False)
+                if dst.suffix.lower() in (".txt", ".srt", ".vtt"):
+                    self.call_from_thread(self.show_text, dst.read_text(encoding="utf-8", errors="replace"))
+                self.call_from_thread(self.status, f"klaar: {dst.name} ({human_size(dst.stat().st_size)})")
+            elif len(files) == 1:
+                self.call_from_thread(self.result, "#result", "!! FOUT\n" + done_lines[0][3:].split(": ", 1)[-1],
+                                      True)
+            else:
+                head = f"STATUS: {len(files) - errors} van {len(files)} gelukt\n"
+                self.call_from_thread(self.result, "#result", head + "\n".join(done_lines[-30:]), bool(errors))
+                self.call_from_thread(self.status, f"klaar: {len(files) - errors}/{len(files)} bestanden")
             self.call_from_thread(self.done_convert)
 
-    def show_result(self, text: str, err: bool) -> None:
-        res = self.query_one("#result", Static)
-        res.set_classes("show err" if err else "show")
-        res.update(text)
+        def show_text(self, text: str) -> None:
+            ta = self.query_one("#text-out", TextArea)
+            ta.text = text[:200000]
+            ta.display = True
 
-    def done_convert(self) -> None:
-        self.query_one("#go", Button).disabled = False
-        self.query_one("#progress", ProgressBar).display = False
-        self.step(2)
+        def done_convert(self) -> None:
+            self.query_one("#go", Button).disabled = False
+            self.query_one("#progress", ProgressBar).display = False
+            self.step(2)
 
-    # ---------------------------------------------------------------- link & torrent
-    @on(Button.Pressed, "#fetch")
-    def fetch_pressed(self) -> None:
-        src = self.query_one("#url", Input).value.strip()
-        if not src:
-            return
-        self.cancel.clear()
-        self.query_one("#fetch", Button).disabled = True
-        self.query_one("#f-progress", ProgressBar).display = True
-        self.fetch_worker(src, Path(self.query_one("#dl-dir", Input).value).expanduser(),
-                          self.query_one("#audio", Checkbox).value, self.query_one("#scan", Checkbox).value)
+        # ------------------------------------------------------------ pdf
+        @on(Button.Pressed, "#pdf-merge, #pdf-split, #pdf-rotate, #pdf-delete, #pdf-compress")
+        def pdf_action(self, event) -> None:
+            files = self.paths(self.query_one("#pdf-files", TextArea).text)
+            if not files and self.src:
+                files = [self.src]
+            missing = [str(p) for p in files if not p.is_file()]
+            if not files or missing:
+                self.result("#pdf-result", "!! " + ("bestaat niet: " + ", ".join(missing) if missing else
+                                                    "vul eerst een of meer bestanden in"), True)
+                return
+            action = event.button.id.split("-")[1]
+            pages = self.query_one("#pdf-pages", Input).value.strip()
+            angle = int(self.query_one("#pdf-angle", Select).value)
+            self.result("#pdf-result", "> bezig…")
+            self.pdf_worker(action, files, pages, angle)
 
-    @on(Button.Pressed, "#stop")
-    def stop_pressed(self) -> None:
-        self.cancel.set()
+        @work(thread=True, group="pdf")
+        def pdf_worker(self, action: str, files: list[Path], pages: str, angle: int) -> None:
+            from converter import pdftools
+            src = files[0]
+            try:
+                if action == "merge":
+                    if len(files) < 2:
+                        raise ConversionError("Samenvoegen: vul minstens twee bestanden in, één per regel.")
+                    dst = cli.unique(src.with_name(f"{src.stem}_samengevoegd.pdf"))
+                    pdftools.merge(files, dst)
+                elif action == "split":
+                    dst = pdftools.split(src, src.parent, pages)
+                elif action in ("rotate", "delete"):
+                    dst = cli.unique(src.with_name(f"{src.stem}_bewerkt.pdf"))
+                    pdftools.edit_pages(src, dst, delete=pages if action == "delete" else "",
+                                        rotate=(pages or "1-") if action == "rotate" else "", angle=angle)
+                else:
+                    dst = cli.convert_file(src, None, {"format": "pdf", "quality": "low"})
+                text = f"STATUS: OK\nBESTAND    {dst}\n" + bars(sum(p.stat().st_size for p in files),
+                                                               dst.stat().st_size)
+                self.call_from_thread(self.result, "#pdf-result", text)
+            except (ConversionError, ValueError) as exc:
+                self.call_from_thread(self.result, "#pdf-result", f"!! FOUT\n{exc}", True)
 
-    @work(thread=True, exclusive=True, group="fetch")
-    def fetch_worker(self, src: str, dl_dir: Path, audio: bool, scan: bool) -> None:
-        from converter import fetch, torrent
-        bar = self.query_one("#f-progress", ProgressBar)
-        out = self.query_one("#f-result", Static)
+        # ------------------------------------------------------------ social
+        @on(Button.Pressed, "#so-go")
+        def social_go(self) -> None:
+            p = Path(self.clean(self.query_one("#so-path", Input).value)).expanduser()
+            if not p.is_file():
+                self.result("#so-result", "!! kies een foto of video", True)
+                return
+            pid = self.query_one("#so-preset", Select).value
+            fit = "contain" if self.query_one("#so-contain", RadioButton).value else "cover"
+            self.query_one("#so-progress").display = True
+            self.social_worker(p, pid, fit)
 
-        def progress(f: float, msg: str) -> None:
-            self.call_from_thread(bar.update, progress=round(f * 100, 1))
-            self.call_from_thread(out.update, "> " + msg.lower())
+        @work(thread=True, group="social")
+        def social_worker(self, p: Path, pid: str, fit: str) -> None:
+            from converter.detect import detect
+            bar = self.query_one("#so-progress", ProgressBar)
 
-        try:
-            dl_dir.mkdir(parents=True, exist_ok=True)
-            if src.lower().startswith("magnet:?") or src.lower().endswith(".torrent"):
-                source = Path(src).expanduser().read_bytes() if src.lower().endswith(".torrent") else src
-                res = torrent.download(source, dl_dir, progress, cancelled=self.cancel.is_set)
-                target = dl_dir / res["files"][0]["path"] if len(res["files"]) == 1 else dl_dir / res["name"]
-                lines = [f"TORRENT KLAAR: {res['name']} · {len(res['files'])} bestanden"]
-                for i, fl in enumerate(res["files"][:40]):
-                    lines.append(f"{'└─' if i == len(res['files']) - 1 else '├─'} {fl['path']}  {human_size(fl['size'])}")
-            else:
-                target = fetch.download(src, dl_dir, audio, progress)
-                lines = [f"OPGEHAALD: {target}"]
-            if scan:
-                progress(0.995, "controleren op virussen")
-                v = virus.check(target, user_settings.load().get("vt_key"))
-                lines.append(self.virus_line(v))
-                if v["status"] == "infected":
-                    lines.append("!! niet openen. verwijder dit bestand.")
-            self.call_from_thread(out.update, "\n".join(lines))
-            if target.is_file() and not (scan and v["status"] == "infected"):
-                self.call_from_thread(self.choose, target)
-                self.call_from_thread(lambda: setattr(self.query_one(TabbedContent), "active", "tab-convert"))
-        except ConversionError as exc:
-            self.call_from_thread(out.update, f"!! {exc}")
-        except Exception as exc:
-            self.call_from_thread(out.update, f"!! er ging iets mis: {exc}")
-        finally:
-            self.call_from_thread(lambda: setattr(self.query_one("#fetch", Button), "disabled", False))
-            self.call_from_thread(lambda: setattr(bar, "display", False))
+            def progress(f: float, msg: str) -> None:
+                self.call_from_thread(bar.update, progress=round(f * 100, 1))
+                self.call_from_thread(self.status, f"{msg.lower()} {round(f * 100)}%")
 
-    # ---------------------------------------------------------------- virusscan
-    @staticmethod
-    def virus_line(v: dict) -> str:
-        loc = v["local"]
-        vt = next((f["vt"]["detail"] for f in v.get("files", []) if f.get("vt")), None)
-        extra = f" · virustotal: {vt}" if vt else ""
-        if v["status"] == "infected":
-            return f"!! VIRUS GEVONDEN ({loc.get('engine')}): {loc.get('detail')}{extra}"
-        if v["status"] == "clean":
-            return f"✓ geen virus gevonden ({loc.get('engine')}){extra}"
-        return f"? niet zeker: {loc.get('detail')}{extra}"
+            tmp = Path(tempfile.mkdtemp(prefix="ac-social-"))
+            try:
+                cat = detect(p)
+                if cat == "image":
+                    made = social.image(p, tmp, pid, fit, progress)
+                elif cat == "video":
+                    made = social.video(p, tmp, pid, fit, progress)
+                else:
+                    raise ConversionError("Kies een foto of video.")
+                dst = cli.move_out(made, p.parent)
+                self.call_from_thread(self.result, "#so-result",
+                                      f"STATUS: OK\nBESTAND    {dst}\n" + bars(p.stat().st_size, dst.stat().st_size))
+            except ConversionError as exc:
+                self.call_from_thread(self.result, "#so-result", f"!! FOUT\n{exc}", True)
+            except Exception as exc:  # noqa: BLE001
+                self.call_from_thread(self.result, "#so-result", f"!! FOUT\n{exc}", True)
+            finally:
+                shutil.rmtree(tmp, ignore_errors=True)
+                self.call_from_thread(lambda: setattr(bar, "display", False))
 
-    @on(Button.Pressed, "#scan-go")
-    @on(Input.Submitted, "#scan-path")
-    def scan_pressed(self) -> None:
-        p = Path(self.query_one("#scan-path", Input).value.strip().strip('"')).expanduser()
-        out = self.query_one("#scan-result", Static)
-        if not p.exists():
-            out.update("!! bestaat niet"); return
-        out.update("> scannen…")
-        self.scan_worker(p)
+        # ------------------------------------------------------------ archief
+        @on(Button.Pressed, "#ar-list, #ar-extract, #ar-pack")
+        def archive_action(self, event) -> None:
+            import argparse
+            import contextlib
+            import io
+            act = event.button.id.split("-")[1]
+            try:
+                if act == "pack":
+                    paths = self.paths(self.query_one("#ar-files", TextArea).text)
+                    if not paths:
+                        raise ConversionError("Vul eerst bestanden of mappen in, één per regel.")
+                    ns = argparse.Namespace(actie="inpakken", paden=paths, uitvoer=None,
+                                            formaat=self.query_one("#ar-fmt", Select).value)
+                else:
+                    p = Path(self.clean(self.query_one("#ar-path", Input).value)).expanduser()
+                    if not p.is_file():
+                        raise ConversionError("Kies eerst een archief.")
+                    ns = argparse.Namespace(actie="lijst" if act == "list" else "uitpakken", paden=[p], uitvoer=None,
+                                            formaat="zip")
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    cli.cmd_archive(ns)
+                self.result("#ar-result", buf.getvalue().rstrip())
+            except Exception as exc:  # noqa: BLE001
+                self.result("#ar-result", f"!! FOUT\n{exc}", True)
 
-    @work(thread=True, group="scan")
-    def scan_worker(self, p: Path) -> None:
-        v = virus.check(p, user_settings.load().get("vt_key"))
-        lines = [self.virus_line(v)] + [f"sha-256 {f['sha256']}  {f['name']}\n        {f['virustotal']}" for f in v["files"][:5]]
-        self.call_from_thread(self.query_one("#scan-result", Static).update, "\n".join(lines))
+        # ------------------------------------------------------------ link & torrent
+        @on(Button.Pressed, "#fetch")
+        def fetch_pressed(self) -> None:
+            src = self.query_one("#url", Input).value.strip()
+            if not src:
+                return
+            self.cancel.clear()
+            self.query_one("#fetch", Button).disabled = True
+            self.query_one("#f-progress", ProgressBar).display = True
+            self.fetch_worker(src, Path(self.clean(self.query_one("#dl-dir", Input).value)).expanduser(),
+                              self.query_one("#audio", Checkbox).value, self.query_one("#scan", Checkbox).value)
 
-    @on(Button.Pressed, "#vt-save")
-    def vt_save(self) -> None:
-        key = self.query_one("#vt", Input).value.strip()
-        if key and (len(key) != 64 or any(c not in "0123456789abcdefABCDEF" for c in key)):
-            self.query_one("#scanner-info", Label).update("!! een virustotal-sleutel heeft 64 tekens (0-9, a-f)")
-            return
-        s = user_settings.load(); s["vt_key"] = key; user_settings.save(s)
-        self.query_one("#vt", Input).value = ""
-        self.query_one("#scanner-info", Label).update("// sleutel opgeslagen ✓" if key else "// sleutel verwijderd")
+        @on(Button.Pressed, "#stop")
+        def stop_pressed(self) -> None:
+            self.cancel.set()
+
+        @work(thread=True, exclusive=True, group="fetch")
+        def fetch_worker(self, src: str, dl_dir: Path, audio: bool, scan: bool) -> None:
+            from converter import fetch, torrent
+            bar = self.query_one("#f-progress", ProgressBar)
+            out = self.query_one("#f-result", Static)
+
+            def progress(f: float, msg: str) -> None:
+                self.call_from_thread(bar.update, progress=round(f * 100, 1))
+                self.call_from_thread(out.update, A("> " + msg.lower()))
+
+            v = None
+            try:
+                dl_dir.mkdir(parents=True, exist_ok=True)
+                if src.lower().startswith("magnet:?") or src.lower().endswith(".torrent"):
+                    source = Path(self.clean(src)).expanduser().read_bytes() if src.lower().endswith(".torrent") \
+                        else src
+                    res = torrent.download(source, dl_dir, progress, cancelled=self.cancel.is_set)
+                    target = dl_dir / res["files"][0]["path"] if len(res["files"]) == 1 else dl_dir / res["name"]
+                    lines = [f"TORRENT KLAAR: {res['name']} · {len(res['files'])} bestanden"]
+                    for i, fl in enumerate(res["files"][:40]):
+                        lines.append(f"{'└─' if i == len(res['files']) - 1 else '├─'} {fl['path']}  "
+                                     f"{human_size(fl['size'])}")
+                else:
+                    target = fetch.download(src, dl_dir, audio, progress)
+                    lines = [f"OPGEHAALD: {target}"]
+                if scan:
+                    progress(0.995, "controleren op virussen")
+                    v = virus.check(target, user_settings.load().get("vt_key"))
+                    lines.append(cli.virus_line(v))
+                    if v["status"] == "infected":
+                        lines.append("!! niet openen. verwijder dit bestand.")
+                self.call_from_thread(out.update, A("\n".join(lines)))
+                if target.is_file() and not (v and v["status"] == "infected"):
+                    self.call_from_thread(self.choose, target)
+            except ConversionError as exc:
+                self.call_from_thread(out.update, A(f"!! {exc}"))
+            except Exception as exc:  # noqa: BLE001
+                self.call_from_thread(out.update, A(f"!! er ging iets mis: {exc}"))
+            finally:
+                self.call_from_thread(lambda: setattr(self.query_one("#fetch", Button), "disabled", False))
+                self.call_from_thread(lambda: setattr(bar, "display", False))
+
+        # ------------------------------------------------------------ controle
+        @on(Button.Pressed, "#scan-go")
+        @on(Input.Submitted, "#scan-path")
+        def scan_pressed(self) -> None:
+            p = Path(self.clean(self.query_one("#scan-path", Input).value)).expanduser()
+            out = self.query_one("#scan-result", Static)
+            if not p.exists():
+                out.update("!! bestaat niet")
+                return
+            out.update("> scannen…" if not ascii_mode else "> scannen...")
+            self.scan_worker(p)
+
+        @work(thread=True, group="scan")
+        def scan_worker(self, p: Path) -> None:
+            v = virus.check(p, user_settings.load().get("vt_key"))
+            lines = [cli.virus_line(v)] + [f"sha-256 {f['sha256']}  {f['name']}\n        {f['virustotal']}"
+                                           for f in v["files"][:5]]
+            self.call_from_thread(self.query_one("#scan-result", Static).update, A("\n".join(lines)))
+
+        @on(Button.Pressed, "#hash-go")
+        def hash_pressed(self) -> None:
+            p = Path(self.clean(self.query_one("#scan-path", Input).value)).expanduser()
+            if not p.is_file():
+                self.query_one("#scan-result", Static).update("!! kies een bestand")
+                return
+            self.hash_worker(p, self.query_one("#hmac", Input).value.strip() or None)
+
+        @work(thread=True, group="scan")
+        def hash_worker(self, p: Path, key) -> None:
+            from converter.hashes import compute
+            hs = compute(p, key)
+            w = max(map(len, hs))
+            text = (f"{p.name}{' · HMAC' if key else ''}\n" +
+                    "\n".join(f"{k:<{w}}  {v}" for k, v in hs.items()))
+            self.call_from_thread(self.query_one("#scan-result", Static).update, A(text))
+
+        @on(Button.Pressed, "#vt-save")
+        def vt_save(self) -> None:
+            key = self.query_one("#vt", Input).value.strip()
+            if key and (len(key) != 64 or any(c not in "0123456789abcdefABCDEF" for c in key)):
+                self.query_one("#scanner-info", Label).update("!! een virustotal-sleutel heeft 64 tekens (0-9, a-f)")
+                return
+            s = user_settings.load()
+            s["vt_key"] = key
+            user_settings.save(s)
+            self.query_one("#vt", Input).value = ""
+            self.query_one("#scanner-info", Label).update(A("// sleutel opgeslagen ✓" if key else
+                                                            "// sleutel verwijderd"))
+
+        # ------------------------------------------------------------ ocr & web
+        @on(Button.Pressed, "#ocr-go")
+        @on(Input.Submitted, "#ocr-path")
+        def ocr_go(self) -> None:
+            p = Path(self.clean(self.query_one("#ocr-path", Input).value)).expanduser()
+            if not p.is_file():
+                self.status("kies een afbeelding of pdf")
+                return
+            self.query_one("#ocr-out", TextArea).text = "tekst herkennen…" if not ascii_mode else "bezig..."
+            self.ocr_worker(p, False)
+
+        @on(Button.Pressed, "#ocr-screen")
+        def ocr_screen(self) -> None:
+            self.query_one("#ocr-out", TextArea).text = "kies een gebied op je scherm…" if not ascii_mode else \
+                "kies een gebied op je scherm..."
+            self.ocr_worker(None, True)
+
+        @work(thread=True, group="ocr")
+        def ocr_worker(self, p, screen: bool) -> None:
+            from converter import ocr
+            try:
+                path = ocr.capture_screen() if screen else p
+                text = ocr.searchable_pdf_text(path) if path.suffix.lower() == ".pdf" else ocr.image(path)
+                text = text or "(geen tekst gevonden)"
+            except ConversionError as exc:
+                text = f"!! {exc}"
+            except Exception as exc:  # noqa: BLE001
+                text = f"!! {exc}"
+            self.call_from_thread(setattr, self.query_one("#ocr-out", TextArea), "text", text)
+
+        @on(Button.Pressed, "#ocr-copy")
+        def ocr_copy(self) -> None:
+            self.copy_to_clipboard(self.query_one("#ocr-out", TextArea).text)  # OSC 52: werkt ook via SSH
+            self.status("tekst gekopieerd naar het klembord")
+
+        @on(Button.Pressed, "#web-go")
+        @on(Input.Submitted, "#web-url")
+        def web_go(self) -> None:
+            url = self.query_one("#web-url", Input).value.strip()
+            if url:
+                self.query_one("#web-result", Static).update("> website laden...")
+                self.web_worker(url, self.query_one("#web-fmt", Select).value)
+
+        @work(thread=True, group="web")
+        def web_worker(self, url: str, fmt: str) -> None:
+            from converter import webshot
+            tmp = Path(tempfile.mkdtemp(prefix="ac-web-"))
+            try:
+                dst = cli.move_out(webshot.capture(url, tmp, fmt), Path.home() / "Downloads"
+                                   if (Path.home() / "Downloads").is_dir() else Path.cwd())
+                msg = f"OK: {dst}"
+            except ConversionError as exc:
+                msg = f"!! {exc}"
+            finally:
+                shutil.rmtree(tmp, ignore_errors=True)
+            self.call_from_thread(self.query_one("#web-result", Static).update, A(msg))
+
+    return Converter
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser(prog="anything-converter-tui", description="Anything Converter in de terminal")
-    ap.add_argument("bestand", nargs="?", help="bestand om direct te openen")
-    ap.add_argument("--version", action="store_true", help="versie tonen")
-    args = ap.parse_args()
+def terminal_capable() -> tuple[bool, str]:
+    """Kan deze terminal het volledige scherm aan? Zo niet: waarom."""
+    if not (sys.stdin.isatty() and sys.stdout.isatty()):
+        return False, "geen interactieve terminal (pijp of omleiding)"
+    term = os.environ.get("TERM", "")
+    if os.name != "nt" and term in ("dumb", "unknown", "emacs") or os.environ.get("INSIDE_EMACS"):
+        return False, f"terminaltype '{term or 'emacs'}' kan geen volledig scherm"
+    cols, rows = shutil.get_terminal_size((80, 24))
+    if cols < 40 or rows < 12:
+        return False, f"venster te klein ({cols}x{rows})"
+    return True, ""
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = cli.parse(sys.argv[1:] if argv is None else argv)
     if args.version:
         print(f"Anything Converter {VERSION} (terminal)")
-        return
+        return 0
     # meegeleverde programma's (ffmpeg, deno) in de desktop-installatie
     here = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
     for bindir in (here / "bin", here.parent / "Resources" / "bin"):  # macOS .app: ook Resources
         if bindir.is_dir():
             os.environ["PATH"] = str(bindir) + os.pathsep + os.environ.get("PATH", "")
             break
-    Converter(args.bestand).run()
+    cli.ASCII = args.ascii or cli.wants_ascii()
+    if args.cmd:
+        return cli.run_command(args)
+    ok, why = terminal_capable()
+    if args.simpel or not ok:
+        if not ok and not args.simpel:
+            cli.say(f"(eenvoudige modus: {why}. volledig scherm forceren kan niet; --help voor opdrachten)")
+        return cli.simple(VERSION)
+    try:
+        app_cls = build_app(cli.ASCII)
+    except Exception as exc:  # noqa: BLE001 - bijv. Textual ontbreekt
+        cli.say(f"(volledig scherm niet beschikbaar: {exc}; eenvoudige modus)")
+        return cli.simple(VERSION)
+    app_cls(args.bestand).run()
+    return 0
+
+
+# Voor tests en import: de klasse zonder ASCII-modus
+def __getattr__(name):
+    if name == "Converter":
+        return build_app(False)
+    raise AttributeError(name)
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

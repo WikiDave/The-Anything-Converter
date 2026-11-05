@@ -142,6 +142,12 @@ jobs:
           OUT="$("$TUI" --version)"
           echo "$OUT"
           echo "$OUT" | grep -q "terminal"
+          # opdrachtregel en eenvoudige modus (zonder echte terminal)
+          python -c "from PIL import Image; Image.new('RGB', (64, 48), 'red').save('tui-test.png')"
+          "$TUI" converteer tui-test.png --naar webp
+          test -s tui-test.webp
+          "$TUI" formaten tui-test.png | grep -q "webp"
+          printf 'q\n' | "$TUI" | grep -q "eenvoudige modus"
 
       - name: Logbestand bij fouten
         if: failure()
