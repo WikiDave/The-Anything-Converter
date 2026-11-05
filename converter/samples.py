@@ -543,10 +543,10 @@ def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange l
     return None
 
 
-TEXT_GROUPS = {"Programmeren (broncode)", "Projectbestanden & build", "Infrastructure as Code", "Web",
-               "Linux/Unix-systeem", "Windows-systeem & beheer", "macOS-systeem", "Netwerk & ICT", "Tekst & documenten",
-               "Elektronica & firmware", "3D-printen, CNC & laser", "Wetenschap & medisch", "Fotobewerking & kleur",
-               "Videobewerking & VFX", "Data & configuratie"}
+TEXT_GROUPS = {"Programming (source code)", "Project files & build", "Infrastructure as Code", "Web",
+               "Linux/Unix system", "Windows system & admin", "macOS system", "Network & IT", "Text & documents",
+               "Electronics & firmware", "3D printing, CNC & laser", "Science & medical", "Photo editing & colour",
+               "Video editing & VFX", "Data & configuration"}
 BINARY_EXT = {"so", "a", "o", "ko", "out", "elf", "class", "pyc", "pyd", "wasm", "dll", "exe", "sys", "drv", "ocx", "cpl",
               "scr", "com", "efi", "mui", "nls", "msstyles", "evtx", "evt", "etl", "dmp", "mdmp", "hdmp", "edb", "sdb",
               "chk", "dylib", "kext", "scpt", "savedsearch", "textclipping", "swp", "nib", "lnk", "pif", "msc", "cat",

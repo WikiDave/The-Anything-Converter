@@ -1,159 +1,159 @@
-# Bekende bestandsformaten met omschrijving, per groep. Gelezen door converter/catalog.py.
-# Regel: "* .ext / .ext2 - omschrijving". Kopjes zonder '*' zijn groepen.
+# Known file formats with a description, per group. Read by converter/catalog.py.
+# Line: "* .ext / .ext2 - description". Headings without '*' are groups.
 
-Tekst & documenten
-* .txt - platte tekst
-* .rtf - opgemaakte tekst (Rich Text)
-* .doc - Word-document (oud)
-* .docx - Word-document
-* .docm - Word-document met macro's
-* .dot / .dotx - Word-sjabloon
-* .dotm - Word-sjabloon met macro's
-* .odt - LibreOffice-tekst
-* .ott - LibreOffice-tekstsjabloon
-* .sxw - OpenOffice-tekst (oud)
+Text & documents
+* .txt - plain text
+* .rtf - formatted text (Rich Text)
+* .doc - Word document (old)
+* .docx - Word document
+* .docm - Word document with macros
+* .dot / .dotx - Word template
+* .dotm - Word template with macros
+* .odt - LibreOffice text
+* .ott - LibreOffice text template
+* .sxw - OpenOffice text (old)
 * .pages - Apple Pages
 * .wpd - WordPerfect
 * .wps - Microsoft Works / WPS Office
-* .gdoc - Google Docs-snelkoppeling
-* .pdf - document met vaste opmaak
-* .xps / .oxps - Microsoft-document met vaste opmaak
-* .ps - PostScript (printen)
+* .gdoc - Google Docs shortcut
+* .pdf - fixed-layout document
+* .xps / .oxps - Microsoft fixed-layout document
+* .ps - PostScript (printing)
 * .md / .markdown - Markdown
-* .mdx - Markdown met componenten
+* .mdx - Markdown with components
 * .rst - reStructuredText
 * .adoc - AsciiDoc
-* .org - Emacs Org-mode
-* .tex - LaTeX-bron
-* .bib - LaTeX-bronnenlijst
-* .cls - LaTeX-documentklasse (ook VBA-klasse)
-* .dvi - TeX-uitvoer
-* .log - logbestand
-* .nfo - infobestand bij software/downloads
-* .diz - beschrijving (FILE_ID.DIZ)
-* .one - OneNote-notitieboek
-* .enex - Evernote-export
+* .org - Emacs Org mode
+* .tex - LaTeX source
+* .bib - LaTeX bibliography
+* .cls - LaTeX document class (also VBA class)
+* .dvi - TeX output
+* .log - log file
+* .nfo - info file with software/downloads
+* .diz - description (FILE_ID.DIZ)
+* .one - OneNote notebook
+* .enex - Evernote export
 * .canvas - Obsidian Canvas
-* .xmind - XMind-mindmap
-* .mmap - MindManager-mindmap
-* .mm - FreeMind-mindmap (ook Objective-C++)
-* .opml - outline / lijst met feeds
-* .chm - Windows-helpbestand
-* .hlp - Windows-helpbestand (oud)
-* .1 / .2 / .3 / .4 / .5 / .6 / .7 / .8 / .9 - Unix-manpagina
+* .xmind - XMind mind map
+* .mmap - MindManager mind map
+* .mm - FreeMind mind map (also Objective-C++)
+* .opml - outline / list of feeds
+* .chm - Windows help file
+* .hlp - Windows help file (old)
+* .1 / .2 / .3 / .4 / .5 / .6 / .7 / .8 / .9 - Unix man page
 
-E-books & strips
+E-books & comics
 * .epub - e-book
-* .mobi - Kindle (oud)
+* .mobi - Kindle (old)
 * .azw / .azw3 / .kfx - Kindle
 * .fb2 - FictionBook
-* .lit - Microsoft Reader (oud)
+* .lit - Microsoft Reader (old)
 * .lrf - Sony Reader
 * .ibooks - Apple Books
-* .acsm - Adobe DRM-downloadlink voor e-book
-* .djvu - gescande boeken
-* .cbz / .cbr / .cb7 / .cbt - stripboek (zip/rar/7z/tar)
+* .acsm - Adobe DRM download link for an e-book
+* .djvu - scanned books
+* .cbz / .cbr / .cb7 / .cbt - comic book (zip/rar/7z/tar)
 
 Spreadsheets
-* .xls - Excel (oud)
+* .xls - Excel (old)
 * .xlsx - Excel
-* .xlsm - Excel met macro's
-* .xlsb - Excel binair
-* .xlt / .xltx - Excel-sjabloon
-* .xltm - Excel-sjabloon met macro's
-* .xla / .xlam - Excel-invoegtoepassing
-* .xll - Excel-invoegtoepassing (DLL)
+* .xlsm - Excel with macros
+* .xlsb - Excel binary
+* .xlt / .xltx - Excel template
+* .xltm - Excel template with macros
+* .xla / .xlam - Excel add-in
+* .xll - Excel add-in (DLL)
 * .ods - LibreOffice Calc
-* .ots - LibreOffice Calc-sjabloon
-* .sxc - OpenOffice Calc (oud)
+* .ots - LibreOffice Calc template
+* .sxc - OpenOffice Calc (old)
 * .numbers - Apple Numbers
-* .gsheet - Google Sheets-snelkoppeling
-* .csv - kommagescheiden data
-* .tsv - tabgescheiden data
+* .gsheet - Google Sheets shortcut
+* .csv - comma-separated data
+* .tsv - tab-separated data
 * .123 / .wk1 / .wks - Lotus 1-2-3
 * .qpw - Quattro Pro
-* .slk - SYLK-spreadsheet
+* .slk - SYLK spreadsheet
 * .dif - Data Interchange Format
 
-Presentaties
-* .ppt - PowerPoint (oud)
+Presentations
+* .ppt - PowerPoint (old)
 * .pptx - PowerPoint
-* .pptm - PowerPoint met macro's
-* .pps / .ppsx - PowerPoint-diavoorstelling (opent direct)
-* .ppsm - diavoorstelling met macro's
-* .pot / .potx - PowerPoint-sjabloon
-* .potm - PowerPoint-sjabloon met macro's
-* .ppam - PowerPoint-invoegtoepassing
-* .thmx - Office-thema
+* .pptm - PowerPoint with macros
+* .pps / .ppsx - PowerPoint slide show (opens directly)
+* .ppsm - slide show with macros
+* .pot / .potx - PowerPoint template
+* .potm - PowerPoint template with macros
+* .ppam - PowerPoint add-in
+* .thmx - Office theme
 * .odp - LibreOffice Impress
-* .otp - LibreOffice Impress-sjabloon
-* .sxi - OpenOffice Impress (oud)
+* .otp - LibreOffice Impress template
+* .sxi - OpenOffice Impress (old)
 * .key - Apple Keynote
-* .gslides - Google Slides-snelkoppeling
+* .gslides - Google Slides shortcut
 
-Overige Office
-* .accdb / .mdb - Access-database
-* .accde - Access (vergrendeld/gecompileerd)
-* .laccdb / .ldb - Access-vergrendelbestand
+Other Office
+* .accdb / .mdb - Access database
+* .accde - Access (locked/compiled)
+* .laccdb / .ldb - Access lock file
 * .mpp - Microsoft Project
-* .vsd / .vsdx - Visio-diagram
-* .vssx - Visio-stencils
-* .pub - Publisher (ook publieke SSH-sleutel)
-* .xsn - InfoPath-formulier
+* .vsd / .vsdx - Visio diagram
+* .vssx - Visio stencils
+* .pub - Publisher (also public SSH key)
+* .xsn - InfoPath form
 * .odg - LibreOffice Draw
-* .odf - LibreOffice Math-formule
+* .odf - LibreOffice Math formula
 * .odb - LibreOffice Base
 
-E-mail, contacten & agenda
-* .eml - e-mailbericht
-* .emlx - Apple Mail-bericht
-* .msg - Outlook-bericht
-* .oft - Outlook-sjabloon
+E-mail, contacts & calendar
+* .eml - e-mail message
+* .emlx - Apple Mail message
+* .msg - Outlook message
+* .oft - Outlook template
 * .mbox - mailbox
-* .pst - Outlook-gegevensbestand
-* .ost - Outlook offline-cache
-* .olm - Outlook voor Mac-archief
-* .nsf - Lotus Notes-database
-* .vcf - contactkaart (vCard)
-* .ics - agenda-item (iCalendar)
-* .vcs - vCalendar (oud)
-* .tnef / .dat - Outlook-bijlagepakket (winmail.dat)
-* .p7m - versleutelde/ondertekende mail (S/MIME)
+* .pst - Outlook data file
+* .ost - Outlook offline cache
+* .olm - Outlook for Mac archive
+* .nsf - Lotus Notes database
+* .vcf - contact card (vCard)
+* .ics - calendar item (iCalendar)
+* .vcs - vCalendar (old)
+* .tnef / .dat - Outlook attachment package (winmail.dat)
+* .p7m - encrypted/signed e-mail (S/MIME)
 
-Afbeeldingen
-* .jpg / .jpeg / .jpe / .jfif - foto
-* .png - afbeelding met transparantie
-* .apng - geanimeerde PNG
-* .gif - (geanimeerde) afbeelding
-* .webp - webafbeelding
-* .avif - moderne webafbeelding
-* .heic / .heif - iPhone-foto
+Images
+* .jpg / .jpeg / .jpe / .jfif - photo
+* .png - image with transparency
+* .apng - animated PNG
+* .gif - (animated) image
+* .webp - web image
+* .avif - modern web image
+* .heic / .heif - iPhone photo
 * .jxl - JPEG XL
 * .jp2 / .j2k / .jpx - JPEG 2000
 * .jxr / .wdp / .hdp - JPEG XR
-* .mpo - 3D-/stereofoto
-* .bmp / .dib - Windows-bitmap
-* .tif / .tiff - scans, drukwerk
-* .ico - icoon / favicon
-* .cur - muiscursor
-* .ani - geanimeerde cursor
-* .icns - macOS-icoon
+* .mpo - 3D/stereo photo
+* .bmp / .dib - Windows bitmap
+* .tif / .tiff - scans, print
+* .ico - icon / favicon
+* .cur - mouse cursor
+* .ani - animated cursor
+* .icns - macOS icon
 * .tga - Targa (games/3D)
-* .pcx - PC Paintbrush (oud)
+* .pcx - PC Paintbrush (old)
 * .pbm / .pgm / .ppm / .pnm - Netpbm
-* .xbm / .xpm - X11-bitmap
-* .wbmp - mobiele bitmap (oud)
-* .pict / .pct - Mac-afbeelding (oud)
+* .xbm / .xpm - X11 bitmap
+* .wbmp - mobile bitmap (old)
+* .pict / .pct - Mac image (old)
 * .sgi / .rgb - Silicon Graphics
-* .ras - Sun-raster
+* .ras - Sun raster
 * .qoi - Quite OK Image
-* .hdr - HDR-afbeelding
+* .hdr - HDR image
 * .exr - OpenEXR (VFX/HDR)
-* .dds - game-texture
-* .ktx / .ktx2 - GPU-texture
-* .vtf - Valve-texture
+* .dds - game texture
+* .ktx / .ktx2 - GPU texture
+* .vtf - Valve texture
 * .psd - Photoshop
-* .psb - Photoshop (groot formaat)
+* .psb - Photoshop (large document)
 * .xcf - GIMP
 * .kra - Krita
 * .ora - OpenRaster
@@ -164,10 +164,10 @@ Afbeeldingen
 * .afphoto - Affinity Photo
 * .pxm - Pixelmator
 * .pxd - Pixelmator Pro
-* .aseprite - pixel-art (Aseprite)
+* .aseprite - pixel art (Aseprite)
 
 Camera RAW
-* .dng - universeel RAW (Adobe)
+* .dng - universal RAW (Adobe)
 * .cr2 / .cr3 / .crw - Canon
 * .nef / .nrw - Nikon
 * .arw / .srf / .sr2 - Sony
@@ -185,35 +185,35 @@ Camera RAW
 * .kdc / .dcr - Kodak
 * .mos - Leaf
 * .gpr - GoPro RAW
-* .raw - algemeen ruw beeld
+* .raw - generic raw image
 
-Fotobewerking & kleur
-* .xmp - bewerkingen/metadata (sidecar), presets
-* .lrcat - Lightroom-catalogus
-* .lrtemplate - Lightroom-preset (oud)
-* .dcp - cameraprofiel (Adobe)
-* .cos - Capture One-instellingen
-* .cocatalog - Capture One-catalogus
-* .pp3 - RawTherapee-instellingen
-* .dop - DxO PhotoLab-instellingen
-* .icc / .icm - kleurprofiel
-* .cube / .3dl - LUT (kleurlook)
-* .abr - Photoshop-penselen
-* .atn - Photoshop-acties
-* .pat - Photoshop-patronen
-* .grd - Photoshop-verlopen
-* .asl - Photoshop-laagstijlen
-* .aco - Photoshop-kleurstalen
-* .ase - Adobe-kleurstalen (uitwisselbaar)
-* .8bf - Photoshop-plugin
+Photo editing & colour
+* .xmp - edits/metadata (sidecar), presets
+* .lrcat - Lightroom catalogue
+* .lrtemplate - Lightroom preset (old)
+* .dcp - camera profile (Adobe)
+* .cos - Capture One settings
+* .cocatalog - Capture One catalogue
+* .pp3 - RawTherapee settings
+* .dop - DxO PhotoLab settings
+* .icc / .icm - colour profile
+* .cube / .3dl - LUT (colour look)
+* .abr - Photoshop brushes
+* .atn - Photoshop actions
+* .pat - Photoshop patterns
+* .grd - Photoshop gradients
+* .asl - Photoshop layer styles
+* .aco - Photoshop swatches
+* .ase - Adobe swatches (exchange)
+* .8bf - Photoshop plug-in
 
 Vector, DTP & design
-* .dot - Graphviz (ook Word-sjabloon)
-* .svg / .svgz - vectorafbeelding (web)
+* .dot - Graphviz (also Word template)
+* .svg / .svgz - vector image (web)
 * .ai - Adobe Illustrator
 * .eps - Encapsulated PostScript
 * .cdr - CorelDRAW
-* .emf / .wmf - Windows-vectorafbeelding
+* .emf / .wmf - Windows vector image
 * .cgm - Computer Graphics Metafile
 * .afdesign - Affinity Designer
 * .afpub - Affinity Publisher
@@ -221,433 +221,433 @@ Vector, DTP & design
 * .fig - Figma
 * .xd - Adobe XD
 * .indd - InDesign
-* .indt - InDesign-sjabloon
-* .idml - InDesign-uitwisseling
+* .indt - InDesign template
+* .idml - InDesign exchange
 * .qxd / .qxp - QuarkXPress
 * .sla - Scribus
-* .fla / .xfl - Adobe Animate / Flash-bron
-* .lottie - Lottie-animatie
-* .riv - Rive-animatie
-* .drawio - draw.io-diagram
-* .excalidraw - Excalidraw-schets
+* .fla / .xfl - Adobe Animate / Flash source
+* .lottie - Lottie animation
+* .riv - Rive animation
+* .drawio - draw.io diagram
+* .excalidraw - Excalidraw sketch
 * .graffle - OmniGraffle
-* .puml - PlantUML-diagram
-* .mmd - Mermaid-diagram
+* .puml - PlantUML diagram
+* .mmd - Mermaid diagram
 * .gv - Graphviz
 
-Lettertypes
+Fonts
 * .ttf - TrueType
 * .otf - OpenType
-* .ttc / .otc - font-collectie
-* .woff / .woff2 - weblettertype
-* .eot - weblettertype (oud IE)
-* .fon / .fnt - Windows-bitmapfont
+* .ttc / .otc - font collection
+* .woff / .woff2 - web font
+* .eot - web font (old IE)
+* .fon / .fnt - Windows bitmap font
 * .pfb / .pfm / .afm - PostScript Type 1
-* .bdf / .pcf - Linux-bitmapfont
-* .dfont - macOS-font (oud)
-* .glyphs - Glyphs-fontbron
+* .bdf / .pcf - Linux bitmap font
+* .dfont - macOS font (old)
+* .glyphs - Glyphs font source
 * .ufo - Unified Font Object
-* .sfd - FontForge-bron
+* .sfd - FontForge source
 
 Audio
-* .mp3 - gecomprimeerde audio
-* .wav - ongecomprimeerde audio
+* .mp3 - compressed audio
+* .wav - uncompressed audio
 * .flac - lossless
-* .aiff / .aif - ongecomprimeerd (Apple)
-* .aifc - gecomprimeerde AIFF
-* .aac - gecomprimeerde audio
+* .aiff / .aif - uncompressed (Apple)
+* .aifc - compressed AIFF
+* .aac - compressed audio
 * .m4a - AAC / ALAC (Apple)
-* .m4b - audioboek
-* .m4r - iPhone-beltoon
-* .m4p - beveiligd iTunes-nummer
+* .m4b - audiobook
+* .m4r - iPhone ringtone
+* .m4p - protected iTunes track
 * .ogg / .oga - Ogg Vorbis
-* .opus - Opus (spraak/streaming, WhatsApp-spraak)
+* .opus - Opus (speech/streaming, WhatsApp voice)
 * .wma - Windows Media Audio
 * .ape - Monkey's Audio (lossless)
 * .wv - WavPack (lossless)
 * .tta - True Audio (lossless)
 * .mpc - Musepack
 * .dsf / .dff - DSD (hi-res)
-* .mka - Matroska-audio
+* .mka - Matroska audio
 * .ac3 / .eac3 - Dolby Digital
 * .thd - Dolby TrueHD
-* .dts - DTS-surround
-* .amr - spraakopname (gsm)
-* .awb - AMR-WB-spraak
-* .3ga - spraakopname Android
-* .gsm - GSM-spraak
-* .spx - Speex-spraak
-* .au / .snd - Unix-audio
+* .dts - DTS surround
+* .amr - voice recording (mobile)
+* .awb - AMR-WB speech
+* .3ga - Android voice recording
+* .gsm - GSM speech
+* .spx - Speex speech
+* .au / .snd - Unix audio
 * .ra / .ram - RealAudio
-* .weba - WebM-audio
+* .weba - WebM audio
 * .caf - Apple Core Audio
 * .bwf - Broadcast Wave
-* .w64 / .rf64 - WAV groter dan 4 GB
-* .voc - Creative-audio (oud)
-* .mid / .midi - MIDI-noten
-* .kar - karaoke-MIDI
-* .mod / .xm / .it / .s3m - tracker-modules
+* .w64 / .rf64 - WAV larger than 4 GB
+* .voc - Creative audio (old)
+* .mid / .midi - MIDI notes
+* .kar - karaoke MIDI
+* .mod / .xm / .it / .s3m - tracker modules
 * .sf2 / .sf3 - SoundFont
-* .sfz - sampler-instrument
-* .nki - Kontakt-instrument
-* .nkx - Kontakt-samplebibliotheek
-* .exs - Logic-sampler-instrument
-* .rx2 - REX-loop
-* .lrc - gesynchroniseerde songtekst
-* .m3u / .m3u8 - afspeellijst (ook HLS-stream)
-* .pls - afspeellijst / radiostream
-* .xspf - afspeellijst (XML)
-* .wpl - Windows Media-afspeellijst
-* .asx - Windows Media-stream
+* .sfz - sampler instrument
+* .nki - Kontakt instrument
+* .nkx - Kontakt sample library
+* .exs - Logic sampler instrument
+* .rx2 - REX loop
+* .lrc - synchronised lyrics
+* .m3u / .m3u8 - playlist (also HLS stream)
+* .pls - playlist / radio stream
+* .xspf - playlist (XML)
+* .wpl - Windows Media playlist
+* .asx - Windows Media stream
 
-Muziekproductie & DJ
-* .dll - VST2-plugin (Windows)
-* .als - Ableton Live-set
-* .alc - Ableton-clip
-* .adg - Ableton-rack
-* .adv - Ableton-preset
-* .alp - Ableton-pack
-* .amxd - Max for Live-device
-* .asd - Ableton-analyse (warp-info)
-* .flp - FL Studio-project
-* .fst - FL Studio-preset
-* .logicx - Logic Pro-project
-* .band - GarageBand-project
-* .cpr - Cubase-project
-* .npr - Nuendo-project
-* .ptx / .ptf - Pro Tools-sessie
-* .rpp - REAPER-project
-* .song - Studio One-project
-* .bwproject - Bitwig-project
-* .reason - Reason-project
-* .aup / .aup3 - Audacity-project
-* .sesx - Adobe Audition-sessie
-* .mmpz - LMMS-project
-* .xrns - Renoise-song
-* .vst3 - VST3-plugin
-* .component - Audio Unit-plugin (Mac)
-* .clap - CLAP-plugin
-* .fxp / .fxb - VST-preset / -bank
-* .vstpreset - VST3-preset
-* .aupreset - Audio Unit-preset
-* .nmsv - Massive-preset
-* .h2p - u-he-preset (Diva, Zebra)
-* .nml - Traktor-collectie
-* .tsi - Traktor-mapping
-* .crate - Serato-crate
-* .sib - Sibelius-bladmuziek
-* .mus / .musx - Finale-bladmuziek
+Music production & DJ
+* .dll - VST2 plug-in (Windows)
+* .als - Ableton Live set
+* .alc - Ableton clip
+* .adg - Ableton rack
+* .adv - Ableton preset
+* .alp - Ableton pack
+* .amxd - Max for Live device
+* .asd - Ableton analysis (warp info)
+* .flp - FL Studio project
+* .fst - FL Studio preset
+* .logicx - Logic Pro project
+* .band - GarageBand project
+* .cpr - Cubase project
+* .npr - Nuendo project
+* .ptx / .ptf - Pro Tools session
+* .rpp - REAPER project
+* .song - Studio One project
+* .bwproject - Bitwig project
+* .reason - Reason project
+* .aup / .aup3 - Audacity project
+* .sesx - Adobe Audition session
+* .mmpz - LMMS project
+* .xrns - Renoise song
+* .vst3 - VST3 plug-in
+* .component - Audio Unit plug-in (Mac)
+* .clap - CLAP plug-in
+* .fxp / .fxb - VST preset / bank
+* .vstpreset - VST3 preset
+* .aupreset - Audio Unit preset
+* .nmsv - Massive preset
+* .h2p - u-he preset (Diva, Zebra)
+* .nml - Traktor collection
+* .tsi - Traktor mapping
+* .crate - Serato crate
+* .sib - Sibelius sheet music
+* .mus / .musx - Finale sheet music
 * .mscz - MuseScore
-* .musicxml / .mxl - bladmuziek-uitwisseling
-* .gp / .gp5 / .gpx - Guitar Pro (.gpx ook GPS)
+* .musicxml / .mxl - sheet music exchange
+* .gp / .gp5 / .gpx - Guitar Pro (.gpx also GPS)
 
 Video
-* .mp4 - video (universeel)
-* .m4v - Apple-video
+* .mp4 - video (universal)
+* .m4v - Apple video
 * .mov / .qt - QuickTime
-* .avi - Windows-video (oud)
+* .avi - Windows video (old)
 * .mkv - Matroska
 * .mk3d - Matroska 3D
-* .webm - webvideo
+* .webm - web video
 * .wmv / .asf - Windows Media Video
-* .flv / .f4v - Flash-video
-* .swf - Flash-animatie
-* .mpg / .mpeg / .mpe - MPEG-video
-* .m1v / .m2v - MPEG-videostream
-* .vob - dvd-video
-* .ifo / .bup - dvd-menu/-info
+* .flv / .f4v - Flash video
+* .swf - Flash animation
+* .mpg / .mpeg / .mpe - MPEG video
+* .m1v / .m2v - MPEG video stream
+* .vob - DVD video
+* .ifo / .bup - DVD menu/info
 * .evo - HD DVD
-* .bdmv - Blu-ray-index
-* .mpls - Blu-ray-afspeellijst
+* .bdmv - Blu-ray index
+* .mpls - Blu-ray playlist
 * .m2ts / .mts - AVCHD / Blu-ray
-* .ts - MPEG-transportstream (ook TypeScript)
-* .3gp / .3g2 - gsm-video (oud)
-* .ogv - Ogg-video
+* .ts - MPEG transport stream (also TypeScript)
+* .3gp / .3g2 - mobile phone video (old)
+* .ogv - Ogg video
 * .rm / .rmvb - RealVideo
 * .divx - DivX
-* .dv - DV-camcorder
-* .vro - dvd-recorder
-* .mxf - broadcast/professionele camera
-* .r3d - RED-camera RAW
+* .dv - DV camcorder
+* .vro - DVD recorder
+* .mxf - broadcast/professional camera
+* .r3d - RED camera RAW
 * .braw - Blackmagic RAW
 * .ari - ARRI RAW
 * .crm - Canon Cinema RAW Light
-* .h264 / .h265 / .hevc - ruwe videostream
-* .y4m - ruwe YUV-video
-* .ivf - VP8/VP9/AV1-stream
-* .insv / .insp - Insta360-video / -foto
+* .h264 / .h265 / .hevc - raw video stream
+* .y4m - raw YUV video
+* .ivf - VP8/VP9/AV1 stream
+* .insv / .insp - Insta360 video / photo
 * .360 - GoPro Max 360°
-* .lrv - GoPro-lage-resolutieproxy
-* .thm - camera-thumbnail
-* .dav - bewakingscamera (Dahua)
-* .bik - Bink-gamevideo
+* .lrv - GoPro low-resolution proxy
+* .thm - camera thumbnail
+* .dav - security camera (Dahua)
+* .bik - Bink game video
 
-Ondertitels
-* .srt - ondertitels (standaard)
-* .vtt - webondertitels (WebVTT)
-* .ass / .ssa - opgemaakte ondertitels (anime)
-* .sub / .idx - dvd-ondertitels
-* .sup - Blu-ray-ondertitels
-* .sbv - YouTube-ondertitels
-* .ttml / .dfxp - XML-ondertitels
-* .smi / .sami - Microsoft-ondertitels
+Subtitles
+* .srt - subtitles (standard)
+* .vtt - web subtitles (WebVTT)
+* .ass / .ssa - styled subtitles (anime)
+* .sub / .idx - DVD subtitles
+* .sup - Blu-ray subtitles
+* .sbv - YouTube subtitles
+* .ttml / .dfxp - XML subtitles
+* .smi / .sami - Microsoft subtitles
 * .scc - closed captions
-* .stl - EBU-ondertitels (ook 3D-model)
+* .stl - EBU subtitles (also 3D model)
 
-Videobewerking & VFX
-* .prproj - Premiere Pro-project
-* .aep - After Effects-project
-* .aet - After Effects-sjabloon
-* .mogrt - motion-graphics-sjabloon
-* .drp - DaVinci Resolve-project
-* .dra - DaVinci Resolve-archief
-* .fcpbundle - Final Cut Pro-bibliotheek
-* .fcpxml - Final Cut-uitwisseling
-* .imovielibrary - iMovie-bibliotheek
-* .veg - Vegas Pro-project
-* .kdenlive - Kdenlive-project
-* .mlt - Shotcut-project
-* .osp - OpenShot-project
-* .tscproj - Camtasia-project
-* .wfp - Filmora-project
-* .wlmp - Movie Maker-project
-* .avp - Avid-project
-* .aaf - uitwisseling Avid/Pro Tools
-* .omf - uitwisseling (oud)
-* .edl - montagelijst
-* .nk - Nuke-script
+Video editing & VFX
+* .prproj - Premiere Pro project
+* .aep - After Effects project
+* .aet - After Effects template
+* .mogrt - motion graphics template
+* .drp - DaVinci Resolve project
+* .dra - DaVinci Resolve archive
+* .fcpbundle - Final Cut Pro library
+* .fcpxml - Final Cut exchange
+* .imovielibrary - iMovie library
+* .veg - Vegas Pro project
+* .kdenlive - Kdenlive project
+* .mlt - Shotcut project
+* .osp - OpenShot project
+* .tscproj - Camtasia project
+* .wfp - Filmora project
+* .wlmp - Movie Maker project
+* .avp - Avid project
+* .aaf - Avid/Pro Tools exchange
+* .omf - exchange (old)
+* .edl - edit decision list
+* .nk - Nuke script
 
-Archieven & compressie
-* .zip - archief
-* .zipx - WinZip-archief (uitgebreid)
-* .rar - RAR-archief
-* .r00 / .r01 - gesplitst RAR-archief
-* .7z - 7-Zip-archief
-* .001 - gesplitst archief
-* .tar - Unix-archief
+Archives & compression
+* .zip - archive
+* .zipx - WinZip archive (extended)
+* .rar - RAR archive
+* .r00 / .r01 - split RAR archive
+* .7z - 7-Zip archive
+* .001 - split archive
+* .tar - Unix archive
 * .gz - gzip
-* .tgz / .tar.gz - gecomprimeerd tar-archief
+* .tgz / .tar.gz - compressed tar archive
 * .bz2 / .tbz2 - bzip2
 * .xz / .txz - xz
 * .zst / .tzst - Zstandard
-* .lz / .lz4 / .lzma / .lzo - LZ-compressie
+* .lz / .lz4 / .lzma / .lzo - LZ compression
 * .br - Brotli
-* .z - Unix compress (oud)
-* .cab - Windows-cabinet
-* .arj / .lzh / .lha / .ace / .arc - oude archieven
+* .z - Unix compress (old)
+* .cab - Windows cabinet
+* .arj / .lzh / .lha / .ace / .arc - old archives
 * .sit / .sitx - StuffIt (Mac)
 * .hqx - BinHex (Mac)
-* .xar - macOS-archief
-* .cpio - Unix-archief
-* .squashfs - gecomprimeerd bestandssysteem
+* .xar - macOS archive
+* .cpio - Unix archive
+* .squashfs - compressed file system
 * .uue / .uu - uuencode
 
-Schijf-, VM- & backup-images
-* .raw - ruwe schijfimage
-* .iso - cd/dvd-image
-* .img - schijfimage
-* .bin / .cue - cd-image + tracklijst
-* .nrg - Nero-image
-* .mdf / .mds - Alcohol 120%-image (.mdf ook SQL Server)
-* .ccd - CloneCD-image
-* .cdi - DiscJuggler-image
+Disk, VM & backup images
+* .raw - raw disk image
+* .iso - CD/DVD image
+* .img - disk image
+* .bin / .cue - CD image + track list
+* .nrg - Nero image
+* .mdf / .mds - Alcohol 120% image (.mdf also SQL Server)
+* .ccd - CloneCD image
+* .cdi - DiscJuggler image
 * .toast - Roxio Toast (Mac)
-* .dmg - macOS-schijfimage
-* .sparseimage / .sparsebundle - macOS-groeiende image
-* .vhd / .vhdx - Hyper-V-schijf
-* .vmdk - VMware-schijf
-* .vmx - VMware-VM-configuratie
-* .vmsn / .vmss / .vmem - VMware-snapshot/-suspend/-geheugen
-* .nvram - VM-BIOS-instellingen
-* .vdi - VirtualBox-schijf
-* .vbox - VirtualBox-VM-configuratie
-* .ova / .ovf - VM-export
-* .qcow / .qcow2 - QEMU/KVM/Proxmox-schijf
-* .vma - Proxmox-VM-backup
-* .pxar - Proxmox Backup Server-archief
+* .dmg - macOS disk image
+* .sparseimage / .sparsebundle - macOS growing image
+* .vhd / .vhdx - Hyper-V disk
+* .vmdk - VMware disk
+* .vmx - VMware VM configuration
+* .vmsn / .vmss / .vmem - VMware snapshot/suspend/memory
+* .nvram - VM BIOS settings
+* .vdi - VirtualBox disk
+* .vbox - VirtualBox VM configuration
+* .ova / .ovf - VM export
+* .qcow / .qcow2 - QEMU/KVM/Proxmox disk
+* .vma - Proxmox VM backup
+* .pxar - Proxmox Backup Server archive
 * .hdd / .pvm - Parallels
-* .utm - UTM-VM (Mac)
-* .wim / .esd / .swm - Windows-installatie-image
-* .vfd / .flp - virtuele diskette
-* .dd - ruwe schijfkopie
-* .e01 - forensische schijfimage
+* .utm - UTM VM (Mac)
+* .wim / .esd / .swm - Windows installation image
+* .vfd / .flp - virtual floppy disk
+* .dd - raw disk copy
+* .e01 - forensic disk image
 * .gho - Norton Ghost
-* .tib / .tibx - Acronis-backup
-* .mrimg - Macrium Reflect-backup
-* .vbk / .vib / .vrb - Veeam (volledig/incrementeel/reverse)
+* .tib / .tibx - Acronis backup
+* .mrimg - Macrium Reflect backup
+* .vbk / .vib / .vrb - Veeam (full/incremental/reverse)
 * .bkf - Windows NTBackup
 
-Installatie & pakketten
-* .exe - Windows-programma/installer
+Installers & packages
+* .exe - Windows program/installer
 * .msi - Windows Installer
-* .msp - Windows Installer-patch
-* .mst - Windows Installer-transform
-* .msu - Windows-update
-* .msix / .msixbundle - moderne Windows-app
-* .appx / .appxbundle - Windows Store-app
-* .appinstaller - App Installer-bestand
-* .application / .appref-ms - ClickOnce-app
-* .intunewin - Intune-app-pakket
-* .ppkg - Windows-provisioningpakket
-* .app - macOS-programma
-* .pkg / .mpkg - macOS-installer (ook PlayStation)
-* .ipa - iOS-app
-* .ipsw - iPhone/iPad/Mac-firmware
-* .shsh2 - SHSH-blob (iOS-firmwarehandtekening)
-* .mobileconfig - Apple-configuratieprofiel
-* .mobileprovision / .provisionprofile - Apple-provisioningprofiel
-* .xip - ondertekend Apple-archief (Xcode)
-* .apk - Android-app (ook Alpine Linux-pakket)
+* .msp - Windows Installer patch
+* .mst - Windows Installer transform
+* .msu - Windows update
+* .msix / .msixbundle - modern Windows app
+* .appx / .appxbundle - Windows Store app
+* .appinstaller - App Installer file
+* .application / .appref-ms - ClickOnce app
+* .intunewin - Intune app package
+* .ppkg - Windows provisioning package
+* .app - macOS program
+* .pkg / .mpkg - macOS installer (also PlayStation)
+* .ipa - iOS app
+* .ipsw - iPhone/iPad/Mac firmware
+* .shsh2 - SHSH blob (iOS firmware signature)
+* .mobileconfig - Apple configuration profile
+* .mobileprovision / .provisionprofile - Apple provisioning profile
+* .xip - signed Apple archive (Xcode)
+* .apk - Android app (also Alpine Linux package)
 * .aab - Android App Bundle
-* .xapk / .apks / .apkm - Android-app-bundel (gesplitst)
-* .obb - Android-gamedata
-* .tar.md5 - Samsung-firmware (Odin)
-* .pit - Samsung-partitietabel
-* .kdz - LG-firmware
-* .ftf - Sony-firmware
-* .ofp / .ozip - Oppo/Realme-firmware
-* .ab - Android-backup (adb)
-* .crypt14 / .crypt15 - WhatsApp-backup
-* .ipd / .bbb - BlackBerry-backup
-* .nbu - Nokia-backup
-* .deb - Debian/Ubuntu-pakket
-* .rpm - Red Hat/Fedora-pakket
-* .pkg.tar.zst - Arch Linux-pakket
-* .ebuild - Gentoo-pakket
-* .snap - Snap-pakket
+* .xapk / .apks / .apkm - Android app bundle (split)
+* .obb - Android game data
+* .tar.md5 - Samsung firmware (Odin)
+* .pit - Samsung partition table
+* .kdz - LG firmware
+* .ftf - Sony firmware
+* .ofp / .ozip - Oppo/Realme firmware
+* .ab - Android backup (adb)
+* .crypt14 / .crypt15 - WhatsApp backup
+* .ipd / .bbb - BlackBerry backup
+* .nbu - Nokia backup
+* .deb - Debian/Ubuntu package
+* .rpm - Red Hat/Fedora package
+* .pkg.tar.zst - Arch Linux package
+* .ebuild - Gentoo package
+* .snap - Snap package
 * .flatpak / .flatpakref - Flatpak
-* .appimage - draagbare Linux-app
-* .run - Linux-installer
-* .jar - Java-app/-bibliotheek
-* .war - Java-webapp
-* .ear - Java-enterprise-app
-* .whl - Python-wheel
-* .egg - Python-pakket (oud)
-* .gem - Ruby-pakket
-* .nupkg - NuGet-pakket (.NET)
-* .phar - PHP-archief
-* .vsix - Visual Studio / VS Code-extensie
-* .crx - Chrome-extensie
-* .xpi - Firefox-extensie
+* .appimage - portable Linux app
+* .run - Linux installer
+* .jar - Java app/library
+* .war - Java web app
+* .ear - Java enterprise app
+* .whl - Python wheel
+* .egg - Python package (old)
+* .gem - Ruby package
+* .nupkg - NuGet package (.NET)
+* .phar - PHP archive
+* .vsix - Visual Studio / VS Code extension
+* .crx - Chrome extension
+* .xpi - Firefox extension
 
-Windows-systeem & beheer
-* .com - DOS-programma
-* .dll - gedeelde bibliotheek (ook VST2-plugin)
-* .ocx - ActiveX-control
-* .sys - systeemdriver
+Windows system & admin
+* .com - DOS program
+* .dll - shared library (also VST2 plug-in)
+* .ocx - ActiveX control
+* .sys - system driver
 * .drv - driver
-* .inf - driver-installatie
-* .cat - beveiligingscatalogus (driver)
-* .cpl - Configuratiescherm-item
-* .msc - MMC-console (bv. services.msc)
-* .scr - schermbeveiliging
-* .lnk - snelkoppeling
-* .url - internetsnelkoppeling
-* .pif - DOS-snelkoppeling
-* .reg - registerimport
-* .ini - configuratie
-* .bat / .cmd - batchscript
-* .ps1 - PowerShell-script
-* .psm1 - PowerShell-module
-* .psd1 - PowerShell-module-manifest
-* .ps1xml - PowerShell-opmaak
+* .inf - driver installation
+* .cat - security catalogue (driver)
+* .cpl - Control Panel item
+* .msc - MMC console (e.g. services.msc)
+* .scr - screen saver
+* .lnk - shortcut
+* .url - internet shortcut
+* .pif - DOS shortcut
+* .reg - registry import
+* .ini - configuration
+* .bat / .cmd - batch script
+* .ps1 - PowerShell script
+* .psm1 - PowerShell module
+* .psd1 - PowerShell module manifest
+* .ps1xml - PowerShell formatting
 * .vbs / .vbe - VBScript
 * .jse - JScript (Windows Script Host)
-* .wsf - Windows Script-bestand
-* .hta - HTML-applicatie
-* .evtx / .evt - gebeurtenislogboek
-* .etl - tracelog
-* .dmp / .mdmp / .hdmp - crashdump
-* .wer - Windows-foutrapport
-* .diagcab - probleemoplosser
-* .pol - Groepsbeleid-register (registry.pol)
-* .admx / .adml - Groepsbeleid-sjablonen
-* .ldif - LDAP/Active Directory-import/-export
-* .edb - Exchange-/Windows Search-database
-* .rdp - Extern bureaublad-verbinding
-* .ica - Citrix-verbinding
-* .theme / .themepack / .deskthemepack - Windows-thema
-* .msstyles - visuele stijl
-* .library-ms - bibliotheek
-* .search-ms - opgeslagen zoekopdracht
-* .mui - taalbronnen
-* .nls - taal-/landinstelling
-* .efi - UEFI-programma/bootloader
-* .pdb - debugsymbolen (ook eiwitstructuur)
-* .manifest - app-manifest
-* .config - .NET-configuratie
-* .xaml - UI-opmaak (WPF/UWP)
-* .resx - .NET-resources
-* .sdb - compatibiliteitsdatabase
-* .chk - herstelde fragmenten (chkdsk)
-* .gadget - bureaubladgadget (oud)
+* .wsf - Windows Script file
+* .hta - HTML application
+* .evtx / .evt - event log
+* .etl - trace log
+* .dmp / .mdmp / .hdmp - crash dump
+* .wer - Windows error report
+* .diagcab - troubleshooter
+* .pol - Group Policy registry (registry.pol)
+* .admx / .adml - Group Policy templates
+* .ldif - LDAP/Active Directory import/export
+* .edb - Exchange/Windows Search database
+* .rdp - Remote Desktop connection
+* .ica - Citrix connection
+* .theme / .themepack / .deskthemepack - Windows theme
+* .msstyles - visual style
+* .library-ms - library
+* .search-ms - saved search
+* .mui - language resources
+* .nls - language/locale setting
+* .efi - UEFI program/boot loader
+* .pdb - debug symbols (also protein structure)
+* .manifest - app manifest
+* .config - .NET configuration
+* .xaml - UI markup (WPF/UWP)
+* .resx - .NET resources
+* .sdb - compatibility database
+* .chk - recovered fragments (chkdsk)
+* .gadget - desktop gadget (old)
 
-macOS-systeem
-* .plist - instellingen
-* .dylib - gedeelde bibliotheek
-* .kext - kernelextensie
+macOS system
+* .plist - settings
+* .dylib - shared library
+* .kext - kernel extension
 * .framework - framework
-* .bundle - bundel/plugin
-* .command / .tool - klikbaar shellscript
+* .bundle - bundle/plug-in
+* .command / .tool - clickable shell script
 * .scpt / .applescript - AppleScript
-* .workflow - Automator-workflow
-* .shortcut - Opdrachten-snelkoppeling
-* .webloc - websnelkoppeling
-* .textclipping - tekstknipsel
-* .savedsearch - slimme map
-* .prefpane - systeemvoorkeurpaneel
-* .saver - schermbeveiliging
-* .photoslibrary - Foto's-bibliotheek
-* .xcarchive - Xcode-archief
+* .workflow - Automator workflow
+* .shortcut - Shortcuts shortcut
+* .webloc - web shortcut
+* .textclipping - text clipping
+* .savedsearch - smart folder
+* .prefpane - System Preferences pane
+* .saver - screen saver
+* .photoslibrary - Photos library
+* .xcarchive - Xcode archive
 
-Linux/Unix-systeem
-* .sh / .bash / .zsh / .fish / .csh / .ksh - shellscript
-* .so - gedeelde bibliotheek
-* .a - statische bibliotheek
-* .o - objectbestand
-* .ko - kernelmodule
-* .out / .elf - uitvoerbaar bestand
-* .service / .timer / .socket / .mount / .target / .path - systemd-unit
-* .desktop - app-snelkoppeling
-* .rules - udev-regels
-* .list - apt-bronnenlijst
-* .repo - yum/dnf-bron
-* .conf / .cfg - configuratie
-* .spec - RPM-bouwrecept
-* .pid - proces-ID
-* .lock - vergrendelbestand
-* .swp - vim-swapbestand
+Linux/Unix system
+* .sh / .bash / .zsh / .fish / .csh / .ksh - shell script
+* .so - shared library
+* .a - static library
+* .o - object file
+* .ko - kernel module
+* .out / .elf - executable
+* .service / .timer / .socket / .mount / .target / .path - systemd unit
+* .desktop - app shortcut
+* .rules - udev rules
+* .list - apt sources list
+* .repo - yum/dnf repository
+* .conf / .cfg - configuration
+* .spec - RPM build recipe
+* .pid - process ID
+* .lock - lock file
+* .swp - vim swap file
 
-Programmeren (broncode)
+Programming (source code)
 * .ts - TypeScript
 * .asm - assembly
 * .vhd - VHDL
 * .mm - Objective-C++
 * .c - C
-* .h - C/C++-header
+* .h - C/C++ header
 * .cpp / .cc / .cxx - C++
-* .hpp / .hh / .hxx - C++-header
+* .hpp / .hh / .hxx - C++ header
 * .cs - C#
-* .csx - C#-script
+* .csx - C# script
 * .vb - Visual Basic .NET
-* .bas - BASIC / VBA-module
-* .frm - VB6-formulier (ook MySQL-tabel)
+* .bas - BASIC / VBA module
+* .frm - VB6 form (also MySQL table)
 * .fs / .fsi / .fsx - F#
 * .java - Java
-* .class - Java-bytecode
+* .class - Java bytecode
 * .kt / .kts - Kotlin
 * .scala / .sc - Scala
 * .groovy - Groovy
 * .clj / .cljs / .cljc - Clojure
-* .edn - Clojure-data
+* .edn - Clojure data
 * .py - Python
-* .pyw - Python (zonder console)
-* .pyc - Python-bytecode
-* .pyd - Python-extensie (Windows)
-* .pyi - Python-type-hints
-* .ipynb - Jupyter-notebook
+* .pyw - Python (without console)
+* .pyc - Python bytecode
+* .pyd - Python extension (Windows)
+* .pyi - Python type hints
+* .ipynb - Jupyter notebook
 * .rb - Ruby
-* .erb - Ruby-sjabloon
+* .erb - Ruby template
 * .php / .phtml - PHP
 * .pl / .pm - Perl
 * .js / .mjs / .cjs - JavaScript
@@ -682,7 +682,7 @@ Programmeren (broncode)
 * .rkt - Racket
 * .tcl - Tcl
 * .awk - AWK
-* .sed - sed-script
+* .sed - sed script
 * .ahk - AutoHotkey
 * .au3 - AutoIt
 * .s - assembly
@@ -698,267 +698,267 @@ Programmeren (broncode)
 * .pde - Processing
 * .sb3 - Scratch
 * .wasm - WebAssembly
-* .wat - WebAssembly-tekst
+* .wat - WebAssembly text
 * .cu / .cuh - CUDA
 * .cl - OpenCL
-* .glsl / .vert / .frag / .geom / .comp - GLSL-shader
-* .hlsl - DirectX-shader
-* .wgsl - WebGPU-shader
-* .metal - Apple Metal-shader
-* .shader / .cginc - Unity-shader
+* .glsl / .vert / .frag / .geom / .comp - GLSL shader
+* .hlsl - DirectX shader
+* .wgsl - WebGPU shader
+* .metal - Apple Metal shader
+* .shader / .cginc - Unity shader
 * .sql - SQL
-* .pks / .pkb - Oracle PL/SQL-pakket
+* .pks / .pkb - Oracle PL/SQL package
 * .graphql / .gql - GraphQL
 * .proto - Protocol Buffers
 * .thrift - Apache Thrift
-* .kql - Kusto-query (Azure/Sentinel)
+* .kql - Kusto query (Azure/Sentinel)
 * .nix - Nix
 * .jsonnet - Jsonnet
 * .bzl - Bazel/Starlark
 
-Projectbestanden & build
-* .sln / .slnx - Visual Studio-solution
-* .csproj - C#-project
-* .vbproj - VB.NET-project
-* .fsproj - F#-project
-* .vcxproj - C++-project
-* .vcproj - C++-project (oud)
+Project files & build
+* .sln / .slnx - Visual Studio solution
+* .csproj - C# project
+* .vbproj - VB.NET project
+* .fsproj - F# project
+* .vcxproj - C++ project
+* .vcproj - C++ project (old)
 * .props / .targets - MSBuild
-* .nuspec - NuGet-specificatie
-* .xcodeproj / .xcworkspace - Xcode-project
-* .pbxproj - Xcode-projectdata
-* .entitlements - Apple-app-rechten
-* .storyboard / .xib / .nib - Apple-UI
-* .gradle - Gradle-build
-* .pom - Maven-project
-* .sbt - Scala-build
-* .iml - IntelliJ-module
-* .code-workspace - VS Code-werkruimte
-* .sublime-project - Sublime Text-project
-* .pro - Qt-project
-* .qrc - Qt-resources
-* .ui - Qt Designer-UI
-* .dproj - Delphi-project
-* .uproject - Unreal Engine-project
-* .uplugin - Unreal-plugin
+* .nuspec - NuGet specification
+* .xcodeproj / .xcworkspace - Xcode project
+* .pbxproj - Xcode project data
+* .entitlements - Apple app entitlements
+* .storyboard / .xib / .nib - Apple UI
+* .gradle - Gradle build
+* .pom - Maven project
+* .sbt - Scala build
+* .iml - IntelliJ module
+* .code-workspace - VS Code workspace
+* .sublime-project - Sublime Text project
+* .pro - Qt project
+* .qrc - Qt resources
+* .ui - Qt Designer UI
+* .dproj - Delphi project
+* .uproject - Unreal Engine project
+* .uplugin - Unreal plug-in
 * .cmake - CMake
-* .mk - Makefile-include
-* .ninja - Ninja-build
-* .dockerfile - Docker-buildinstructies
-* .patch / .diff - codewijzigingen
-* .rej - mislukt patchdeel
-* .orig - origineel vóór patch
+* .mk - Makefile include
+* .ninja - Ninja build
+* .dockerfile - Docker build instructions
+* .patch / .diff - code changes
+* .rej - rejected patch hunk
+* .orig - original before patch
 
 Infrastructure as Code
 * .tf - Terraform
-* .tfvars - Terraform-variabelen
-* .tfstate - Terraform-status
-* .hcl - HashiCorp-configuratie
+* .tfvars - Terraform variables
+* .tfstate - Terraform state
+* .hcl - HashiCorp configuration
 * .bicep - Azure Bicep
-* .pp - Puppet-manifest (ook Pascal)
-* .sls - SaltStack-state
+* .pp - Puppet manifest (also Pascal)
+* .sls - SaltStack state
 
 Web
-* .html / .htm - webpagina
-* .xhtml - XHTML-pagina
-* .shtml - webpagina met server-side includes
-* .css - opmaak
+* .html / .htm - web page
+* .xhtml - XHTML page
+* .shtml - web page with server-side includes
+* .css - style sheet
 * .scss / .sass - Sass
 * .less - Less
 * .styl - Stylus
 * .map - source map
-* .webmanifest - web-app-manifest
-* .asp - klassiek ASP
-* .aspx - ASP.NET-pagina
-* .ascx - ASP.NET-gebruikersbesturingselement
-* .ashx - ASP.NET-handler
-* .asmx - ASP.NET-webservice
+* .webmanifest - web app manifest
+* .asp - classic ASP
+* .aspx - ASP.NET page
+* .ascx - ASP.NET user control
+* .ashx - ASP.NET handler
+* .asmx - ASP.NET web service
 * .cshtml / .razor - Razor (C#)
 * .vbhtml - Razor (VB)
 * .jsp / .jspx - Java Server Pages
 * .cfm / .cfc - ColdFusion
-* .cgi - CGI-script
-* .vue - Vue-component
-* .svelte - Svelte-component
-* .astro - Astro-component
-* .ejs - Embedded JS-sjabloon
-* .hbs / .handlebars - Handlebars-sjabloon
-* .mustache - Mustache-sjabloon
-* .pug - Pug-sjabloon
-* .twig - Twig-sjabloon
-* .liquid - Liquid-sjabloon (Shopify)
-* .njk - Nunjucks-sjabloon
-* .haml - Haml-sjabloon
-* .tpl - sjabloon (algemeen)
-* .htaccess - Apache-configuratie
-* .htpasswd - Apache-wachtwoorden
-* .har - HTTP-archief (netwerkverkeer browser)
-* .mhtml / .mht - opgeslagen webpagina (één bestand)
-* .webarchive - opgeslagen webpagina (Safari)
-* .rss / .atom - nieuwsfeed
+* .cgi - CGI script
+* .vue - Vue component
+* .svelte - Svelte component
+* .astro - Astro component
+* .ejs - Embedded JS template
+* .hbs / .handlebars - Handlebars template
+* .mustache - Mustache template
+* .pug - Pug template
+* .twig - Twig template
+* .liquid - Liquid template (Shopify)
+* .njk - Nunjucks template
+* .haml - Haml template
+* .tpl - template (generic)
+* .htaccess - Apache configuration
+* .htpasswd - Apache passwords
+* .har - HTTP archive (browser network traffic)
+* .mhtml / .mht - saved web page (single file)
+* .webarchive - saved web page (Safari)
+* .rss / .atom - news feed
 
-Data & configuratie
-* .ini / .cfg / .conf - configuratie
-* .json - gestructureerde data
-* .json5 / .jsonc - JSON met commentaar
-* .jsonl / .ndjson - JSON per regel
+Data & configuration
+* .ini / .cfg / .conf - configuration
+* .json - structured data
+* .json5 / .jsonc - JSON with comments
+* .jsonl / .ndjson - JSON per line
 * .jsonld - Linked Data
-* .xml - gestructureerde data
-* .xsd - XML-schema
-* .xsl / .xslt - XML-transformatie
-* .dtd - XML-documentdefinitie
-* .yaml / .yml - configuratie
-* .toml - configuratie
-* .properties - Java-configuratie
-* .env - omgevingsvariabelen
-* .parquet - kolomdata (big data)
-* .avro - Avro-data
-* .orc - kolomdata (Hadoop)
+* .xml - structured data
+* .xsd - XML schema
+* .xsl / .xslt - XML transformation
+* .dtd - XML document type definition
+* .yaml / .yml - configuration
+* .toml - configuration
+* .properties - Java configuration
+* .env - environment variables
+* .parquet - columnar data (big data)
+* .avro - Avro data
+* .orc - columnar data (Hadoop)
 * .feather / .arrow - Apache Arrow
-* .h5 / .hdf5 - wetenschappelijke data
-* .nc - NetCDF (klimaat/weer)
-* .mat - MATLAB-data
-* .npy / .npz - NumPy-arrays
-* .pkl / .pickle - Python-object
-* .joblib - Python-object (ML)
-* .rds / .rdata / .rda - R-data
-* .sav - SPSS-data (ook savegame)
-* .dta - Stata-data
-* .sas7bdat - SAS-data
+* .h5 / .hdf5 - scientific data
+* .nc - NetCDF (climate/weather)
+* .mat - MATLAB data
+* .npy / .npz - NumPy arrays
+* .pkl / .pickle - Python object
+* .joblib - Python object (ML)
+* .rds / .rdata / .rda - R data
+* .sav - SPSS data (also save game)
+* .dta - Stata data
+* .sas7bdat - SAS data
 * .msgpack - MessagePack
-* .bson - binaire JSON (MongoDB)
-* .cbor - binaire data
-* .pb - Protobuf-data / TensorFlow-model
+* .bson - binary JSON (MongoDB)
+* .cbor - binary data
+* .pb - Protobuf data / TensorFlow model
 
 AI & machine learning
-* .gguf - lokaal taalmodel (llama.cpp, Ollama)
-* .ggml - lokaal taalmodel (oud)
-* .safetensors - modelgewichten
-* .pt / .pth - PyTorch-model
+* .gguf - local language model (llama.cpp, Ollama)
+* .ggml - local language model (old)
+* .safetensors - model weights
+* .pt / .pth - PyTorch model
 * .ckpt - checkpoint
-* .onnx - uitwisselbaar model
-* .keras - Keras-model
-* .tflite - TensorFlow Lite (mobiel)
+* .onnx - portable model
+* .keras - Keras model
+* .tflite - TensorFlow Lite (mobile)
 * .mlmodel / .mlpackage - Core ML (Apple)
 
 Databases
-* .mdf - SQL Server-data
-* .frm - MySQL-tabel
-* .db - database (algemeen)
+* .mdf - SQL Server data
+* .frm - MySQL table
+* .db - database (generic)
 * .sqlite / .sqlite3 / .db3 - SQLite
 * .duckdb - DuckDB
-* .ibd / .myd / .myi - MySQL-tabelbestanden
-* .ndf - SQL Server-data
-* .ldf - SQL Server-transactielog
-* .bak - SQL Server-backup (ook algemene backup)
-* .bacpac - Azure SQL-export (schema + data)
-* .dacpac - SQL Server-schema-pakket
-* .dbf - dBase (ook shapefile-attributen)
+* .ibd / .myd / .myi - MySQL table files
+* .ndf - SQL Server data
+* .ldf - SQL Server transaction log
+* .bak - SQL Server backup (also generic backup)
+* .bacpac - Azure SQL export (schema + data)
+* .dacpac - SQL Server schema package
+* .dbf - dBase (also shapefile attributes)
 * .fdb / .gdb - Firebird
 * .fp7 / .fmp12 - FileMaker
-* .realm - Realm (mobiel)
-* .dump - databasedump
-* .rdb / .aof - Redis-opslag
-* .kdbx / .kdb - KeePass-wachtwoordkluis
-* .1pux - 1Password-export
+* .realm - Realm (mobile)
+* .dump - database dump
+* .rdb / .aof - Redis storage
+* .kdbx / .kdb - KeePass password vault
+* .1pux - 1Password export
 
-Netwerk & ICT
-* .conf - WireGuard-configuratie
-* .pcap / .pcapng / .cap - netwerkcapture (Wireshark)
-* .ovpn - OpenVPN-profiel
-* .vnc - VNC-verbinding
-* .pac - proxy-autoconfiguratie
-* .mib - SNMP-MIB
+Network & IT
+* .conf - WireGuard configuration
+* .pcap / .pcapng / .cap - network capture (Wireshark)
+* .ovpn - OpenVPN profile
+* .vnc - VNC connection
+* .pac - proxy auto-configuration
+* .mib - SNMP MIB
 * .pkt - Cisco Packet Tracer
-* .gns3 - GNS3-netwerklab
-* .unl - EVE-NG-lab
+* .gns3 - GNS3 network lab
+* .unl - EVE-NG lab
 
-Beveiliging & certificaten
-* .key - privésleutel (ook Keynote)
-* .pub - publieke SSH-sleutel
-* .pem - certificaat/sleutel (tekst)
-* .crt / .cer - certificaat
-* .der - certificaat (binair)
-* .csr - certificaataanvraag
-* .crl - intrekkingslijst
-* .p7b / .p7c - certificaatketen
-* .p7s - digitale handtekening
-* .p12 / .pfx - certificaat + privésleutel
-* .p8 - Apple-API-sleutel
-* .jks / .keystore - Java-sleutelopslag
-* .sst - Windows-certificaatexport
-* .spc - codesigning-certificaat
-* .snk - .NET-sterke-naamsleutel
-* .gpg / .pgp - versleuteld bestand
-* .asc - PGP-sleutel/-handtekening (tekst; ook LTspice)
-* .sig - handtekening
-* .ppk - PuTTY-sleutel
-* .md5 / .sha1 / .sha256 - controlesom
-* .sfv - controlesom (CRC)
+Security & certificates
+* .key - private key (also Keynote)
+* .pub - public SSH key
+* .pem - certificate/key (text)
+* .crt / .cer - certificate
+* .der - certificate (binary)
+* .csr - certificate signing request
+* .crl - revocation list
+* .p7b / .p7c - certificate chain
+* .p7s - digital signature
+* .p12 / .pfx - certificate + private key
+* .p8 - Apple API key
+* .jks / .keystore - Java key store
+* .sst - Windows certificate export
+* .spc - code-signing certificate
+* .snk - .NET strong-name key
+* .gpg / .pgp - encrypted file
+* .asc - PGP key/signature (text; also LTspice)
+* .sig - signature
+* .ppk - PuTTY key
+* .md5 / .sha1 / .sha256 - checksum
+* .sfv - checksum (CRC)
 
-3D-printen, CNC & laser
-* .stl - 3D-model (printen)
-* .nc - CNC-G-code
-* .3mf - 3D-printproject (model + instellingen)
-* .obj - 3D-model
-* .mtl - materialen bij .obj
+3D printing, CNC & laser
+* .stl - 3D model (printing)
+* .nc - CNC G-code
+* .3mf - 3D print project (model + settings)
+* .obj - 3D model
+* .mtl - materials for .obj
 * .amf - Additive Manufacturing Format
-* .ply - 3D-model / 3D-scan
-* .gcode / .gco / .g - printerinstructies
-* .bgcode - binaire G-code (Prusa)
-* .ufp - Ultimaker-printpakket
+* .ply - 3D model / 3D scan
+* .gcode / .gco / .g - printer instructions
+* .bgcode - binary G-code (Prusa)
+* .ufp - Ultimaker print package
 * .x3g / .makerbot - MakerBot
 * .gx - Flashforge
-* .ctb / .cbddlp / .photon - resinprinter
+* .ctb / .cbddlp / .photon - resin printer
 * .lys - Lychee Slicer
-* .chitubox - Chitubox-project
-* .ngc / .tap - CNC-G-code
+* .chitubox - Chitubox project
+* .ngc / .tap - CNC G-code
 * .lbrn / .lbrn2 - LightBurn (laser)
-* .studio3 - Silhouette-snijplotter
-* .pes - Brother-borduurpatroon
-* .dst - Tajima-borduurpatroon
-* .jef - Janome-borduurpatroon
+* .studio3 - Silhouette cutting plotter
+* .pes - Brother embroidery pattern
+* .dst - Tajima embroidery pattern
+* .jef - Janome embroidery pattern
 * .scad - OpenSCAD
 * .fcstd - FreeCAD
 
 CAD & BIM
 * .f3d / .f3z - Fusion
-* .step / .stp - CAD-uitwisseling
-* .iges / .igs - CAD-uitwisseling (oud)
+* .step / .stp - CAD exchange
+* .iges / .igs - CAD exchange (old)
 * .x_t / .x_b - Parasolid
 * .sat - ACIS
 * .jt - Siemens JT
-* .sldprt / .sldasm / .slddrw - SolidWorks (onderdeel/assemblage/tekening)
+* .sldprt / .sldasm / .slddrw - SolidWorks (part/assembly/drawing)
 * .ipt / .iam / .idw / .ipn - Inventor
-* .prt - NX / Creo-onderdeel
-* .asm - Creo-assemblage (ook assembly-code)
+* .prt - NX / Creo part
+* .asm - Creo assembly (also assembly code)
 * .catpart / .catproduct / .catdrawing - CATIA
 * .par / .psm - Solid Edge
-* .dwg - AutoCAD-tekening
-* .dxf - CAD-uitwisseling / laservector
-* .dwt - AutoCAD-sjabloon
-* .dwf / .dwfx - AutoCAD-publicatie
+* .dwg - AutoCAD drawing
+* .dxf - CAD exchange / laser vector
+* .dwt - AutoCAD template
+* .dwf / .dwfx - AutoCAD publication
 * .dgn - MicroStation
 * .rvt / .rfa / .rte - Revit
-* .ifc - BIM-uitwisseling
+* .ifc - BIM exchange
 * .skp - SketchUp
 * .3dm - Rhino
 * .pln - ArchiCAD
 * .vwx - Vectorworks
 
-3D & animatie
-* .3ds - 3D Studio (oud)
-* .stl - 3D-model
-* .obj - 3D-model
-* .ply - 3D-model
+3D & animation
+* .3ds - 3D Studio (old)
+* .stl - 3D model
+* .obj - 3D model
+* .ply - 3D model
 * .blend - Blender
-* .blend1 - Blender-backup
-* .fbx - 3D-uitwisseling (met animatie)
+* .blend1 - Blender backup
+* .fbx - 3D exchange (with animation)
 * .dae - Collada
-* .gltf / .glb - 3D voor web/AR
+* .gltf / .glb - 3D for web/AR
 * .usd / .usda / .usdc - Universal Scene Description
-* .usdz - Apple AR-model
-* .abc - Alembic (animatiecache)
+* .usdz - Apple AR model
+* .abc - Alembic (animation cache)
 * .max - 3ds Max
 * .ma / .mb - Maya
 * .c4d - Cinema 4D
@@ -968,138 +968,138 @@ CAD & BIM
 * .spp - Substance Painter
 * .sbs / .sbsar - Substance Designer
 * .vox - MagicaVoxel
-* .x3d / .wrl / .vrml - web-3D
+* .x3d / .wrl / .vrml - web 3D
 * .pmx / .pmd - MikuMikuDance
-* .vrm - VR-avatar
+* .vrm - VR avatar
 * .bvh - motion capture
-* .e57 / .las / .laz / .pts / .xyz - 3D-scan / puntenwolk
+* .e57 / .las / .laz / .pts / .xyz - 3D scan / point cloud
 
-Elektronica & firmware
-* .bin - binaire firmware / data
-* .asc - LTspice-schema
+Electronics & firmware
+* .bin - binary firmware / data
+* .asc - LTspice schematic
 * .kicad_pcb / .kicad_sch / .kicad_pro - KiCad
-* .sch / .brd - Eagle-schema / -printplaat
+* .sch / .brd - Eagle schematic / board
 * .schdoc / .pcbdoc - Altium
 * .fzz - Fritzing
-* .gbr / .gtl / .gbl / .gto - Gerber (printplaatproductie)
-* .drl / .xln - boorbestand printplaat
-* .cir / .sp / .net - SPICE-simulatie
-* .hex - Intel HEX-firmware
-* .uf2 - microcontroller-firmware (drag & drop)
-* .srec / .s19 - Motorola S-record-firmware
-* .dfu - firmware-update (USB DFU)
+* .gbr / .gtl / .gbl / .gto - Gerber (PCB manufacturing)
+* .drl / .xln - PCB drill file
+* .cir / .sp / .net - SPICE simulation
+* .hex - Intel HEX firmware
+* .uf2 - microcontroller firmware (drag & drop)
+* .srec / .s19 - Motorola S-record firmware
+* .dfu - firmware update (USB DFU)
 
-Wetenschap & medisch
-* .vcf - genetische varianten (ook contacten)
-* .pdb - eiwitstructuur
-* .nc - NetCDF (klimaat/weer)
-* .dcm - DICOM (medische beelden)
-* .nii - MRI-/hersenscan
-* .edf - EEG / slaapmeting
-* .fits - astronomie
-* .fasta / .fa - DNA-/eiwitsequentie
-* .fastq - sequencingdata
-* .sam / .bam - DNA-uitlijning
-* .gff / .gtf - genannotatie
-* .bed - genoomregio's
-* .cif / .mmcif - kristal-/eiwitstructuur
-* .mol / .mol2 / .sdf - molecuul
-* .mzml - massaspectrometrie
-* .opj - Origin-project
+Science & medical
+* .vcf - genetic variants (also contacts)
+* .pdb - protein structure
+* .nc - NetCDF (climate/weather)
+* .dcm - DICOM (medical images)
+* .nii - MRI/brain scan
+* .edf - EEG / sleep study
+* .fits - astronomy
+* .fasta / .fa - DNA/protein sequence
+* .fastq - sequencing data
+* .sam / .bam - DNA alignment
+* .gff / .gtf - gene annotation
+* .bed - genome regions
+* .cif / .mmcif - crystal/protein structure
+* .mol / .mol2 / .sdf - molecule
+* .mzml - mass spectrometry
+* .opj - Origin project
 
-GPS, kaarten & sport
-* .gpx - GPS-route / -track
-* .dbf - shapefile-attributen
-* .fit - Garmin-activiteit
+GPS, maps & sport
+* .gpx - GPS route / track
+* .dbf - shapefile attributes
+* .fit - Garmin activity
 * .tcx - Garmin Training Center
 * .kml / .kmz - Google Earth
 * .geojson / .topojson - geodata (web)
 * .shp / .shx / .prj - shapefile (GIS)
 * .gpkg - GeoPackage
 * .osm - OpenStreetMap
-* .mbtiles / .pmtiles - kaarttegels
-* .igc - zweefvliegtrack
-* .ov2 - TomTom-POI
-* .itn - TomTom-route
+* .mbtiles / .pmtiles - map tiles
+* .igc - gliding track
+* .ov2 - TomTom POI
+* .itn - TomTom route
 * .loc - geocaching
 
-Financieel & administratie
-* .cod - CODA-bankafschrift (België)
-* .sta / .940 - MT940-bankafschrift
-* .ofx / .qfx - bankexport
+Finance & administration
+* .cod - CODA bank statement (Belgium)
+* .sta / .940 - MT940 bank statement
+* .ofx / .qfx - bank export
 * .qif - Quicken
-* .qbo - QuickBooks-bankexport
-* .qbw - QuickBooks-bedrijfsbestand
-* .xbrl - financiële rapportering (jaarrekening)
+* .qbo - QuickBooks bank export
+* .qbw - QuickBooks company file
+* .xbrl - financial reporting (annual accounts)
 
-Printen
-* .prn - printbestand
+Printing
+* .prn - print file
 * .pcl - Printer Command Language
-* .ppd - PostScript-printerbeschrijving
-* .spl / .shd - Windows-printspool
+* .ppd - PostScript printer description
+* .spl / .shd - Windows print spool
 
-Games & emulatie
-* .md - Sega Mega Drive (ook Markdown)
-* .bin - cd-image of cartridge
-* .nes - NES-ROM
-* .sfc / .smc - SNES-ROM
-* .n64 / .z64 / .v64 - N64-ROM
+Games & emulation
+* .md - Sega Mega Drive (also Markdown)
+* .bin - CD image or cartridge
+* .nes - NES ROM
+* .sfc / .smc - SNES ROM
+* .n64 / .z64 / .v64 - N64 ROM
 * .gb / .gbc - Game Boy (Color)
 * .gba - Game Boy Advance
 * .nds - Nintendo DS
-* .3ds / .cia - Nintendo 3DS (.3ds ook 3D Studio)
+* .3ds / .cia - Nintendo 3DS (.3ds also 3D Studio)
 * .nsp / .xci / .nsz - Nintendo Switch
 * .rvz / .wbfs - GameCube/Wii
-* .wad - Wii-kanaal / Doom-levels
+* .wad - Wii channel / Doom levels
 * .cso / .pbp - PSP
-* .chd - gecomprimeerde disc (MAME/PS1/PS2)
+* .chd - compressed disc (MAME/PS1/PS2)
 * .xex - Xbox 360
 * .xbe - Xbox
-* .gen / .smd - Sega Mega Drive (.md is ook Markdown)
+* .gen / .smd - Sega Mega Drive (.md is also Markdown)
 * .sms - Sega Master System
 * .gg - Game Gear
 * .pce - PC Engine
 * .a26 - Atari 2600
 * .lnx - Atari Lynx
 * .ws / .wsc - WonderSwan
-* .rom - ROM (algemeen)
-* .srm - SNES-savegame
-* .mcr - PS1-geheugenkaart
-* .pak - game-assets
-* .vpk - Valve-pakket
-* .bsp - gamemap (Source/Quake)
-* .pk3 - Quake 3-pakket
-* .unitypackage - Unity-pakket
-* .unity - Unity-scène
-* .prefab - Unity-prefab
-* .uasset / .umap - Unreal-asset / -map
-* .upk - Unreal-pakket (oud)
-* .esp / .esm / .esl - Bethesda-mod (Skyrim, Fallout)
-* .bsa / .ba2 - Bethesda-archief
-* .rpa - Ren'Py-archief
-* .tscn / .tres - Godot-scène / -resource
-* .pck - Godot-export
-* .yyp - GameMaker-project
-* .dem - demo-opname (CS, TF2)
-* .rofl - League of Legends-replay
+* .rom - ROM (generic)
+* .srm - SNES save game
+* .mcr - PS1 memory card
+* .pak - game assets
+* .vpk - Valve package
+* .bsp - game map (Source/Quake)
+* .pk3 - Quake 3 package
+* .unitypackage - Unity package
+* .unity - Unity scene
+* .prefab - Unity prefab
+* .uasset / .umap - Unreal asset / map
+* .upk - Unreal package (old)
+* .esp / .esm / .esl - Bethesda mod (Skyrim, Fallout)
+* .bsa / .ba2 - Bethesda archive
+* .rpa - Ren'Py archive
+* .tscn / .tres - Godot scene / resource
+* .pck - Godot export
+* .yyp - GameMaker project
+* .dem - demo recording (CS, TF2)
+* .rofl - League of Legends replay
 * .osz / .osk / .osr - osu! (beatmap/skin/replay)
-* .mca - Minecraft-regio
-* .mcworld - Minecraft Bedrock-wereld
-* .mcpack / .mcaddon - Minecraft Bedrock-addon
-* .mcfunction - Minecraft-functie
-* .nbt - Minecraft-data
-* .schem / .schematic / .litematic - Minecraft-bouwwerk
+* .mca - Minecraft region
+* .mcworld - Minecraft Bedrock world
+* .mcpack / .mcaddon - Minecraft Bedrock add-on
+* .mcfunction - Minecraft function
+* .nbt - Minecraft data
+* .schem / .schematic / .litematic - Minecraft build
 
-Downloads, tijdelijk & overig
+Downloads, temporary & other
 * .bak - backup
-* .dat - data (algemeen)
+* .dat - data (generic)
 * .torrent - torrent
-* .nzb - Usenet-download
-* .par2 - pariteit/herstel
-* .crdownload - onvolledige download (Chrome)
-* .part / .partial - onvolledige download (Firefox/Edge)
-* .download - onvolledige download (Safari)
-* .!ut / .!qb - onvolledige torrent
-* .tmp / .temp - tijdelijk bestand
+* .nzb - Usenet download
+* .par2 - parity/recovery
+* .crdownload - incomplete download (Chrome)
+* .part / .partial - incomplete download (Firefox/Edge)
+* .download - incomplete download (Safari)
+* .!ut / .!qb - incomplete torrent
+* .tmp / .temp - temporary file
 * .old - backup
 * .cache - cache
