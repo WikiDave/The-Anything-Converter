@@ -120,7 +120,7 @@ def main():
             if job["status"] in ("done", "error"):
                 break
             time.sleep(1)
-        assert "geldig" in (job.get("error") or ""), f"torrent module does not work: {job.get('error')}"
+        assert "valid" in (job.get("error") or ""), f"torrent module does not work: {job.get('error')}"
         print("  ok: libtorrent aanwezig")
         call("/api/quit", {})
         proc.wait(timeout=30)

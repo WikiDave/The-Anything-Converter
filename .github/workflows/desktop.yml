@@ -126,8 +126,10 @@ jobs:
             STAGE="$RUNNER_TEMP/brew-stage"
             rm -rf "$STAGE" && mkdir -p "$STAGE" && cp -R "$DIR" "$STAGE/"
             APP="$STAGE/$(basename "$DIR")"
-            LONG="/opt/homebrew/opt/anything-converter/libexec/AnythingConverter.app/Contents/Resources/lib/a/very/long/path/to/make/sure/there/is/room/for/homebrew/relocation/xxxxxxxxxxxxxxxxxxxxxxxx.dylib"
             find "$APP" -type f \( -name "*.dylib" -o -name "*.so" \) | while read -r f; do
+              [ -f "$f" ] || continue   # already left out together with its module
+              # the exact new id Homebrew gives it (Apple Silicon prefix, the longest)
+              LONG="/opt/homebrew/opt/anything-converter/libexec/AnythingConverter.app/${f#*.app/}"
               t="$RUNNER_TEMP/padtest"; cp "$f" "$t"; chmod u+w "$t"
               if ! install_name_tool -id "$LONG" "$t" 2>/dev/null; then
                 pkg=$(echo "$f" | sed -n 's#.*/Resources/lib/\([^/]*\)/.*#\1#p')
