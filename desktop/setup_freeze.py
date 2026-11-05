@@ -35,6 +35,8 @@ if (HERE / "bin").is_dir() and any((HERE / "bin").iterdir()):
 # Programmavenster (pywebview). Als bronbestand naast het programma: op Linux start de systeem-Python
 # het (die heeft de GTK/WebKit-koppeling), met pywebview als bronbestanden in pyweb/.
 include_files.append((str(HERE / "window.py"), "window.py"))
+# catalogus met omschrijvingen van ~1000 formaten (gelezen door converter/catalog.py)
+include_files.append((str(ROOT / "converter" / "formaten.txt"), "lib/converter/formaten.txt"))
 
 
 def pkg_dir(name: str) -> Path | None:
@@ -60,20 +62,24 @@ PACKAGES = ["converter", "textual", "rich", "flask", "werkzeug", "jinja2", "mark
             "blinker", "PIL", "pikepdf", "yt_dlp", "yt_dlp_ejs", "certifi", "libtorrent",
             "webview", "proxy_tools", "bottle", "typing_extensions",
             # PDF-gereedschap, Office-bestanden, 7z, spraakherkenning
-            "pymupdf", "fitz", "docx", "openpyxl", "pptx", "lxml", "py7zr", "numpy", "pywhispercpp", "yaml"]
+            "pymupdf", "fitz", "docx", "openpyxl", "pptx", "lxml", "py7zr", "numpy", "pywhispercpp", "yaml",
+            # bestandsformaten uit de catalogus
+            "rawpy", "pillow_heif", "fontTools", "brotli", "trimesh", "ezdxf", "pydicom", "extract_msg", "tnefparse",
+            "cryptography", "asn1crypto", "fitdecode", "zstandard", "lz4", "pefile", "pygments"]
 if sys.platform == "win32":
     PACKAGES += ["clr_loader", "pythonnet", "winrt"]  # winrt: Windows-tekstherkenning
 elif sys.platform == "darwin":
     PACKAGES += ["objc", "AppKit", "Foundation", "WebKit", "PyObjCTools", "UniformTypeIdentifiers", "Vision", "Quartz"]
 # niet op elk platform beschikbaar
-OPTIONAL = {"pikepdf", "libtorrent", "UniformTypeIdentifiers", "pywhispercpp", "winrt", "Vision", "Quartz"}
+OPTIONAL = {"pikepdf", "libtorrent", "UniformTypeIdentifiers", "pywhispercpp", "winrt", "Vision", "Quartz", "rawpy",
+            "pillow_heif", "extract_msg", "tnefparse", "fitdecode", "zstandard", "lz4", "brotli"}
 
 build_exe = {
     "packages": [p for p in PACKAGES if p not in OPTIONAL or importlib.util.find_spec(p)],
     "includes": ["app", "window"] + (["clr"] if sys.platform == "win32" else [])
                 + (["_pywhispercpp"] if importlib.util.find_spec("_pywhispercpp") else []),
     "include_files": include_files,
-    "excludes": ["tkinter", "unittest", "pytest", "test", "pydoc_data", "cx_Freeze", "fontTools", "matplotlib", "pandas", "scipy", "IPython", "setuptools", "pip"],
+    "excludes": ["tkinter", "unittest", "pytest", "test", "pydoc_data", "cx_Freeze", "matplotlib", "pandas", "scipy", "IPython", "setuptools", "pip"],
     "include_msvcr": True,
     "optimize": 1,
 }

@@ -46,7 +46,18 @@ class Job:
 
 
 def run_conversion(src: Path, out_dir: Path, category: str, opts: dict, progress=None) -> Path:
+    from . import families
+    from .detect import analyse_path, extension
     fmt = (opts.get("format") or "").lower()
+    real_cat, eff = analyse_path(src)
+    if category in families.FAMILY_LABELS or real_cat in families.FAMILY_LABELS:
+        return families.process(src, out_dir, real_cat if real_cat in families.FAMILY_LABELS else category, eff, opts,
+                                progress)
+    if eff and eff != extension(src):  # bijv. film.mp4.crdownload: behandelen als .mp4
+        src = families.with_ext(src, eff, out_dir / "_in")
+    if category == "spreadsheet" and eff in ("csv", "tsv") and fmt in ("json", "yaml", "xml", "txt", "toml", "html"):
+        from . import datafmt
+        return datafmt.convert(src, out_dir, fmt, opts)
     if category in ("video", "audio") and fmt in transcribe.TEXT_FORMATS:
         from .util import parse_time
         start = parse_time(opts.get("trim_start")) or 0.0

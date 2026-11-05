@@ -138,8 +138,68 @@
           <a id="saveSrc" class="btn hidden" href="#" download>[ ↓ OPSLAAN ]</a>
           <button id="scanBtn" class="btn" type="button">[ VIRUSSCAN ]</button>
           <button id="hashBtn" class="btn" type="button" title="MD5, SHA-1, SHA-256, CRC-32 en meer">[ CHECKSUM ]</button>
+          <button id="editBtn" class="btn hidden" type="button" title="Tekst bewerken">[ BEWERKEN ]</button>
+          <button id="dbBtn" class="btn hidden" type="button" title="Tabellen bekijken en SQL uitvoeren">[ DATABASE ]</button>
           <button id="resetBtn" class="btn" type="button">[ ANDER BESTAND ]</button>
         </span>
+      </div>
+    </fieldset>
+
+    <!-- Teksteditor -->
+    <fieldset id="editBox" class="frame hidden">
+      <legend>TEKSTEDITOR</legend>
+      <div class="ed-bar">
+        <span id="edInfo" class="dim small"></span>
+        <span>
+          <button id="edCheck" class="btn small" type="button">[ CONTROLEER ]</button>
+          <button id="edSave" class="btn small" type="button" title="ctrl+s">[ OPSLAAN ]</button>
+          <a id="edDownload" class="btn small" href="#" download>[ ↓ DOWNLOAD ]</a>
+          <button id="edClose" class="btn small" type="button">[ SLUIT ]</button>
+        </span>
+      </div>
+      <div class="ed-wrap"><pre id="edLines" class="ed-lines" aria-hidden="true"></pre><textarea id="edText" spellcheck="false" wrap="off"></textarea></div>
+      <p id="edMsg" class="dim small">// opslaan bewaart de werkkopie (daarna kun je hem ook omzetten). je origineel verandert niet.</p>
+    </fieldset>
+
+    <!-- Databasetester -->
+    <fieldset id="dbBox" class="frame hidden">
+      <legend>DATABASE</legend>
+      <div class="db-grid">
+        <div class="db-side">
+          <p class="dim small">// tabellen</p>
+          <ul id="dbTables" class="db-tables"></ul>
+          <button id="dbClose" class="btn small" type="button">[ SLUIT ]</button>
+        </div>
+        <div class="db-main">
+          <div class="db-view">
+            <p id="dbTitle" class="dim small"></p>
+            <div id="dbRows" class="db-rows"></div>
+            <p class="db-pager"><button id="dbPrev" class="btn small" type="button">[ ◀ ]</button> <span id="dbPage" class="dim small"></span> <button id="dbNext" class="btn small" type="button">[ ▶ ]</button></p>
+          </div>
+          <label class="dim small" for="dbSql">// sql (ctrl+enter = uitvoeren). meerdere opdrachten mogen, gescheiden door ;</label>
+          <textarea id="dbSql" rows="5" spellcheck="false" placeholder="SELECT * FROM tabel LIMIT 10;"></textarea>
+          <p class="db-actions">
+            <button id="dbRun" class="btn small" type="button">[ ▶ UITVOEREN ]</button>
+            <span class="sel"><select id="dbExamples"><option value="">voorbeelden…</option>
+              <option value="CREATE TABLE klanten (id INTEGER PRIMARY KEY, naam TEXT NOT NULL, plaats TEXT, sinds DATE);">tabel maken</option>
+              <option value="INSERT INTO klanten (naam, plaats, sinds) VALUES ('Anna', 'Utrecht', '2024-03-01'), ('Bo', 'Gent', '2025-11-12');">rijen toevoegen</option>
+              <option value="SELECT plaats, COUNT(*) AS aantal FROM klanten GROUP BY plaats ORDER BY aantal DESC;">groeperen en tellen</option>
+              <option value="UPDATE klanten SET plaats = 'Amsterdam' WHERE naam = 'Anna';">rij wijzigen</option>
+              <option value="DELETE FROM klanten WHERE id = 2;">rij verwijderen</option>
+              <option value="ALTER TABLE klanten ADD COLUMN email TEXT;">kolom toevoegen</option>
+              <option value="SELECT name, sql FROM sqlite_master WHERE type = 'table';">structuur bekijken</option>
+            </select></span>
+            <span class="sel"><select id="dbExportFmt">
+              <option value="sqlite">database (.sqlite)</option><option value="sql">sql-dump</option>
+              <option value="xlsx">excel (alle tabellen)</option><option value="json">json</option>
+              <option value="csv">csv</option><option value="html">html</option>
+              <option value="q-csv">resultaat als csv</option><option value="q-xlsx">resultaat als excel</option>
+            </select></span>
+            <button id="dbExport" class="btn small" type="button">[ ↓ EXPORT ]</button>
+          </p>
+          <p id="dbMsg" class="dim small">// je werkt op een kopie: het originele bestand verandert niet.</p>
+          <div id="dbResult" class="db-rows"></div>
+        </div>
       </div>
     </fieldset>
 

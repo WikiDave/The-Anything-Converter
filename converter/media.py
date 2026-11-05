@@ -7,8 +7,9 @@ from typing import Optional
 
 from .util import NO_WINDOW, ConversionError, ProgressFn, ffprobe, parse_time, human_size
 
-AUDIO_ONLY = {"mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "aiff", "wma", "m4r", "mmf"}
-LOSSLESS_AUDIO = {"wav", "flac", "aiff"}
+AUDIO_ONLY = {"mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "aiff", "wma", "m4r", "mmf", "ac3", "eac3", "wv",
+              "tta", "au", "caf", "mka", "m4b", "spx", "alac"}
+LOSSLESS_AUDIO = {"wav", "flac", "aiff", "wv", "tta", "au", "alac"}
 FIXED_AUDIO = LOSSLESS_AUDIO | {"mmf"}  # geen bitrate te kiezen
 
 AUDIO_CODEC = {
@@ -23,9 +24,20 @@ AUDIO_CODEC = {
     "wma": ["-c:a", "wmav2"],
     "m4r": ["-c:a", "aac", "-f", "ipod"],  # iPhone-beltoon
     "mmf": ["-c:a", "adpcm_yamaha", "-ar", "8000", "-ac", "1"],  # beltoon (Yamaha SMAF)
+    "ac3": ["-c:a", "ac3"],
+    "eac3": ["-c:a", "eac3"],
+    "wv": ["-c:a", "wavpack"],
+    "tta": ["-c:a", "tta"],
+    "au": ["-c:a", "pcm_s16be"],
+    "caf": ["-c:a", "alac"],
+    "mka": ["-c:a", "libopus"],
+    "m4b": ["-c:a", "aac", "-f", "ipod"],  # audioboek
+    "spx": ["-c:a", "libspeex", "-ar", "16000", "-ac", "1"],
+    "alac": ["-c:a", "alac", "-f", "ipod"],
 }
 AUDIO_LIMITS = {"mp3": (8, 320), "m4a": (16, 512), "aac": (16, 512), "ogg": (45, 500), "opus": (6, 510),
-                "wma": (32, 320), "m4r": (16, 512)}
+                "wma": (32, 320), "m4r": (16, 512), "ac3": (64, 640), "eac3": (32, 1536), "mka": (6, 510),
+                "m4b": (16, 512), "spx": (4, 44)}
 
 VIDEO_CODEC = {
     "mp4": ("libx264", "aac"),
@@ -39,6 +51,12 @@ VIDEO_CODEC = {
     "mpg": ("mpeg2video", "mp2"),
     "ogv": ("libtheora", "libvorbis"),
     "wmv": ("wmv2", "wmav2"),
+    "asf": ("wmv2", "wmav2"),
+    "m4v": ("libx264", "aac"),
+    "ts": ("libx264", "aac"),
+    "m2ts": ("libx264", "ac3"),
+    "divx": ("mpeg4", "libmp3lame"),
+    "mxf": ("mpeg2video", "pcm_s16le"),
 }
 # Apparaat-presets: maximale hoogte en H.264-profiel/-niveau dat het apparaat zeker afspeelt
 DEVICES = {
@@ -48,8 +66,13 @@ DEVICES = {
     "wii": (480, "baseline", "3.0"), "blackberry": (480, "baseline", "3.0"), "kindle-fire": (720, "main", "3.1"),
 }
 
+# Extra muxer-opties per uitvoerformaat
+VIDEO_EXTRA = {"divx": ["-f", "avi"], "mxf": ["-r", "25", "-ar", "48000"], "m2ts": ["-f", "mpegts"],
+               "ts": ["-f", "mpegts"], "asf": ["-f", "asf"]}
+
 # Codecs zonder CRF: vaste kwaliteit via -q:v (theora: hoger = beter, de rest: lager = beter)
 QSCALE = {"mpeg2video": {"high": 3, "medium": 5, "low": 9}, "wmv2": {"high": 3, "medium": 5, "low": 9},
+          "mpeg4": {"high": 3, "medium": 5, "low": 9},
           "libtheora": {"high": 8, "medium": 6, "low": 4}}
 CRF = {"libx264": {"high": 20, "medium": 24, "low": 30}, "libvpx-vp9": {"high": 31, "medium": 36, "low": 42}}
 AUDIO_KBPS = {"high": 192, "medium": 128, "low": 96}
@@ -147,7 +170,7 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
         trim_args += ["-t", f"{end - start:.3f}"]
 
     stem = src.stem + ("_bewerkt" if fmt == src.suffix.lstrip(".").lower() else "")
-    dst = out_dir / f"{stem}.{fmt}"
+    dst = out_dir / f"{stem}.{ {'alac': 'm4a'}.get(fmt, fmt)}"
 
     target = opts.get("target_bytes")
     quality = opts.get("quality") or "medium"
@@ -192,7 +215,7 @@ def _audio(src, dst, fmt, trim_args, duration, target, quality, progress) -> Pat
         args += ["-b:a", f"{AUDIO_KBPS[quality]}k"]
     if fmt == "m4r" and duration > 40 and "-t" not in trim_args:
         args += ["-t", "40"]  # iPhone-beltonen mogen maximaal 40 seconden zijn
-    if fmt in ("m4a", "m4r"):
+    if fmt in ("m4a", "m4r", "m4b", "alac"):
         args += ["-movflags", "+faststart"]
     _run_ffmpeg([*args, str(dst)], duration, progress, label="Audio coderen")
     return dst
@@ -221,7 +244,7 @@ def _video(src, dst, fmt, trim_args, duration, info, opts, target, quality, prog
             common_v += ["-profile:v", device[1], "-level", device[2]]
     elif vcodec == "libvpx-vp9":
         common_v += ["-row-mt", "1", "-deadline", "good", "-cpu-used", "2"]
-    tail = ["-movflags", "+faststart"] if fmt in ("mp4", "mov") else []
+    tail = (["-movflags", "+faststart"] if fmt in ("mp4", "mov", "m4v") else []) + VIDEO_EXTRA.get(fmt, [])
 
     if not target:
         filters = _scale_filter(height)

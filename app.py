@@ -162,24 +162,32 @@ def archive_listing(path: Path) -> list[str]:
 
 def register_upload(uid: str, path: Path) -> dict:
     """Maak een bestand beschikbaar voor conversie en geef de info voor de interface."""
-    category = detect(path)
-    info = media_info(path) if category in ("video", "audio", "image") else {}
-    targets = TARGETS[category]
     from converter import rom
+    from converter.catalog import describe
+    from converter.detect import targets_for
     patches = [p for p in path.parent.iterdir() if p.suffix.lower().lstrip(".") in rom.PATCH_EXT and p != path]
-    if patches and category not in ("disc", "rom"):
-        category = "rom"  # bijv. een .bin-cartridge met een patch erbij
+    category, eff, targets = targets_for(path, patches)
+    info = media_info(path) if category in ("video", "audio", "image") and category != "rom" else {}
+    desc = describe(path)
+    if desc:
+        info = dict(info, kind=desc)
+    if eff and eff != extension(path):
+        info = dict(info, real_ext=eff)
     if category in ("disc", "rom"):
-        targets = rom.targets(path, category, patches)
         extra = [p.name for p in (rom.disc_files(path) if category == "disc" else [path, *patches])
                  if p != path]
         if extra:
             info = dict(info, files=extra)
-    uploads[uid] = {"path": path, "category": category}
+    uploads[uid] = {"path": path, "category": category, "targets": targets}
+    from converter import dbtool
+    try:
+        info = dict(info, edit=dbtool.can_edit(path, category), db=dbtool.can_open(path))
+    except OSError:
+        pass
     size = sum(p.stat().st_size for p in path.parent.iterdir() if p.is_file()) if category == "disc" \
         else path.stat().st_size
     return dict(id=uid, name=path.name, size=size, ext=extension(path), category=category,
-                label=LABELS[category], targets=targets, info=info)
+                label=LABELS.get(category, category), targets=targets, info=info)
 
 
 @app.post("/api/fetch")
@@ -251,6 +259,7 @@ def capabilities():
     """Welke extra hulpprogramma's zijn er (voor uitleg in de interface)."""
     from converter import ebook, ocr, pdftools, webshot
     from converter.document import have
+    from converter.unpack import sevenzip as sevenzip_tool
     speech_error = None
     try:
         import pywhispercpp.model  # noqa: F401
@@ -264,6 +273,7 @@ def capabilities():
         sevenzip = False
     return jsonify(ocr=ocr.engine(), calibre=bool(ebook.calibre()), pymupdf=pdftools.have_pymupdf(),
                    speech=speech, speech_error=speech_error, sevenzip=sevenzip,
+                   sevenzip_tool=bool(sevenzip_tool()),
                    libreoffice=have("soffice") or have("libreoffice"), chrome=bool(webshot.chromium()))
 
 
@@ -379,6 +389,126 @@ def uploaded_file(uid):
                      download_name=up["path"].name)
 
 
+# --------------------------------------------------------------------------- teksteditor
+
+@app.get("/api/text/<uid>")
+def text_get(uid):
+    from converter.textfmt import read_text
+    up = uploads.get(uid)
+    if not up or not up["path"].exists():
+        return jsonify(error="Bestand niet gevonden."), 404
+    if up["path"].stat().st_size > 5 * 1024 * 1024:
+        return jsonify(error="Te groot om hier te bewerken (max. 5 MB)."), 400
+    return jsonify(text=read_text(up["path"]), ext=extension(up["path"]), name=up["path"].name)
+
+
+@app.post("/api/text/<uid>")
+def text_save(uid):
+    """Bewerkte tekst opslaan in de werkkopie (het origineel op je computer verandert niet)."""
+    from converter.dbtool import validate
+    up = uploads.get(uid)
+    if not up or not up["path"].exists():
+        return jsonify(error="Bestand niet gevonden."), 404
+    data = request.get_json(force=True, silent=True) or {}
+    text = data.get("text")
+    if not isinstance(text, str):
+        return jsonify(error="Geen tekst ontvangen."), 400
+    problem = validate(text, extension(up["path"]))
+    if data.get("check"):
+        return jsonify(ok=problem is None, error=problem)
+    up["path"].write_text(text, encoding="utf-8", newline="")
+    (up["path"].parent / "_werk.sqlite").unlink(missing_ok=True)  # databasetester opnieuw laden
+    info = register_upload(uid, up["path"])
+    return jsonify(ok=True, warning=problem, size=up["path"].stat().st_size, upload=info)
+
+
+@app.post("/api/text/new")
+def text_new():
+    """Nieuw leeg tekstbestand (voor de editor), met de gekozen extensie."""
+    data = request.get_json(force=True, silent=True) or {}
+    name = safe_name(str(data.get("name") or "nieuw.txt"))
+    if "." not in name:
+        name += ".txt"
+    uid = uuid.uuid4().hex
+    folder = WORK / uid
+    folder.mkdir(parents=True)
+    path = folder / name
+    path.write_text("", encoding="utf-8")
+    return jsonify(register_upload(uid, path))
+
+
+# --------------------------------------------------------------------------- databasetester
+
+def _db_for(uid):
+    from converter import dbtool
+    up = uploads.get(uid)
+    if not up or not up["path"].exists():
+        raise ConversionError("Bestand niet gevonden.")
+    return dbtool.prepare(up["path"], up["path"].parent), up
+
+
+@app.post("/api/db/new")
+def db_new():
+    import sqlite3
+    uid = uuid.uuid4().hex
+    folder = WORK / uid
+    folder.mkdir(parents=True)
+    path = folder / "nieuwe-database.sqlite"
+    con = sqlite3.connect(path)
+    con.execute("pragma user_version = 1")  # schrijft de kop, zodat het een geldig bestand is
+    con.commit()
+    con.close()
+    return jsonify(register_upload(uid, path))
+
+
+@app.post("/api/db/<uid>/open")
+def db_open(uid):
+    from converter import dbtool
+    try:
+        db, up = _db_for(uid)
+        return jsonify(tables=dbtool.overview(db), name=up["path"].name)
+    except ConversionError as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.get("/api/db/<uid>/table")
+def db_table(uid):
+    from converter import dbtool
+    try:
+        db, _ = _db_for(uid)
+        return jsonify(dbtool.rows(db, request.args.get("name", ""), int(request.args.get("offset", 0) or 0)))
+    except (ConversionError, ValueError) as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.post("/api/db/<uid>/query")
+def db_query(uid):
+    from converter import dbtool
+    data = request.get_json(force=True, silent=True) or {}
+    try:
+        db, _ = _db_for(uid)
+        res = dbtool.query(db, str(data.get("sql") or ""))
+        return jsonify(result=res, tables=dbtool.overview(db))
+    except ConversionError as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.get("/api/db/<uid>/export")
+def db_export(uid):
+    import tempfile
+    from converter import dbtool
+    fmt = request.args.get("fmt", "sqlite")
+    if fmt not in ("sqlite", "sql", "xlsx", "json", "csv", "html"):
+        return jsonify(error="Onbekend formaat."), 400
+    try:
+        db, up = _db_for(uid)
+        out_dir = Path(tempfile.mkdtemp(prefix="db-export-", dir=WORK))
+        dst = dbtool.export(db, fmt, out_dir, up["path"].name, request.args.get("sql") or None)
+    except ConversionError as e:
+        return jsonify(error=str(e)), 400
+    return send_file(dst, as_attachment=True, download_name=dst.name)
+
+
 @app.post("/api/convert")
 def convert():
     data = request.get_json(force=True, silent=True) or {}
@@ -392,7 +522,7 @@ def convert():
         opts.pop("target_unit", None)
     except ConversionError as exc:
         return jsonify(error=str(exc)), 400
-    if opts.get("format") and opts["format"] not in TARGETS[up["category"]]:
+    if opts.get("format") and opts["format"] not in up.get("targets", TARGETS.get(up["category"], [])):
         return jsonify(error=f"Formaat .{opts['format']} is niet mogelijk voor dit bestand."), 400
     job = jobs.submit(up["path"], up["category"], opts)
     return jsonify(job.public())

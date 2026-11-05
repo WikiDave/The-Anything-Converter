@@ -63,6 +63,19 @@ def convert(src: Path, out_dir: Path, fmt: str, opts: dict, progress: Optional[P
         return dst
     if fmt == "epub" and ext in ("txt", "html", "htm", "md", "markdown", "docx"):
         return write_epub(src, dst)
+    if fmt in ("epub", "fb2") and ext in ("doc", "odt", "rtf", "wpd", "wps", "docm", "dot", "dotx", "dotm", "ott",
+                                          "sxw", "pages", "pdf"):
+        # eerst naar Word (LibreOffice of PyMuPDF), dan zelf een e-book maken
+        from .document import process as doc_process
+        tmp_dir = out_dir / "_docx"
+        tmp_dir.mkdir(exist_ok=True)
+        cat = "pdf" if ext == "pdf" else "document"
+        docx = doc_process(src, tmp_dir, cat, {"format": "docx"}, progress)
+        if fmt == "epub":
+            return write_epub(docx, dst)
+        if have("pandoc"):
+            run(["pandoc", str(docx), "-o", str(dst), "--standalone"], timeout=600)
+            return dst
     raise ConversionError(f".{ext} naar .{fmt} heeft Calibre nodig (gratis, calibre-ebook.com). "
                           "Na installeren werkt het vanzelf.")
 

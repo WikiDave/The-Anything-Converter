@@ -56,7 +56,7 @@ def _safe_extract(src: Path, dest: Path) -> None:
 
 def _pack(items: list[Path], base: Path, dst: Path, fmt: str, level: int) -> None:
     if fmt == "zip":
-        with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED, compresslevel=level) as z:
+        with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED, compresslevel=level, strict_timestamps=False) as z:
             for item in items:
                 if item.is_dir():
                     for f in sorted(item.rglob("*")):
