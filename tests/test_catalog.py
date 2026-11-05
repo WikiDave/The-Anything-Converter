@@ -7,7 +7,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from formaten_rapport import make_sample  # noqa: E402
+from formats_report import make_sample  # noqa: E402
 
 from converter.catalog import catalog, describe  # noqa: E402
 from converter.detect import analyse_path, targets_for  # noqa: E402

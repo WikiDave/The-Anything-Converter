@@ -1,6 +1,6 @@
 """Test files: make a small sample of (almost) any file type, to try what the converter does with it.
 
-Used by the app (the TEST FILES drop-down) and by tools/formaten_rapport.py (the full format run).
+Used by the app (the TEST FILES drop-down) and by tools/formats_report.py (the full format run).
 """
 from __future__ import annotations
 
