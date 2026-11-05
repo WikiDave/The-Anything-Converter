@@ -32,8 +32,8 @@ def _open_any(src: Path, work: Path) -> Image.Image:
             with rawpy.imread(str(src)) as raw:
                 rgb = raw.postprocess(use_camera_wb=True, no_auto_bright=False, output_bps=8)
             return Image.fromarray(rgb)
-        except ImportError as e:
-            raise ConversionError("Reading camera RAW needs rawpy.") from e
+        except ImportError:
+            pass  # without rawpy: the embedded preview (Pillow), ffmpeg or ImageMagick below
         except Exception as e:  # noqa: BLE001
             raise ConversionError(f"This RAW file cannot be read: {e}") from e
     try:
