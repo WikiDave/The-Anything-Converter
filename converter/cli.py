@@ -594,7 +594,7 @@ def cmd_sql(a) -> int:
         if not a.opdracht:
             for t in dbtool.overview(db):
                 cols = ", ".join(c["naam"] + (f" {c['type']}" if c["type"] else "") for c in t["kolommen"])
-                say(f"{t['soort']} {t['naam']} ({t['rijen']} rows): {cols}")
+                say(f"{'table' if t['soort'] == 'tabel' else t['soort']} {t['naam']} ({t['rijen']} rows): {cols}")
             return 0
         res = dbtool.query(db, a.opdracht)
         if res["kolommen"]:

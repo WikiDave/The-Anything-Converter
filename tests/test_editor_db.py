@@ -88,6 +88,6 @@ def test_sql_command_line(tmp_path):
     csv_file.write_text("naam,leeftijd\nAnna,30\nBo,25\n")
     tui = [sys.executable, "-W", "ignore", str(ROOT / "tui.py")]
     r = subprocess.run([*tui, "sql", str(csv_file)], capture_output=True, text=True)
-    assert "tabel m (2 rows)" in r.stdout
+    assert "table m (2 rows)" in r.stdout
     r = subprocess.run([*tui, "sql", str(csv_file), "SELECT naam FROM m WHERE leeftijd > 26"], capture_output=True, text=True)
     assert "Anna" in r.stdout and "Bo" not in r.stdout

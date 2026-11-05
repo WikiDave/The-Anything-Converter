@@ -88,6 +88,8 @@ def run_conversion(src: Path, out_dir: Path, category: str, opts: dict, progress
         return convert_pdf(pdf, out_dir, fmt, opts, progress)
     if category in ("video", "audio"):
         return media.process(src, out_dir, opts, progress)
+    if category == "image" and fmt in ("mp4", "webm", "mov"):  # animated GIF/WebP/APNG to video
+        return media.process(src, out_dir, opts, progress)
     if category == "image":
         return image.process(src, out_dir, opts, progress)
     if category in ("pdf", "document", "spreadsheet", "presentation"):

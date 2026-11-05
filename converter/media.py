@@ -407,6 +407,8 @@ def _video(src, dst, fmt, trim_args, duration, info, opts, target, quality, prog
         filters += _scale_filter(height)
     if fps:
         filters.append(f"fps={fps:g}")
+    if not filters and ((info.get("width") or 0) % 2 or (info.get("height") or 0) % 2):
+        filters.append("scale=trunc(iw/2)*2:trunc(ih/2)*2")  # 4:2:0 video needs even sizes (e.g. a 161x91 GIF)
     if vcodec == "copy":
         if filters or target:
             raise ConversionError("Copying the video stream (no re-encoding) cannot change the size, resolution or "
