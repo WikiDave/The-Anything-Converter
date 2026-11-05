@@ -19,7 +19,7 @@ from .util import ConversionError
 
 TREE = {"json", "json5", "jsonc", "jsonl", "ndjson", "jsonld", "geojson-data", "yaml", "yml", "toml", "xml", "xsd",
         "xsl", "xslt", "ini", "cfg", "conf", "properties", "env", "plist", "webmanifest", "npy", "npz", "msgpack",
-        "csv", "tsv", "edn"}
+        "csv", "tsv"}
 DB = {"sqlite", "sqlite3", "db", "db3", "dbf"}
 SPECIAL = {"ipynb", "har", "rss", "atom", "opml"}
 FINANCE = {"ofx", "qfx", "qbo", "qif", "sta", "940", "cod"}

@@ -94,7 +94,18 @@ def _probe(src: Path) -> dict:
         "height": int(v["height"]) if v else 0,
         "has_video": v is not None,
         "has_audio": a is not None,
+        # sommige bronnen (TTA, Speex, ...) hebben geen kanaalindeling; encoders als AAC weigeren dan
+        "fix_layout": _layout_fix(a),
+        "sample_rate": int(a.get("sample_rate") or 0) if a else 0,
     }
+
+
+def _layout_fix(a) -> list[str]:
+    """Kanaalindeling vastleggen als de bron er geen heeft (TTA, Speex, ...): anders weigeren encoders als AAC."""
+    if not a or a.get("channel_layout"):
+        return []
+    n = int(a.get("channels") or 2)
+    return ["-af", "pan=mono|c0=c0" if n == 1 else "pan=stereo|c0=c0|c1=c1"]
 
 
 def _run_ffmpeg(args: list[str], duration: float, progress: Optional[ProgressFn],
@@ -184,7 +195,7 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
     if fmt in AUDIO_ONLY:
         if not info["has_audio"]:
             raise ConversionError("Dit bestand bevat geen audio.")
-        return _audio(src, dst, fmt, trim_args, duration, target, quality, progress)
+        return _audio(src, dst, fmt, trim_args, duration, target, quality, progress, info)
     if fmt == "gif":
         return _gif(src, dst, trim_args, duration, info, opts, target, progress)
     if fmt not in VIDEO_CODEC:
@@ -194,8 +205,12 @@ def process(src: Path, out_dir: Path, opts: dict, progress: Optional[ProgressFn]
     return _video(src, dst, fmt, trim_args, duration, info, opts, target, quality, progress, trimming)
 
 
-def _audio(src, dst, fmt, trim_args, duration, target, quality, progress) -> Path:
-    args = [*trim_args, "-i", str(src), "-vn", "-map", "0:a:0", *AUDIO_CODEC[fmt]]
+VORBIS_Q = {"high": 6, "medium": 4, "low": 2}
+
+
+def _audio(src, dst, fmt, trim_args, duration, target, quality, progress, info=None) -> Path:
+    info = info or {}
+    args = [*trim_args, "-i", str(src), "-vn", "-map", "0:a:0", *AUDIO_CODEC[fmt], *info.get("fix_layout", [])]
     if target:
         if fmt in FIXED_AUDIO:
             raise ConversionError(f".{fmt} heeft een vaste kwaliteit; de grootte ligt vast. Kies mp3, m4a, ogg of opus "
@@ -211,6 +226,8 @@ def _audio(src, dst, fmt, trim_args, duration, target, quality, progress) -> Pat
         args += ["-b:a", f"{kbps}k"]
         if kbps < 64 and fmt in ("mp3", "m4a", "aac"):
             args += ["-ac", "1"]
+    elif fmt == "ogg":
+        args += ["-q:a", str(VORBIS_Q[quality])]  # kwaliteitsstand: werkt ook bij lage samplerates (8 kHz)
     elif fmt not in FIXED_AUDIO:
         args += ["-b:a", f"{AUDIO_KBPS[quality]}k"]
     if fmt == "m4r" and duration > 40 and "-t" not in trim_args:
@@ -254,7 +271,11 @@ def _video(src, dst, fmt, trim_args, duration, info, opts, target, quality, prog
             args += ["-b:v", "0"]
         if filters:
             args += ["-vf", ",".join(filters)]
-        args += (["-c:a", acodec, "-b:a", f"{AUDIO_KBPS[quality]}k"] if keep_audio else ["-an"])
+        if keep_audio:
+            rate = ["-q:a", str(VORBIS_Q[quality])] if acodec == "libvorbis" else ["-b:a", f"{AUDIO_KBPS[quality]}k"]
+            args += ["-c:a", acodec, *rate, *info.get("fix_layout", [])]
+        else:
+            args += ["-an"]
         _run_ffmpeg([*args, *tail, str(dst)], duration, progress, label="Video coderen")
         return dst
 

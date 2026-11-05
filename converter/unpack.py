@@ -176,6 +176,9 @@ def _extract_tool(src: Path, dest: Path, single: bool = False) -> Path:
         err = r.stdout.decode("utf-8", "replace") + r.stderr.decode("utf-8", "replace")
         if "Wrong password" in err or "encrypted" in err.lower():
             raise ConversionError("Dit archief is met een wachtwoord beveiligd.")
+        if not bsdtar():
+            raise ConversionError("De inhoud kon niet gelezen worden (leeg, beschadigd of een onbekend "
+                                  "bestandssysteem).")
     bt = bsdtar()
     if bt:
         r = subprocess.run([bt, "-xf", str(src), "-C", str(dest)], capture_output=True, **NO_WINDOW)

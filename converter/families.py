@@ -138,6 +138,8 @@ def targets(path: Path, category: str, eff: str) -> list[str]:
         return subsfmt.targets(eff)
     if category in ("font", "mail", "contact", "calendar", "gps", "model3d", "cad", "vector", "cert", "medical"):
         out = objfmt.targets({"font": "font", "mail": "mail"}.get(category, category), eff)
+        if category == "font" and "otf" in out and not objfmt.is_cff(path):
+            out.remove("otf")
         if category == "vector" and eff in LO_VECTOR:
             out = ["pdf", "png", "svg", "jpg"]
         return out

@@ -13,6 +13,11 @@ from typing import Callable, Optional
 from .util import NO_WINDOW, ConversionError
 
 
+def no_sandbox() -> list[str]:
+    """Chrome weigert als root te starten met sandbox (bijv. in een container)."""
+    return ["--no-sandbox"] if hasattr(os, "geteuid") and os.geteuid() == 0 else []
+
+
 def chromium() -> Optional[str]:
     if sys.platform == "win32":
         cands = [Path(os.environ.get(v, "")) / sub for v in ("PROGRAMFILES(X86)", "PROGRAMFILES", "LOCALAPPDATA")
@@ -38,7 +43,7 @@ def capture(url: str, out_dir: Path, fmt: str, progress: Optional[Callable[[floa
     name = re.sub(r"[^A-Za-z0-9.-]+", "_", re.sub(r"^https?://(www\.)?", "", url))[:60].strip("_") or "website"
     dst = out_dir / f"{name}.{fmt}"
     profile = tempfile.mkdtemp(prefix="webshot-")
-    base = [exe, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--no-first-run",
+    base = [exe, "--headless=new", "--disable-gpu", *no_sandbox(), "--hide-scrollbars", "--no-first-run",
             f"--user-data-dir={profile}", "--virtual-time-budget=8000"]
     if progress:
         progress(0.3, "pagina laden")

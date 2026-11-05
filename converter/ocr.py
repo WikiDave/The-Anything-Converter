@@ -72,9 +72,10 @@ def image_bytes(data: bytes, suffix: str = ".png") -> str:
 
 def _normalise(path: Path) -> Path:
     """HEIC, WebP, enz. eerst naar PNG; heel grote beelden verkleinen (Windows-OCR heeft een maximum)."""
-    from PIL import Image, ImageOps
+    from PIL import ImageOps
+    from .image import _open_any
     try:
-        with Image.open(path) as im:
+        with _open_any(path, Path(tempfile.mkdtemp(prefix="ocr-"))) as im:
             im = ImageOps.exif_transpose(im)
             limit = 4000 if engine() == "windows" else 8000
             change = path.suffix.lower() not in (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp") \

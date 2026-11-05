@@ -57,6 +57,16 @@ def targets(fam: str, ext: str) -> list[str]:
 
 # --------------------------------------------------------------------------- lettertypes
 
+def is_cff(path: Path) -> bool:
+    """OpenType met PostScript-contouren (CFF)? Alleen dan kan .otf zonder verlies."""
+    try:
+        from fontTools.ttLib import TTFont
+        f = TTFont(str(path), lazy=True, fontNumber=0)
+        return "CFF " in f or "CFF2" in f
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def font(src: Path, out_dir: Path, fmt: str) -> Path:
     from fontTools.ttLib import TTCollection, TTFont
     ext = src.suffix.lower().lstrip(".")

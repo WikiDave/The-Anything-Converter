@@ -10,7 +10,10 @@ from typing import Optional
 from . import pdftools
 from .util import ConversionError, ProgressFn, have, run, human_size
 
-OFFICE_IN = {"doc", "docx", "odt", "rtf", "xls", "xlsx", "ods", "csv", "tsv", "ppt", "pptx", "odp", "key"}
+OFFICE_IN = {"doc", "docx", "odt", "rtf", "xls", "xlsx", "ods", "csv", "tsv", "ppt", "pptx", "odp", "key",
+             "docm", "dot", "dotx", "dotm", "ott", "sxw", "wps", "wpd", "pages", "abw", "lwp", "hwp",
+             "xlsm", "xlsb", "xlt", "xltx", "xltm", "ots", "sxc", "numbers", "123", "wk1", "wks", "qpw", "slk", "dif",
+             "pptm", "pps", "ppsx", "ppsm", "pot", "potx", "potm", "otp", "sxi"}
 PANDOC_IN = {"md": "markdown", "markdown": "markdown", "html": "html", "htm": "html", "txt": "markdown",
              "epub": "epub", "tex": "latex", "rst": "rst", "docx": "docx", "odt": "odt"}
 PANDOC_OUT = {"md": "gfm", "html": "html", "txt": "plain", "epub": "epub", "docx": "docx", "odt": "odt", "rtf": "rtf"}
@@ -92,6 +95,11 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
             out = pandoc(tmp, fmt, dst, "docx")
         else:
             out = libreoffice(src, fmt, out_dir)
+    elif fmt in ("doc", "odt", "rtf", "pdf") and (have("soffice") or have("libreoffice")):
+        src_for_lo = src
+        if ext in PANDOC_IN and ext != "txt" and have("pandoc"):
+            src_for_lo = pandoc(src, "docx", out_dir / f"{src.stem}.docx", PANDOC_IN[ext])
+        out = libreoffice(src_for_lo, fmt, out_dir)
     else:
         raise ConversionError(f"Conversie van .{ext} naar .{fmt} wordt niet ondersteund.")
 

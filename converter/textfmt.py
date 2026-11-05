@@ -26,6 +26,21 @@ MAN = {str(i) for i in range(1, 10)} | {"man"}
 WEB = {"html", "htm", "xhtml", "shtml", "mhtml", "mht", "webarchive"}
 
 
+_PANDOC_IN: set[str] | None = None
+
+
+def pandoc_inputs() -> set[str]:
+    global _PANDOC_IN
+    if _PANDOC_IN is None:
+        try:
+            r = subprocess.run(["pandoc", "--list-input-formats"], capture_output=True, text=True, timeout=20,
+                               **NO_WINDOW)
+            _PANDOC_IN = set(r.stdout.split())
+        except Exception:  # noqa: BLE001
+            _PANDOC_IN = set()
+    return _PANDOC_IN
+
+
 def read_text(path: Path) -> str:
     data = path.read_bytes()
     ext = path.suffix.lower().lstrip(".")
@@ -50,7 +65,7 @@ def targets(ext: str) -> list[str]:
         return ["pdf", "png", "txt", "md", "html"] if ext in ("mhtml", "mht", "webarchive") else ["pdf", "png", "txt", "md"]
     if ext in MARKUP:
         out = ["html", "pdf", "docx", "txt"]
-        if have("pandoc"):
+        if have("pandoc") and PANDOC_FROM.get(ext) in pandoc_inputs():
             out += ["epub", "odt", "rtf", "md", "rst", "tex"]
         return [t for t in out if t != ext]
     return ["pdf", "html", "png", "txt", "md"]
@@ -239,18 +254,18 @@ def html_markdown(page: str) -> str:
 
 
 def chrome_pdf(src_html: Path, dst: Path, fmt: str = "pdf") -> bool:
-    from .webshot import chromium
+    from .webshot import chromium, no_sandbox
     exe = chromium()
     if not exe:
         return False
     import tempfile
     prof = tempfile.mkdtemp(prefix="ac-chrome-")
     try:
-        args = [exe, "--headless=new", "--disable-gpu", "--no-first-run", f"--user-data-dir={prof}",
+        args = [exe, "--headless=new", "--disable-gpu", *no_sandbox(), "--no-first-run", f"--user-data-dir={prof}",
                 "--allow-file-access-from-files"]
         args += ([f"--print-to-pdf={dst}", "--no-pdf-header-footer"] if fmt == "pdf" else
                  [f"--screenshot={dst}", "--window-size=1280,2000", "--hide-scrollbars"])
-        subprocess.run([*args, src_html.resolve().as_uri()], capture_output=True, timeout=120, **NO_WINDOW)
+        subprocess.run([*args, src_html.resolve().as_uri()], capture_output=True, timeout=45, **NO_WINDOW)
     except Exception:  # noqa: BLE001
         return False
     finally:
