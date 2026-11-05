@@ -1,0 +1,8 @@
+.git
+build
+dist
+**/__pycache__
+.pytest_cache
+desktop/bin
+android/app/build
+*.egg-info

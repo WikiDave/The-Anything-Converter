@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -178,7 +179,11 @@ def searchable_pdf_text(path: Path, progress=None) -> str:
 
 def capture_screen() -> Path:
     """Laat de gebruiker een stuk van het scherm kiezen; geeft het pad naar de schermafbeelding."""
-    out = Path(tempfile.mkdtemp(prefix="screenshot-")) / "scherm.png"
+    if (os.environ.get("SSH_CONNECTION") or os.path.exists("/.dockerenv")) and sys.platform.startswith("linux") \
+            and not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
+        raise ConversionError("A screenshot is not possible over SSH or in Docker (no screen here). Save a "
+                              "screenshot as an image file and recognise the text from that file.")
+    out = Path(tempfile.mkdtemp(prefix="screenshot-")) / "screen.png"
     if sys.platform == "darwin":
         subprocess.run(["screencapture", "-i", "-x", str(out)], timeout=300)
     elif sys.platform == "win32":

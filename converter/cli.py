@@ -174,7 +174,7 @@ def build_parser(with_file: bool = False) -> argparse.ArgumentParser:
         ap.add_argument("bestand", nargs="?", metavar="file", help="file to open straight away")
         ap.set_defaults(cmd=None)
         ap.epilog = ("Commands (more help: anything-converter-tui <command> --help):\n"
-                     "  convert, formats, hash, pdf, archive, social, ocr, web, fetch, scan, sql, drives\n\n" + ap.epilog)
+                     "  convert, formats, hash, pdf, archive, social, ocr, web, fetch, scan, sql, drives, serve\n\n" + ap.epilog)
         return ap
     sub = ap.add_subparsers(dest="cmd", metavar="command")
 
@@ -271,6 +271,12 @@ def build_parser(with_file: bool = False) -> argparse.ArgumentParser:
     dr.add_argument("--full", action="store_true", help="overwrite everything with zeros first (slow)")
     dr.add_argument("--internal", action="store_true", help="also allow internal (non-system) disks")
     dr.add_argument("--yes", metavar="DEVICE", help="confirm without asking by repeating the device name")
+
+    w2 = sub.add_parser("serve", aliases=["server"], help="the full app interface in a web browser (also over SSH "
+                                                         "or in Docker)")
+    w2.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"),
+                    help="127.0.0.1 = only this computer (default); 0.0.0.0 = the whole network")
+    w2.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
 
     v = sub.add_parser("scan", help="check a file or folder for viruses")
     v.add_argument("pad", type=Path, metavar="path")
@@ -521,6 +527,22 @@ def cmd_scan(a) -> int:
     return 2 if v["status"] == "infected" else 0
 
 
+def cmd_serve(a) -> int:
+    root = Path(__file__).resolve().parent.parent
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from app import app  # noqa: PLC0415 - Flask only when needed
+    say(f"Anything Converter web interface: http://{'localhost' if a.host in ('127.0.0.1', '::1') else a.host}:{a.port}")
+    if a.host in ("127.0.0.1", "localhost"):
+        say(f"  over SSH: on your own computer run  ssh -L {a.port}:localhost:{a.port} user@this-machine")
+        say(f"  then open http://localhost:{a.port} there. ctrl+c = stop")
+    else:
+        say("  !! reachable by everyone on the network; only do this on a trusted network. ctrl+c = stop")
+    from werkzeug.serving import run_simple
+    run_simple(a.host, a.port, app, threaded=True, use_reloader=False)
+    return 0
+
+
 def cmd_drives(a) -> int:
     from . import drives
     if a.actie == "list":
@@ -596,7 +618,7 @@ COMMANDS = {"converteer": cmd_convert, "convert": cmd_convert, "formaten": cmd_f
             "info": cmd_formats, "hash": cmd_hash, "checksum": cmd_hash, "pdf": cmd_pdf, "archief": cmd_archive,
             "archive": cmd_archive, "social": cmd_social, "ocr": cmd_ocr, "web": cmd_web, "ophalen": cmd_fetch,
             "fetch": cmd_fetch, "scan": cmd_scan, "sql": cmd_sql,
-            "drives": cmd_drives, "schijven": cmd_drives}
+            "drives": cmd_drives, "schijven": cmd_drives, "serve": cmd_serve, "server": cmd_serve}
 
 
 # ============================================================================ eenvoudige modus

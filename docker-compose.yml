@@ -1,6 +1,21 @@
 services:
+  # web interface: docker compose up -d, then open http://localhost:8000
   converter:
     build: .
+    image: ghcr.io/wikidave/the-anything-converter:latest
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./data:/data
     restart: unless-stopped
+
+  # terminal version: docker compose run --rm tui   (files in ./data are at /data)
+  tui:
+    image: ghcr.io/wikidave/the-anything-converter:latest
+    profiles: ["tui"]
+    stdin_open: true
+    tty: true
+    working_dir: /data
+    volumes:
+      - ./data:/data
+    command: ["anything-converter-tui"]

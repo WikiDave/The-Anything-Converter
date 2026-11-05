@@ -1341,6 +1341,10 @@ def main(argv: list[str] | None = None) -> int:
         if bindir.is_dir():
             os.environ["PATH"] = str(bindir) + os.pathsep + os.environ.get("PATH", "")
             break
+    for base in (here, here.parent / "Resources", here.parent):  # where static/ lives (for 'serve')
+        if (base / "static").is_dir():
+            os.environ.setdefault("CONVERTER_BASE", str(base))
+            break
     cli.ASCII = args.ascii or cli.wants_ascii()
     if getattr(args, "theme", None):
         os.environ["ANYTHING_THEME"] = args.theme
