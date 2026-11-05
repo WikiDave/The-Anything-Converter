@@ -260,7 +260,7 @@ HelpScreen {{ align: center middle; background: $background 70%; }}
         def compose(self) -> ComposeResult:
             with Horizontal(id="top"):
                 yield Label("ANYTHING CONVERTER (TM)", classes="name")
-                yield Label(A(f"   VER {VERSION} · TERMINAL"), classes="dim")
+                yield Label(A(f"   VER {VERSION} · TERMINAL"), classes="dim", id="ver")
                 yield Label(A("f1 help · ctrl+q quit"), classes="dim", id="keys")
             yield Static(LOGO_ASCII if ascii_mode else LOGO, id="logo")
             yield Label(A("> convert · shrink · enlarge · trim · pdf · ocr · speech · roms · social"),
@@ -556,6 +556,7 @@ HelpScreen {{ align: center middle; background: $background 70%; }}
                     yield DataTable(id="db-result", zebra_stripes=True)
 
         def on_mount(self) -> None:
+            threading.Thread(target=self._check_update, daemon=True).start()
             for th in themes:
                 self.register_theme(th)
             try:
@@ -630,6 +631,14 @@ HelpScreen {{ align: center middle; background: $background 70%; }}
                 user_settings.save(s)
             except Exception:  # noqa: BLE001
                 pass
+
+        def _check_update(self) -> None:
+            from converter import update
+            info = update.latest()
+            if info and update.newer(info["version"], VERSION):
+                msg = f"update {info['version']} available: {update.how_to_update()}"
+                self.call_from_thread(lambda: (self.query_one("#ver", Label).update(
+                    A(f"   VER {VERSION} · TERMINAL · {msg}")), self.notify(msg, timeout=12)))
 
         def action_help(self) -> None:
             self.push_screen(HelpScreen())

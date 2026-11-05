@@ -297,6 +297,17 @@ def drives_format():
     return jsonify(job.public())
 
 
+@app.get("/api/update")
+def update_check():
+    """Newer release on GitHub? (shown as a notice in the app)"""
+    from converter import update
+    info = update.latest()
+    if not info:
+        return jsonify(current=VERSION, newer=False)
+    return jsonify(current=VERSION, latest=info["version"], url=info["url"],
+                   newer=update.newer(info["version"], VERSION))
+
+
 @app.get("/api/samples")
 def sample_list():
     """Test files to choose from, grouped like the format list."""

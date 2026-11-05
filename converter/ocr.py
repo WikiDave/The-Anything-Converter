@@ -2,7 +2,7 @@
 
 - macOS: Apple Vision (ingebouwd, alle talen van macOS)
 - Windows: Windows.Media.Ocr (ingebouwd, de talen van Windows)
-- overal: Tesseract, als het geïnstalleerd is (Linux: sudo apt install tesseract-ocr tesseract-ocr-nld)
+- overal: Tesseract, als het geïnstalleerd is (Linux: sudo apt install tesseract-ocr tesseract-ocr-eng)
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from pathlib import Path
 
 from .util import NO_WINDOW, ConversionError
 
-PREFERRED_LANGS = ["nld", "eng", "deu", "fra", "spa", "ita", "por", "rus", "tur", "ara", "chi_sim", "jpn"]
+PREFERRED_LANGS = ["eng", "nld", "deu", "fra", "spa", "ita", "por", "rus", "tur", "ara", "chi_sim", "jpn"]
 
 
 def engine() -> str | None:
@@ -83,7 +83,7 @@ def _normalise(path: Path) -> Path:
                 return path
             if max(im.size) > limit:
                 im.thumbnail((limit, limit))
-            out = Path(tempfile.mkdtemp(prefix="ocr-")) / "beeld.png"
+            out = Path(tempfile.mkdtemp(prefix="ocr-")) / "image.png"
             im.convert("RGB").save(out)
             return out
     except Exception as e:  # noqa: BLE001
@@ -161,7 +161,7 @@ def _tesseract(path: Path) -> str:
     r = subprocess.run(["tesseract", str(path), "stdout", "-l", _tesseract_langs()], capture_output=True,
                        timeout=600, **NO_WINDOW)
     if r.returncode != 0:
-        raise ConversionError("Tesseract faalde: " + r.stderr.decode("utf-8", "replace")[-300:])
+        raise ConversionError("Tesseract failed: " + r.stderr.decode("utf-8", "replace")[-300:])
     return r.stdout.decode("utf-8", "replace").strip()
 
 

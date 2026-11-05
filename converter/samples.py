@@ -1,6 +1,6 @@
 """Test files: make a small sample of (almost) any file type, to try what the converter does with it.
 
-Used by the app (the TEST FILES drop-down) and by tools/formaten_rapport.py (the full format run).
+Used by the app (the TEST FILES drop-down) and by tools/formats_report.py (the full format run).
 """
 from __future__ import annotations
 
@@ -25,8 +25,8 @@ ROOT = Path(__file__).resolve().parent.parent
 if not (ROOT / "static").exists() and (ROOT.parent / "static").exists():  # frozen app: lib/converter
     ROOT = ROOT.parent
 
-# Extensions for which a sample was made and tested in the full format run.
-SAMPLE_EXTS = ["!qb", "!ut", "1", "1pux", "2", "3", "360", "3dl", "3dm", "3ds", "3ga", "3mf", "4", "5", "6", "7", "7z", "8", "8bf", "9", "940", "a", "aab", "aac", "aaf", "ab", "abc", "abr", "ac3", "accdb", "accde", "aco", "acsm", "adb", "adg", "adml", "admx", "adoc", "ads", "adv", "aep", "aet", "afdesign", "afm", "afphoto", "afpub", "ahk", "ai", "aif", "aifc", "aiff", "alc", "alp", "als", "amf", "amxd", "ani", "aof", "apk", "apkm", "apks", "apng", "app", "appinstaller", "applescript", "application", "appref-ms", "appx", "appxbundle", "ari", "arrow", "asc", "ascx", "asd", "ase", "aseprite", "asf", "ashx", "asl", "asm", "asmx", "asp", "aspx", "ass", "astro", "asx", "atn", "atom", "au", "au3", "aup", "aup3", "aupreset", "avi", "avif", "avp", "avro", "awk", "ba2", "bacpac", "bak", "bam", "band", "bas", "bash", "bat", "bbb", "bdf", "bdmv", "bed", "bgcode", "bib", "bicep", "bkf", "blend", "blend1", "bmp", "br", "braw", "brd", "bsa", "bson", "bsp", "bundle", "bup", "bvh", "bwf", "bwproject", "bz2", "bzl", "c", "c4d", "cache", "caf", "canvas", "cap", "cat", "catdrawing", "catpart", "catproduct", "cb7", "cbddlp", "cbl", "cbor", "cbt", "cbz", "cc", "cdi", "cer", "cfc", "cfg", "cfm", "cgi", "cginc", "chitubox", "chk", "cia", "cif", "cir", "cjs", "ckpt", "cl", "clap", "class", "clip", "clj", "cljc", "cljs", "cls", "cmake", "cmd", "cob", "cocatalog", "cod", "code-workspace", "coffee", "com", "command", "comp", "component", "conf", "config", "cos", "cpl", "cpp", "cpr", "cr", "crate", "crdownload", "crl", "crm", "crt", "crypt14", "crypt15", "cs", "csh", "cshtml", "csproj", "csr", "css", "csv", "csx", "ctb", "cu", "cube", "cue", "cuh", "cxx", "d", "dacpac", "dart", "dat", "db", "db3", "dbf", "dcm", "dcp", "dds", "deb", "dem", "der", "deskthemepack", "desktop", "dfu", "dfxp", "dgn", "diagcab", "dib", "dif", "diff", "divx", "diz", "dll", "dmp", "doc", "dockerfile", "docm", "docx", "dop", "dot", "dotm", "dotx", "download", "dpr", "dproj", "dra", "drawio", "drl", "drp", "drv", "dst", "dta", "dtd", "dts", "duckdb", "dump", "dvi", "dwf", "dwfx", "dwg", "dwt", "dxf", "dylib", "e57", "eac3", "ear", "ebuild", "edb", "edf", "edl", "edn", "efi", "egg", "ejs", "el", "elf", "elm", "emf", "eml", "enex", "entitlements", "env", "eot", "eps", "epub", "erb", "erl", "esl", "esm", "esp", "etl", "evo", "evt", "evtx", "ex", "excalidraw", "exe", "exr", "exs", "f", "f3d", "f3z", "f4v", "f90", "f95", "fa", "fasta", "fastq", "fb2", "fbx", "fcpbundle", "fcpxml", "fcstd", "fdb", "feather", "fish", "fits", "fla", "flac", "flatpakref", "flp", "flv", "fmp12", "fnt", "fon", "for", "fp7", "frag", "framework", "frm", "fs", "fsi", "fsproj", "fst", "fsx", "ftf", "fxb", "fxp", "fzz", "g", "gadget", "gb", "gba", "gbc", "gbl", "gbr", "gco", "gcode", "gd", "gdb", "gdoc", "gem", "geojson", "geom", "gff", "ggml", "gguf", "gho", "gif", "glb", "glsl", "glyphs", "gns3", "go", "gp", "gp5", "gpg", "gpkg", "gpx", "gql", "gradle", "graphql", "grd", "groovy", "gsheet", "gslides", "gsm", "gtf", "gtl", "gto", "gv", "gx", "gz", "h", "h264", "h265", "h2p", "h5", "haml", "handlebars", "har", "hbs", "hcl", "hdf5", "hdmp", "hdr", "heic", "heif", "hevc", "hex", "hh", "hip", "hipnc", "hlp", "hlsl", "hpp", "hrl", "hs", "hta", "htaccess", "htm", "html", "htpasswd", "hx", "hxx", "iam", "ibd", "ibooks", "ica", "icc", "icm", "icns", "ico", "ics", "idml", "idw", "idx", "ifc", "ifo", "igc", "iges", "igs", "iml", "imovielibrary", "indd", "indt", "inf", "ini", "ino", "insp", "insv", "ipa", "ipd", "ipn", "ips", "ipt", "ipynb", "iso", "itn", "ivf", "j2k", "jar", "java", "jef", "jfif", "jks", "jl", "joblib", "jp2", "jpe", "jpeg", "jpg", "jpx", "js", "jse", "json", "json5", "jsonc", "jsonl", "jsonld", "jsonnet", "jsp", "jspx", "jsx", "jt", "jxl", "kar", "kdb", "kdbx", "kdenlive", "keras", "kext", "key", "keystore", "kicad_pcb", "kicad_pro", "kicad_sch", "kml", "kmz", "ko", "kql", "kra", "ksh", "kt", "kts", "ktx", "ktx2", "laccdb", "las", "laz", "lbrn", "lbrn2", "ldb", "ldf", "ldif", "less", "lhs", "library-ms", "liquid", "lisp", "list", "litematic", "lnk", "loc", "lock", "log", "logicx", "lottie", "lrc", "lrcat", "lrtemplate", "lrv", "lsp", "lua", "lwo", "lws", "lys", "lz4", "lzma", "m", "m2ts", "m2v", "m3u", "m3u8", "m4a", "m4b", "m4r", "m4v", "ma", "makerbot", "manifest", "map", "markdown", "mat", "max", "mb", "mbox", "mbtiles", "mca", "mcaddon", "mcfunction", "mcpack", "mcr", "mcworld", "md", "md5", "mdb", "mdmp", "mdx", "metal", "mht", "mhtml", "mib", "mid", "midi", "mjs", "mk", "mk3d", "mka", "mkv", "ml", "mli", "mlmodel", "mlt", "mmap", "mmcif", "mmd", "mmpz", "mobileconfig", "mobileprovision", "mogrt", "mol", "mol2", "mount", "mov", "mp3", "mp4", "mpls", "mpo", "mpp", "mrimg", "msc", "mscz", "msix", "msixbundle", "msp", "msstyles", "mst", "mtl", "mts", "mui", "mus", "musicxml", "mustache", "musx", "mxl", "myd", "myi", "mzml", "n64", "nbt", "nc", "ndf", "ndjson", "nds", "nes", "net", "nfo", "ngc", "nib", "nii", "nim", "ninja", "nix", "njk", "nk", "nki", "nkx", "nls", "nml", "nmsv", "npr", "npy", "npz", "nsf", "nsp", "nsz", "nupkg", "nuspec", "nvram", "nzb", "o", "obj", "ocx", "odb", "odf", "odg", "odp", "ods", "odt", "ofx", "oga", "ogg", "ogv", "old", "olm", "omf", "one", "onnx", "opj", "opml", "opus", "ora", "orc", "org", "orig", "osk", "osm", "osp", "osr", "ost", "osz", "otc", "otp", "ots", "ott", "out", "ov2", "ova", "ovf", "ovpn", "p12", "p7b", "p7c", "p7s", "p8", "pac", "pak", "par", "par2", "parquet", "part", "partial", "pas", "pat", "patch", "path", "pb", "pbm", "pbp", "pbxproj", "pcap", "pcapng", "pcbdoc", "pcf", "pck", "pcl", "pcx", "pdb", "pde", "pdf", "pdn", "pem", "pes", "pfb", "pfm", "pfx", "pgm", "pgp", "photon", "photoslibrary", "php", "phtml", "pickle", "pid", "pif", "pit", "pk3", "pkb", "pkl", "pks", "pkt", "pl", "plist", "pln", "pls", "ply", "pm", "pmd", "pmtiles", "pmx", "png", "pnm", "pol", "pom", "pot", "potm", "potx", "pp", "pp3", "ppam", "ppd", "ppk", "ppm", "pps", "ppsm", "ppsx", "ppt", "pptm", "pptx", "prefab", "prefpane", "prj", "prn", "pro", "properties", "props", "proto", "provisionprofile", "prproj", "prt", "ps", "ps1", "ps1xml", "psd1", "psm", "psm1", "pst", "pt", "ptf", "pth", "ptx", "pug", "puml", "pvm", "pxar", "pxd", "pxm", "py", "pyc", "pyd", "pyi", "pyw", "qbo", "qbw", "qcow", "qcow2", "qfx", "qif", "qoi", "qrc", "qt", "qxd", "qxp", "r", "r3d", "ra", "ram", "raw", "razor", "rb", "rda", "rdata", "rdb", "rdp", "rds", "realm", "reason", "reg", "rej", "repo", "resx", "rf64", "rfa", "rgb", "riv", "rkt", "rm", "rmd", "rofl", "rom", "rpa", "rpp", "rpy", "rs", "rss", "rst", "rte", "rtf", "rules", "rvt", "rvz", "rx2", "s", "s19", "safetensors", "sai", "sam", "sami", "sas7bdat", "sass", "sat", "sav", "savedsearch", "saver", "sb3", "sbs", "sbsar", "sbt", "sbv", "sc", "scad", "scala", "sch", "schdoc", "schem", "schematic", "scm", "scpt", "scr", "scss", "sdb", "sdf", "search-ms", "sed", "service", "sesx", "sf2", "sf3", "sfc", "sfd", "sfv", "sfz", "sgi", "sh", "sha1", "sha256", "shader", "shd", "shortcut", "shp", "shsh2", "shtml", "shx", "sib", "sig", "skp", "sla", "sldasm", "slddrw", "sldprt", "slk", "sln", "slnx", "sls", "smc", "smd", "smi", "snd", "snk", "so", "socket", "sol", "song", "sp", "sparsebundle", "sparseimage", "spc", "spec", "spl", "spp", "spx", "sql", "sqlite", "sqlite3", "srec", "srm", "srt", "ss", "ssa", "sst", "sta", "step", "stl", "storyboard", "stp", "studio3", "styl", "sub", "sublime-project", "sup", "sv", "svelte", "svg", "svgz", "svh", "swf", "swift", "swp", "sys", "tap", "tar", "tar.gz", "tar.md5", "target", "targets", "tbz2", "tcl", "tcx", "temp", "tex", "textclipping", "tf", "tflite", "tfstate", "tfvars", "tga", "tgz", "thd", "theme", "themepack", "thm", "thmx", "thrift", "tib", "tibx", "tif", "tiff", "timer", "tmp", "toml", "tool", "topojson", "torrent", "tpl", "tres", "ts", "tscn", "tscproj", "tsi", "tsv", "tsx", "tta", "ttc", "ttf", "ttml", "twig", "txt", "txz", "uasset", "uf2", "ufo", "ufp", "ui", "umap", "unity", "unitypackage", "unl", "upk", "uplugin", "uproject", "url", "usd", "usda", "usdc", "usdz", "utm", "uu", "uue", "v", "v64", "vb", "vbe", "vbhtml", "vbk", "vbox", "vbproj", "vbs", "vcf", "vcproj", "vcs", "vcxproj", "vdi", "veg", "vert", "vfd", "vhd", "vhdl", "vhdx", "vib", "vmdk", "vmem", "vmsn", "vmss", "vmx", "vnc", "vob", "voc", "vox", "vpk", "vrb", "vrm", "vrml", "vro", "vsix", "vst3", "vstpreset", "vtf", "vtt", "vue", "vwx", "w64", "wad", "war", "wasm", "wat", "wav", "wbfs", "weba", "webarchive", "webloc", "webm", "webmanifest", "webp", "wer", "wfp", "wgsl", "whl", "wim", "wlmp", "wma", "wmf", "wmv", "woff", "woff2", "workflow", "wpl", "wrl", "wsf", "wv", "x3d", "x3g", "x_b", "x_t", "xaml", "xapk", "xbe", "xbm", "xbrl", "xcarchive", "xci", "xcodeproj", "xcworkspace", "xd", "xex", "xfl", "xhtml", "xib", "xla", "xlam", "xll", "xln", "xls", "xlsm", "xlsx", "xlt", "xltm", "xltx", "xmind", "xml", "xmp", "xpi", "xrns", "xsd", "xsl", "xslt", "xsn", "xspf", "xz", "yaml", "yml", "yyp", "z64", "zig", "zip", "zipx", "zpr", "zsh", "zst", "ztl"]
+# Extensions for which a sample file can be made (checked by making each one; info-only types have none).
+SAMPLE_EXTS = ["1", "2", "3", "360", "3dl", "3ga", "3mf", "4", "5", "6", "7", "7z", "8", "9", "940", "aab", "aac", "ac3", "adb", "adml", "admx", "adoc", "ads", "ahk", "ai", "aif", "aifc", "aiff", "alp", "amf", "apk", "apkm", "apks", "apng", "applescript", "appx", "appxbundle", "ascx", "asf", "ashx", "asm", "asmx", "asp", "aspx", "ass", "astro", "asx", "atom", "au", "au3", "avi", "avif", "awk", "bas", "bash", "bat", "bed", "bib", "bicep", "bin", "bmp", "br", "brd", "bwf", "bz2", "bzl", "c", "caf", "cb7", "cbl", "cbt", "cbz", "cc", "cer", "cfc", "cfg", "cfm", "cgi", "cginc", "cif", "cir", "cjs", "cl", "clj", "cljc", "cljs", "cls", "cmake", "cmd", "cob", "cod", "code-workspace", "coffee", "command", "comp", "conf", "config", "cos", "cpp", "cr", "crl", "crt", "cs", "csh", "cshtml", "csproj", "csr", "css", "csv", "csx", "cu", "cube", "cue", "cuh", "cxx", "d", "dart", "db", "db3", "dbf", "dcm", "dds", "deb", "der", "deskthemepack", "desktop", "dfxp", "dib", "dif", "diff", "divx", "diz", "doc", "dockerfile", "docm", "docx", "dot", "dotm", "dotx", "dpr", "dproj", "drl", "dtd", "dts", "dxf", "eac3", "ear", "edl", "edn", "egg", "ejs", "el", "elf", "elm", "emf", "eml", "entitlements", "env", "eps", "epub", "erb", "erl", "evo", "ex", "exr", "f", "f4v", "f90", "f95", "fa", "fasta", "fastq", "fb2", "fcpxml", "fish", "fits", "flac", "flv", "for", "frag", "frm", "fs", "fsi", "fsproj", "fsx", "fzz", "g", "gb", "gba", "gbc", "gbl", "gbr", "gco", "gcode", "gd", "gdoc", "gem", "gen", "geojson", "geom", "gff", "gg", "gguf", "gif", "glb", "glsl", "go", "gpx", "gql", "gradle", "graphql", "groovy", "gsheet", "gslides", "gsm", "gtf", "gtl", "gto", "gv", "gz", "h", "h264", "h265", "haml", "handlebars", "har", "hbs", "hcl", "hdr", "heic", "heif", "hevc", "hex", "hh", "hlsl", "hpp", "hrl", "hs", "hta", "htaccess", "htm", "html", "htpasswd", "hx", "hxx", "ibooks", "ica", "icns", "ico", "ics", "igc", "iml", "inf", "ini", "ino", "insp", "insv", "ipa", "ips", "ipynb", "iso", "ivf", "j2k", "jar", "java", "jfif", "jl", "jp2", "jpe", "jpeg", "jpg", "jpx", "js", "jse", "json", "json5", "jsonc", "jsonl", "jsonld", "jsonnet", "jsp", "jspx", "jsx", "jxl", "kar", "kdenlive", "key", "kicad_pcb", "kicad_pro", "kicad_sch", "kml", "kmz", "kql", "kra", "ksh", "kt", "kts", "lbrn2", "ldif", "less", "lhs", "library-ms", "liquid", "lisp", "list", "loc", "log", "lrc", "lrv", "lsp", "lua", "lz4", "lzma", "m", "m2ts", "m2v", "m3u", "m3u8", "m4a", "m4b", "m4r", "m4v", "manifest", "map", "markdown", "mbox", "mcaddon", "mcpack", "mcworld", "md", "md5", "mdx", "metal", "mht", "mhtml", "mib", "mid", "midi", "mjs", "mk", "mk3d", "mka", "mkv", "ml", "mli", "mlt", "mmcif", "mmd", "mogrt", "mol", "mol2", "mount", "mov", "mp3", "mp4", "mpo", "msix", "msixbundle", "msp", "mtl", "mts", "mustache", "mzml", "n64", "ndjson", "nds", "nes", "net", "nfo", "ngc", "nim", "ninja", "nix", "njk", "nk", "npy", "npz", "nupkg", "nuspec", "o", "obj", "odg", "ofx", "oga", "ogg", "ogv", "opml", "opus", "ora", "org", "orig", "osk", "osz", "otc", "otp", "ots", "ott", "out", "ova", "ovpn", "p7b", "p7c", "pac", "pas", "patch", "path", "pbm", "pbxproj", "pcbdoc", "pce", "pcx", "pdb", "pde", "pdf", "pem", "pgm", "php", "phtml", "pk3", "pkb", "pks", "pl", "plist", "pls", "ply", "pm", "png", "pnm", "pom", "pot", "potm", "potx", "pp", "pp3", "ppm", "ppsm", "ppsx", "ppt", "pptm", "pptx", "pro", "properties", "props", "proto", "ps", "ps1", "ps1xml", "psd1", "psm1", "pug", "puml", "py", "pyi", "pyw", "qbo", "qcow", "qcow2", "qfx", "qif", "qoi", "qrc", "qt", "r", "ra", "ram", "razor", "rb", "rdp", "reg", "rej", "repo", "resx", "rf64", "rgb", "rkt", "rm", "rmd", "rpy", "rs", "rss", "rst", "rtf", "rules", "s", "s19", "safetensors", "sam", "sami", "sass", "sb3", "sbt", "sbv", "sc", "scad", "scala", "sch", "schdoc", "scm", "scss", "sdf", "search-ms", "sed", "service", "sfc", "sgi", "sh", "shader", "shortcut", "shtml", "slk", "sln", "slnx", "sls", "smc", "smd", "smi", "sms", "snd", "so", "socket", "sol", "sp", "spec", "spx", "sql", "sqlite", "sqlite3", "srec", "srt", "ss", "ssa", "sta", "stl", "storyboard", "styl", "sub", "sublime-project", "sv", "svelte", "svg", "svgz", "svh", "swf", "swift", "tap", "tar", "tar.gz", "tar.md5", "target", "targets", "tbz2", "tcl", "tcx", "tex", "tf", "tfstate", "tfvars", "tga", "tgz", "thd", "theme", "themepack", "thm", "thrift", "tif", "tiff", "timer", "toml", "tool", "torrent", "tpl", "ts", "tsv", "tsx", "tta", "ttc", "ttf", "ttml", "twig", "txt", "txz", "ufp", "ui", "unitypackage", "unl", "uplugin", "uproject", "url", "uu", "uue", "v", "v64", "vb", "vbe", "vbhtml", "vbproj", "vbs", "vcf", "vcproj", "vcs", "vcxproj", "vdi", "vert", "vhd", "vhdl", "vhdx", "vmdk", "vnc", "vob", "voc", "vro", "vsix", "vtt", "vue", "w64", "war", "wat", "wav", "weba", "webarchive", "webloc", "webm", "webmanifest", "webp", "wer", "wgsl", "whl", "wim", "wma", "wmf", "wmv", "woff", "woff2", "workflow", "wpl", "wsf", "wv", "xaml", "xapk", "xbm", "xcodeproj", "xcworkspace", "xhtml", "xib", "xln", "xls", "xlsm", "xlsx", "xlt", "xltm", "xltx", "xmind", "xml", "xmp", "xpi", "xsd", "xsl", "xslt", "xspf", "xz", "yaml", "yml", "z64", "zig", "zip", "zipx", "zsh", "zst"]
 
 
 NEEDS = [("LibreOffice", "libreoffice"), ("Calibre", "Calibre"), ("chdman", "chdman"), ("Ghostscript", "Ghostscript"),
@@ -84,6 +84,7 @@ def _rom_sample(ext: str, d: Path) -> Path | None:
     elif ext == "nds":
         rom = bytearray(body * 4)
         rom[0:12] = title[:12]
+        rom[0x12] = 0  # unit code: plain DS (not DSi)
         rom[0x80:0x84] = (len(rom) // 2).to_bytes(4, "little")
         p.write_bytes(bytes(rom))
     elif ext == "ips":
@@ -94,6 +95,18 @@ def _rom_sample(ext: str, d: Path) -> Path | None:
 
 
 def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange lijst is hier het duidelijkst
+    if ext == "ibooks":  # Apple Books: an EPUB under another name
+        e = make_sample("epub", d)
+        return e.rename(d / "sample.ibooks") if e else None
+    if ext == "webarchive":
+        import plistlib
+        page = b"<html><head><title>Test page</title></head><body><h1>Test page</h1><p>Hello world.</p></body></html>"
+        p = d / "sample.webarchive"
+        p.write_bytes(plistlib.dumps({"WebMainResource": {"WebResourceData": page, "WebResourceMIMEType": "text/html",
+                                                          "WebResourceTextEncodingName": "UTF-8",
+                                                          "WebResourceURL": "https://example.com/"}},
+                                     fmt=plistlib.FMT_BINARY))
+        return p
     if ext in ("cue", "bin", "iso", "nes", "z64", "n64", "v64", "sfc", "smc", "gb", "gbc", "gba", "gen", "smd",
                "sms", "gg", "pce", "nds", "ips"):
         r = _rom_sample(ext, d)
@@ -194,48 +207,48 @@ def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange l
         return ff(vid + video[ext], p)
     # ---- tekst, code en data
     texts = {
-        "txt": "Hallo wereld.\nTweede regel.\n", "log": "2026-11-05 10:00:00 INFO start\n2026-11-05 10:00:01 WARN klaar\n",
+        "txt": "Hello world.\nSecond line.\n", "log": "2026-11-05 10:00:00 INFO start\n2026-11-05 10:00:01 WARN done\n",
         "nfo": "╔══╗\n║AC║ Anything Converter\n╚══╝\n",
-        "diz": "Anything Converter v2\n", "md": "# Titel\n\nTekst met **vet**.\n\n- een\n- twee\n",
-        "markdown": "# Titel\n\nTekst.\n", "mdx": "import X from './x'\n\n# Titel\n\nTekst.\n",
-        "rst": "Titel\n=====\n\nTekst.\n", "adoc": "= Titel\n\nTekst.\n", "org": "* Titel\nTekst.\n",
-        "tex": "\\documentclass{article}\\begin{document}Hallo\\end{document}\n",
-        "bib": "@book{x, title={Boek}, year={2020}}\n", "1": ".TH VOORBEELD 1\n.SH NAAM\nvoorbeeld \\- test\n",
-        "json": '{"naam": "Anna", "leeftijd": 30, "hobby": ["lezen", "fietsen"]}',
-        "json5": "// commentaar\n{naam: 'x'}\n".replace("naam", '"naam"').replace("'x'", '"x"'),
+        "diz": "Anything Converter v2\n", "md": "# Title\n\nText with **bold**.\n\n- one\n- two\n",
+        "markdown": "# Title\n\nText.\n", "mdx": "import X from './x'\n\n# Title\n\nText.\n",
+        "rst": "Title\n=====\n\nText.\n", "adoc": "= Title\n\nText.\n", "org": "* Title\nText.\n",
+        "tex": "\\documentclass{article}\\begin{document}Hello\\end{document}\n",
+        "bib": "@book{x, title={Book}, year={2020}}\n", "1": ".TH EXAMPLE 1\n.SH NAME\nexample \\- test\n",
+        "json": '{"name": "Anna", "age": 30, "hobby": ["reading", "cycling"]}',
+        "json5": "// comment\n{name: 'x'}\n".replace("name", '"name"').replace("'x'", '"x"'),
         "jsonc": '{\n  // c\n  "a": 1,\n}\n', "jsonl": '{"a": 1}\n{"a": 2}\n', "ndjson": '{"a": 1}\n{"a": 2}\n',
         "jsonld": '{"@context": "https://schema.org", "name": "x"}', "webmanifest": '{"name": "App"}',
-        "xml": "<?xml version='1.0'?><mensen><mens id='1'><naam>Anna</naam></mens><mens id='2'><naam>Bo</naam></mens></mensen>",
+        "xml": "<?xml version='1.0'?><people><person id='1'><name>Anna</name></person><person id='2'><name>Bo</name></person></people>",
         "xsd": "<?xml version='1.0'?><xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema'><xs:element name='a'/></xs:schema>",
         "xsl": "<?xml version='1.0'?><xsl:stylesheet version='1.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform'/>",
         "xslt": "<?xml version='1.0'?><xsl:stylesheet version='1.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform'/>",
-        "yaml": "naam: Anna\nlijst:\n  - a\n  - b\n", "yml": "a: 1\n", "toml": "[server]\nhost = 'x'\npoort = 80\n",
-        "ini": "[a]\nb = 1\n", "cfg": "[a]\nb = 1\n", "conf": "server_name voorbeeld;\n", "properties": "a=1\nb=2\n",
-        "env": "export A=1\nB=\"twee\"\n", "csv": "naam,leeftijd\nAnna,30\nBo,25\n", "tsv": "naam\tleeftijd\nAnna\t30\n",
-        "html": "<!doctype html><html><body><h1>Titel</h1><p>Tekst</p></body></html>",
+        "yaml": "name: Anna\nlist:\n  - a\n  - b\n", "yml": "a: 1\n", "toml": "[server]\nhost = 'x'\nport = 80\n",
+        "ini": "[a]\nb = 1\n", "cfg": "[a]\nb = 1\n", "conf": "server_name example;\n", "properties": "a=1\nb=2\n",
+        "env": "export A=1\nB=\"two\"\n", "csv": "name,age\nAnna,30\nBo,25\n", "tsv": "name\tage\nAnna\t30\n",
+        "html": "<!doctype html><html><body><h1>Title</h1><p>Text</p></body></html>",
         "htm": "<html><body><p>Tekst</p></body></html>", "xhtml": "<html xmlns='http://www.w3.org/1999/xhtml'><body><p>x</p></body></html>",
         "shtml": "<html><body><p>x</p></body></html>",
-        "srt": "1\n00:00:01,000 --> 00:00:02,500\nHallo\n\n2\n00:00:03,000 --> 00:00:04,000\nDaar\n",
-        "vtt": "WEBVTT\n\n00:00:01.000 --> 00:00:02.500\nHallo\n",
-        "sbv": "0:00:01.000,0:00:02.500\nHallo\n",
+        "srt": "1\n00:00:01,000 --> 00:00:02,500\nHello\n\n2\n00:00:03,000 --> 00:00:04,000\nThere\n",
+        "vtt": "WEBVTT\n\n00:00:01.000 --> 00:00:02.500\nHello\n",
+        "sbv": "0:00:01.000,0:00:02.500\nHello\n",
         "ass": "[Script Info]\nScriptType: v4.00+\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize\nStyle: Default,Arial,20\n\n"
                "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
-               "Dialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hallo\n",
+               "Dialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hello\n",
         "ssa": "[Script Info]\nScriptType: v4.00\n\n[V4 Styles]\nFormat: Name, Fontname, Fontsize\nStyle: Default,Arial,20\n\n"
                "[Events]\nFormat: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
-               "Dialogue: Marked=0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hallo\n", "lrc": "[00:01.00]Eerste regel\n[00:03.50]Tweede regel\n",
-        "sub": "{1}{1}25\n{25}{60}Hallo|wereld\n",
-        "ttml": "<?xml version='1.0'?><tt xmlns='http://www.w3.org/ns/ttml'><body><div><p begin='00:00:01.000' end='00:00:02.000'>Hallo</p></div></body></tt>",
-        "dfxp": "<?xml version='1.0'?><tt xmlns='http://www.w3.org/ns/ttml'><body><div><p begin='1s' end='2s'>Hallo</p></div></body></tt>",
-        "smi": "<SAMI><BODY><SYNC Start=1000><P>Hallo<SYNC Start=2000><P>&nbsp;</BODY></SAMI>",
-        "sami": "<SAMI><BODY><SYNC Start=1000><P>Hallo<SYNC Start=2000><P>&nbsp;</BODY></SAMI>",
+               "Dialogue: Marked=0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hello\n", "lrc": "[00:01.00]First line\n[00:03.50]Second line\n",
+        "sub": "{1}{1}25\n{25}{60}Hello|world\n",
+        "ttml": "<?xml version='1.0'?><tt xmlns='http://www.w3.org/ns/ttml'><body><div><p begin='00:00:01.000' end='00:00:02.000'>Hello</p></div></body></tt>",
+        "dfxp": "<?xml version='1.0'?><tt xmlns='http://www.w3.org/ns/ttml'><body><div><p begin='1s' end='2s'>Hello</p></div></body></tt>",
+        "smi": "<SAMI><BODY><SYNC Start=1000><P>Hello<SYNC Start=2000><P>&nbsp;</BODY></SAMI>",
+        "sami": "<SAMI><BODY><SYNC Start=1000><P>Hello<SYNC Start=2000><P>&nbsp;</BODY></SAMI>",
         "m3u": "#EXTM3U\n#EXTINF:120,Artiest - Nummer\nmuziek/nummer.mp3\n", "m3u8": "#EXTM3U\n#EXTINF:10,Deel\ndeel1.ts\n",
         "pls": "[playlist]\nFile1=a.mp3\nTitle1=A\nNumberOfEntries=1\n",
         "xspf": "<?xml version='1.0'?><playlist version='1' xmlns='http://xspf.org/ns/0/'><trackList><track><location>a.mp3</location><title>A</title></track></trackList></playlist>",
         "wpl": "<?wpl version='1.0'?><smil><body><seq><media src='a.mp3'/></seq></body></smil>",
         "asx": "<asx version='3.0'><entry><title>A</title><ref href='a.mp3'/></entry></asx>",
-        "ram": "rtsp://voorbeeld.nl/stream.rm\n",
-        "vcf": "BEGIN:VCARD\nVERSION:3.0\nFN:Anna de Vries\nTEL:+31612345678\nEMAIL:anna@voorbeeld.nl\nEND:VCARD\n",
+        "ram": "rtsp://example.com/stream.rm\n",
+        "vcf": "BEGIN:VCARD\nVERSION:3.0\nFN:Anna de Vries\nTEL:+31612345678\nEMAIL:anna@example.com\nEND:VCARD\n",
         "ics": "BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:Overleg\nDTSTART:20261105T100000Z\nDTEND:20261105T110000Z\nLOCATION:Kantoor\nEND:VEVENT\nEND:VCALENDAR\n",
         "vcs": "BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:Oud\nDTSTART:20261105T100000\nEND:VEVENT\nEND:VCALENDAR\n",
         "gpx": "<?xml version='1.0'?><gpx version='1.1' xmlns='http://www.topografix.com/GPX/1/1'><trk><name>Rit</name><trkseg><trkpt lat='52.1' lon='5.1'><ele>3</ele></trkpt><trkpt lat='52.2' lon='5.2'><ele>4</ele></trkpt></trkseg></trk></gpx>",
@@ -256,16 +269,16 @@ def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange l
         "cod": "0000005112600005        00000000  BANK                      000000000                       2\n"
                "21000100000000000001000000000001250000511260000100000000Bakker Jansen                                         05112600101 0\n",
         "har": '{"log":{"entries":[{"startedDateTime":"2026-11-05","time":12,"request":{"method":"GET","url":"https://x.nl"},"response":{"status":200,"content":{"size":10,"mimeType":"text/html"}}}]}}',
-        "ipynb": '{"cells":[{"cell_type":"markdown","source":["# Titel"]},{"cell_type":"code","source":["print(1)"],"outputs":[{"text":["1"]}]}],"metadata":{},"nbformat":4,"nbformat_minor":5}',
+        "ipynb": '{"cells":[{"cell_type":"markdown","source":["# Title"]},{"cell_type":"code","source":["print(1)"],"outputs":[{"text":["1"]}]}],"metadata":{},"nbformat":4,"nbformat_minor":5}',
         "gv": "digraph G { a -> b; }\n", "puml": "@startuml\nA -> B\n@enduml\n", "mmd": "graph TD\nA-->B\n",
         "svg": "<svg xmlns='http://www.w3.org/2000/svg' width='100' height='60'><rect width='100' height='60' fill='#3a8'/><circle cx='50' cy='30' r='20' fill='#fd2'/></svg>",
         "eml": "From: a@x.nl\nTo: b@x.nl\nSubject: Test\nDate: Thu, 05 Nov 2026 10:00:00 +0100\nMIME-Version: 1.0\n"
-               "Content-Type: multipart/mixed; boundary=XX\n\n--XX\nContent-Type: text/plain\n\nHallo!\n--XX\n"
+               "Content-Type: multipart/mixed; boundary=XX\n\n--XX\nContent-Type: text/plain\n\nHello!\n--XX\n"
                "Content-Type: text/plain\nContent-Disposition: attachment; filename=bijlage.txt\n\nbijlage\n--XX--\n",
-        "mbox": "From a@x.nl Thu Nov  5 10:00:00 2026\nFrom: a@x.nl\nSubject: Een\n\nHallo\n\nFrom b@x.nl Thu Nov  5 11:00:00 2026\nFrom: b@x.nl\nSubject: Twee\n\nDaar\n",
+        "mbox": "From a@x.nl Thu Nov  5 10:00:00 2026\nFrom: a@x.nl\nSubject: Een\n\nHello\n\nFrom b@x.nl Thu Nov  5 11:00:00 2026\nFrom: b@x.nl\nSubject: Twee\n\nThere\n",
         "mhtml": "MIME-Version: 1.0\nContent-Type: multipart/related; boundary=B\n\n--B\nContent-Type: text/html\n\n<html><body><h1>Pagina</h1></body></html>\n--B--\n",
         "mht": "MIME-Version: 1.0\nContent-Type: multipart/related; boundary=B\n\n--B\nContent-Type: text/html\n\n<html><body><p>x</p></body></html>\n--B--\n",
-        "url": "[InternetShortcut]\nURL=https://voorbeeld.nl\n", "desktop": "[Desktop Entry]\nName=X\nExec=x\n",
+        "url": "[InternetShortcut]\nURL=https://example.com\n", "desktop": "[Desktop Entry]\nName=X\nExec=x\n",
         "gdoc": '{"url": "https://docs.google.com/document/d/abc", "doc_id": "abc"}',
         "gsheet": '{"url": "https://docs.google.com/spreadsheets/d/abc"}', "gslides": '{"url": "https://docs.google.com/presentation/d/abc"}',
         "hex": ":10010000214601360121470136007EFE09D2190140\n:00000001FF\n",
@@ -278,11 +291,11 @@ def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange l
         return p
     if ext == "webloc":
         import plistlib
-        p.write_bytes(plistlib.dumps({"URL": "https://voorbeeld.nl"}))
+        p.write_bytes(plistlib.dumps({"URL": "https://example.com"}))
         return p
     if ext == "plist":
         import plistlib
-        p.write_bytes(plistlib.dumps({"naam": "x", "lijst": [1, 2]}))
+        p.write_bytes(plistlib.dumps({"name": "x", "list": [1, 2]}))
         return p
     if ext in ("npy", "npz"):
         import numpy as np
@@ -290,8 +303,8 @@ def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange l
         return p
     if ext in ("sqlite", "sqlite3", "db", "db3"):
         con = sqlite3.connect(p)
-        con.execute("create table mensen(naam text, leeftijd int)")
-        con.executemany("insert into mensen values(?,?)", [("Anna", 30), ("Bo", 25)])
+        con.execute("create table people(name text, age int)")
+        con.executemany("insert into people values(?,?)", [("Anna", 30), ("Bo", 25)])
         con.commit()
         con.close()
         return p
@@ -316,14 +329,14 @@ def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange l
     if ext in ("docx", "docm", "dotx", "dotm"):
         from docx import Document
         doc = Document()
-        doc.add_heading("Titel", 1)
-        doc.add_paragraph("Tekst van het document.")
+        doc.add_heading("Title", 1)
+        doc.add_paragraph("Text of the document.")
         doc.save(p)
         return p
     if ext in ("xlsx", "xlsm", "xltx", "xltm"):
         from openpyxl import Workbook
         wb = Workbook()
-        wb.active.append(["naam", "leeftijd"])
+        wb.active.append(["name", "age"])
         wb.active.append(["Anna", 30])
         wb.save(p)
         return p
@@ -344,7 +357,7 @@ def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange l
         make_sample("pdf", d).rename(p)
         return p
     if ext == "rtf":
-        p.write_text(r"{\rtf1\ansi Hallo {\b vet}\par wereld}", encoding="ascii")
+        p.write_text(r"{\rtf1\ansi Hello {\b vet}\par wereld}", encoding="ascii")
         return p
     if ext in ("odt", "ods", "odp", "odg", "doc", "xls", "ppt", "ott", "ots", "otp", "sxw", "sxc", "sxi", "dot", "xlt",
                "pot", "pps", "xlsb", "slk", "dif", "wps", "wks", "wk1", "123", "vsd", "vsdx", "pub", "rtf-lo"):
@@ -508,7 +521,7 @@ def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange l
         return p
     if ext in ("uue", "uu"):
         import binascii
-        data = b"Hallo uuencode wereld\n"
+        data = b"Hello uuencode wereld\n"
         p.write_text("begin 644 hallo.txt\n" + binascii.b2a_uu(data).decode() + "`\nend\n")
         return p
     if ext in ("cpio", "iso", "cab", "wim", "rar", "xar", "dmg", "squashfs"):
@@ -538,7 +551,7 @@ def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange l
         return p
     group = catalog()[ext][0][0] if ext in catalog() else ""
     if group in TEXT_GROUPS and ext not in BINARY_EXT:
-        p.write_text(f"# voorbeeld .{ext}\nnaam = \"waarde\"\n", encoding="utf-8")
+        p.write_text(f"# example .{ext}\nname = \"value\"\n", encoding="utf-8")
         return p
     return None
 

@@ -296,7 +296,7 @@ def vmdisk(src: Path, out_dir: Path, fmt: str) -> Path:
     r = subprocess.run(["qemu-img", "convert", "-p", "-O", qfmt, str(src), str(dst)], capture_output=True,
                        timeout=4 * 3600, **NO_WINDOW)
     if r.returncode != 0:
-        raise ConversionError("qemu-img faalde: " + r.stderr.decode("utf-8", "replace")[-300:])
+        raise ConversionError("qemu-img failed: " + r.stderr.decode("utf-8", "replace")[-300:])
     return dst
 
 

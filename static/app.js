@@ -630,7 +630,15 @@ function showError(msg) {
 
 // ---------- desktop-app: afsluiten, terminal, eigen venster
 fetch("/api/ping").then((r) => r.json()).then((p) => {
-  $("verLabel").textContent = "VER " + p.version.split(".").slice(0, 2).join(".");
+  $("verLabel").textContent = "VER " + p.version;
+  fetch("/api/update").then((r) => r.json()).then((u) => {
+    if (!u.newer) return;
+    const a = document.createElement("a");
+    a.className = "btn small update-btn"; a.href = u.url; a.target = "_blank"; a.rel = "noopener";
+    a.textContent = `[ UPDATE ${u.latest} AVAILABLE ]`;
+    a.title = "You have " + u.current + ". Download the new version (your settings are kept).";
+    $("verLabel").after(a);
+  }).catch(() => {});
   if (!p.desktop) return;
   $("modeLabel").textContent = "DESKTOP-APP";
   show($("termBtn"), true);

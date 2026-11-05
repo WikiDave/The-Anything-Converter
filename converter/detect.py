@@ -150,6 +150,14 @@ def targets_for(path: Path, patches=()) -> tuple[str, str, list[str]]:
             out = [t for t in out if t not in AUDIO_ONLY and t not in ("txt", "srt", "vtt")]
     if eff in ("csv", "tsv"):
         out += ["json", "yaml", "xml", "txt"]
+    if cat == "image" and eff in ("gif", "webp", "apng", "png"):
+        try:  # animated image: can also become a video
+            from PIL import Image
+            with Image.open(path) as im:
+                if getattr(im, "n_frames", 1) > 1:
+                    out = out[:1] + ["mp4", "webm", "mov"] + out[1:]
+        except Exception:  # noqa: BLE001
+            pass
     return cat, eff, out
 
 

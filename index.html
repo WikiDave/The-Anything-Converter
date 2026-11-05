@@ -110,6 +110,9 @@ input::placeholder, textarea::placeholder { font-family: var(--mono); }
 .drop p { margin: 6px 0; }
 .drop .big { font-size: 16px; font-weight: 700; color: var(--hi); margin-top: 14px; }
 .sample-row { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; }
+.test-row { align-items: center; }
+.test-row .sel { min-width: 260px; }
+#newPdfBox textarea { width: 100%; font: inherit; background: var(--bg); color: var(--hi); border: 1px solid var(--dim); padding: 8px; }
 .q-empty { padding: 8px 0; }
 .dl-frame { margin-top: 18px; }
 .dl-intro { margin: 0 0 12px; }
@@ -397,7 +400,43 @@ button.ar-name:hover, button.ar-name:focus-visible { outline: none; text-decorat
     <div class="sample-row">
       <button id="newArchBtn" class="btn" type="button">[ + NIEUW LEEG ARCHIEF ]</button>
       <button id="sampleBtn" class="btn" type="button">[ PROBEER MET 3 TESTBEELDEN ]</button>
+      <button id="newPdfBtn" class="btn" type="button">[ + NEW PDF ]</button>
     </div>
+    <div class="sample-row test-row">
+      <span class="prompt">TEST FILE&gt;</span>
+      <span class="sel"><select id="testSel" aria-label="Test file">
+        <option value="">choose a test file…</option>
+        <optgroup label="VIDEO"><option value="mp4">.mp4 · H.264 + AAC, 5 s</option><option value="webm">.webm · VP9 + Opus, 5 s</option>
+          <option value="mov">.mov · QuickTime, 5 s</option><option value="mkv">.mkv · Matroska, 5 s</option></optgroup>
+        <optgroup label="AUDIO"><option value="wav">.wav · tone, 5 s</option><option value="mp3">.mp3</option>
+          <option value="m4a">.m4a · AAC</option><option value="ogg">.ogg · Opus</option></optgroup>
+        <optgroup label="IMAGES"><option value="png">.png</option><option value="jpg">.jpg</option><option value="webp">.webp</option>
+          <option value="gif">.gif · animated</option><option value="bmp">.bmp</option><option value="svg">.svg</option>
+          <option value="3img">3 test images (.png)</option></optgroup>
+        <optgroup label="DOCUMENTS"><option value="pdf">.pdf · 3 pages</option><option value="txt">.txt</option>
+          <option value="md">.md · Markdown</option><option value="csv">.csv</option><option value="json">.json</option>
+          <option value="html">.html</option></optgroup>
+        <optgroup label="ARCHIVES"><option value="zip">.zip · 4 files</option></optgroup>
+        <optgroup label="EVERYTHING"><option value="all">one of each (16 files)</option></optgroup>
+      </select></span>
+      <button id="testBtn" class="btn" type="button">[ LOAD ]</button>
+    </div>
+    <fieldset class="frame" id="newPdfBox" hidden>
+      <legend>NEW PDF</legend>
+      <label class="field"><span>TITLE&gt;</span><input id="npTitle" type="text" value="My document"></label>
+      <label class="field"><span>TEXT&gt;</span><textarea id="npText" rows="8" spellcheck="true">Type or paste your text here.
+
+Every new line stays a new line; long lines wrap automatically.</textarea></label>
+      <div class="grid">
+        <label class="field"><span>PAGE&gt;</span><span class="sel"><select id="npSize"><option value="a4">A4</option><option value="letter">Letter</option><option value="a5">A5</option></select></span></label>
+        <label class="field"><span>FONT&gt;</span><span class="sel"><select id="npFont"><option value="Helvetica">Helvetica</option><option value="TimesRoman">Times</option><option value="Courier">Courier (mono)</option></select></span></label>
+      </div>
+      <div class="sample-row">
+        <button id="npMake" class="btn" type="button">[ CREATE PDF ]</button>
+        <button id="npClose" class="btn" type="button">[ CLOSE ]</button>
+      </div>
+      <p class="dim small">// the pdf is saved and also added to the list, so you can merge it, add images or compress it in the pdf workbench.</p>
+    </fieldset>
     <fieldset class="frame dl-frame" id="dlFrame">
       <legend>DOWNLOADS</legend>
       <p class="dl-intro">De converter als app voor je computer of telefoon. Op de computer zit alles erin, ook <strong>youtube- en andere video-links ophalen</strong> en <strong>torrents downloaden</strong>.</p>
@@ -494,7 +533,7 @@ button.ar-name:hover, button.ar-name:focus-visible { outline: none; text-decorat
             <option value="bc">onder midden</option><option value="br">onder rechts</option>
             <option value="tc">boven midden</option><option value="tr">boven rechts</option></select></span></label>
           <label class="field"><span>VORM&gt;</span><span class="sel"><select id="pnFormat">
-            <option value="n">1</option><option value="of">1 / 10</option><option value="pagina">Pagina 1</option></select></span></label>
+            <option value="n">1</option><option value="of">1 / 10</option><option value="pagina">Page 1</option></select></span></label>
         </div>
         <label class="check"><input id="wmOn" type="checkbox"><span>Watermerk</span></label>
         <div class="row" id="wmRow" hidden><span class="prompt">TEKST&gt;</span><input id="wmText" type="text" value="CONCEPT" aria-label="Watermerktekst"></div>
@@ -819,6 +858,8 @@ const EXT = {
   archive: new Set(["zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "tbz", "tbz2", "xz", "txz", "zst", "tzst", "lz", "lzma",
     "cab", "iso", "jar", "cpio", "lzh", "lha", "xar", "ar"]),
   unsupportedVideo: new Set(["avi", "wmv", "flv", "mpg", "mpeg", "3gp", "vob"]),
+  text: new Set(["txt", "md", "markdown", "csv", "tsv", "json", "xml", "html", "htm", "log", "yaml", "yml", "ini",
+    "toml", "srt", "vtt", "py", "js", "ts", "css", "sql", "sh", "bat", "c", "cpp", "h", "java", "rs", "go", "rtf"]),
 };
 const TARGETS = {
   video: ["mp4", "webm", "mov", "mkv", "gif", "mp3", "m4a", "wav"],
@@ -826,9 +867,10 @@ const TARGETS = {
   image: ["jpg", "png", "webp", "gif", "pdf", "bmp", "ico"],
   pdf: ["pdf", "jpg", "png", "txt"],
   archive: ["zip", "7z", "tar.xz", "tar.gz", "tar.bz2", "tar", "iso"],
+  text: ["pdf", "html", "txt", "zip"],
   other: ["zip"],
 };
-const LABEL = { video: "Video", audio: "Audio", image: "Afbeelding", pdf: "PDF", archive: "Archief", other: "Overig" };
+const LABEL = { video: "Video", audio: "Audio", image: "Image", pdf: "PDF", archive: "Archive", text: "Text", other: "Other" };
 // soortnamen per taal (video, audio, afbeelding, pdf, archief, overig)
 const CAT_I18N = {
   en: "Video|Audio|Image|PDF|Archive|Other", de: "Video|Audio|Bild|PDF|Archiv|Sonstiges",
@@ -843,10 +885,10 @@ function catName(c) {
   const row = CAT_I18N[globalThis.__lang];
   return row ? row.split("|")[CAT_ORDER_I18N.indexOf(c)] || LABEL[c] : LABEL[c];
 }
-const CAT_ORDER = ["video", "audio", "image", "pdf", "archive", "other"];
+const CAT_ORDER = ["video", "audio", "image", "pdf", "archive", "text", "other"];
 const AUDIO_OUT = new Set(["mp3", "m4a", "ogg", "wav"]);
 const NO_TARGET = new Set(["wav", "bmp", "ico"]);
-const hasTarget = (c, f) => (c === "archive" ? false : c === "pdf" ? f === "pdf" : !NO_TARGET.has(f));
+const hasTarget = (c, f) => (c === "archive" || c === "text" ? false : c === "pdf" ? f === "pdf" : !NO_TARGET.has(f));
 
 // De converters hieronder werken op "het huidige bestand"; processItem() zet deze per bestand.
 let file = null, cat = null, ext = "", info = {}, duration = 0;
@@ -940,9 +982,9 @@ $("newArchBtn").addEventListener("click", () => {
   if (busy) return;
   showPanel();
   setMode("arch");
-  $("arName").placeholder = "nieuw-archief";
+  $("arName").placeholder = "new-archive";
   $("arAddBtn").focus();
-  status("nieuw leeg archief: voeg bestanden toe");
+  status("new empty archive: add files");
 });
 
 function categorize(f) {
@@ -953,6 +995,7 @@ function categorize(f) {
   if (EXT.video.has(e) || (f.type.startsWith("video/") && !EXT.audio.has(e))) return "video";
   if (EXT.audio.has(e) || f.type.startsWith("audio/")) return "audio";
   if (EXT.image.has(e) || f.type.startsWith("image/")) return "image";
+  if (EXT.text.has(e) || f.type.startsWith("text/")) return "text";
   return "other";
 }
 
@@ -978,13 +1021,13 @@ async function addFiles(list) {
       if (it.cat === "pdf") it.info = { pages: (await openPdfJs(it.file)).numPages };
     } catch (err) {
       console.warn(err);
-      it.msg = err instanceof UserError ? err.message + " Het wordt ingepakt als zip." : "Je browser kan dit bestand niet openen; het wordt ingepakt als zip.";
+      it.msg = err instanceof UserError ? err.message + " It is packed as a zip instead." : "Your browser cannot open this file; it is packed as a zip instead.";
       it.cat = "other"; it.info = {}; it.duration = 0;
     }
     it.state = "ready";
     renderQueue(); refresh(); syncPages(); syncArch(); syncSocial();
   }
-  status(`${items.length} ${items.length === 1 ? "bestand" : "bestanden"} geladen`);
+  status(`${items.length} ${items.length === 1 ? "file" : "files"} loaded`);
 }
 
 async function probeMedia(it) {
@@ -1027,8 +1070,26 @@ async function showStreams() {
     box.textContent = "(could not read the streams: " + e.message + ")";
   }
 }
+// Decode any image file to an ImageBitmap. createImageBitmap() does not accept SVG files in Chrome/Edge,
+// so SVG goes through an <img> element (with a size if the SVG has none).
+async function imageBitmap(f) {
+  const isSvg = f.type === "image/svg+xml" || /\.svgz?$/i.test(f.name || "");
+  if (!isSvg) return createImageBitmap(f);
+  const url = URL.createObjectURL(f);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const w = img.naturalWidth || 1024, h = img.naturalHeight || Math.round(w * 0.75);
+    const c = new OffscreenCanvas(w, h);
+    c.getContext("2d").drawImage(img, 0, 0, w, h);
+    return createImageBitmap(c);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 async function probeImage(it) {
-  const bmp = await createImageBitmap(it.file);
+  const bmp = await imageBitmap(it.file);
   it.info = { width: bmp.width, height: bmp.height };
   bmp.close();
 }
@@ -1067,7 +1128,7 @@ function renderQueue() {
     const meta = [catName(it.cat).toUpperCase(), human(it.file.size)];
     if (it.info.width) meta.push(`${it.info.width}×${it.info.height}`);
     if (it.duration) meta.push(fmtTime(it.duration));
-    if (it.info.pages) meta.push(it.info.pages + (it.info.pages === 1 ? " pagina" : " pagina's"));
+    if (it.info.pages) meta.push(it.info.pages + (it.info.pages === 1 ? " page" : " pages"));
     li.innerHTML = `<span class="q-idx">${String(i + 1).padStart(2, "0")}</span><span class="q-name"></span>` +
       `<span class="q-meta"></span><span class="q-status"></span><span class="q-act"></span>`;
     li.querySelector(".q-name").textContent = it.file.name;
@@ -1078,7 +1139,7 @@ function renderQueue() {
     if (it.state === "done") {
       const b = document.createElement("button");
       b.className = "btn small"; b.type = "button"; b.textContent = "[↓]";
-      b.title = "Opslaan: " + it.out.name; b.setAttribute("aria-label", "Opslaan " + it.out.name);
+      b.title = "Saving: " + it.out.name; b.setAttribute("aria-label", "Save " + it.out.name);
       b.addEventListener("click", () => saveOne(it));
       act.append(b);
     }
@@ -1086,13 +1147,13 @@ function renderQueue() {
       // viruscontrole: alleen de vingerafdruk (sha-256) gaat naar virustotal, nooit het bestand
       const vt = document.createElement("button");
       vt.className = "btn small"; vt.type = "button"; vt.textContent = "[VT]";
-      vt.title = "Controleren op virussen bij VirusTotal (alleen de vingerafdruk wordt gedeeld)";
-      vt.setAttribute("aria-label", "Controleer " + it.file.name + " op virussen");
+      vt.title = "Check for viruses at VirusTotal (only the fingerprint is shared)";
+      vt.setAttribute("aria-label", "Controleer " + it.file.name + " for viruses");
       vt.addEventListener("click", () => virusTotal(it));
       act.append(vt);
       const x = document.createElement("button");
       x.className = "btn small"; x.type = "button"; x.textContent = "[x]";
-      x.title = "Verwijderen"; x.setAttribute("aria-label", "Verwijder " + it.file.name);
+      x.title = "Remove"; x.setAttribute("aria-label", "Remove " + it.file.name);
       x.addEventListener("click", () => removeItem(it));
       act.append(x);
     }
@@ -1103,7 +1164,7 @@ function renderQueue() {
       const a = document.createElement("a");
       a.href = it.vtLink; a.target = "_blank"; a.rel = "noopener"; a.className = "btn small";
       a.textContent = "[ OPEN VIRUSTOTAL ]";
-      m.append(a, " 70+ scanners · 'nog nooit gezien' = onbekend bestand, niet per se veilig");
+      m.append(a, " 70+ scanners · 'never seen' = unknown file, not necessarily safe");
       li.append(m);
     }
     if (it.msg || it.err) {
@@ -1114,7 +1175,7 @@ function renderQueue() {
     }
     ol.append(li);
   });
-  $("queueTitle").textContent = `BESTANDEN (${items.length})`;
+  $("queueTitle").textContent = `FILES (${items.length})`;
 }
 async function virusTotal(it) {
   if (it.sha256 == null) {
@@ -1124,7 +1185,7 @@ async function virusTotal(it) {
       const h = new Uint8Array(await crypto.subtle.digest("SHA-256", buf));
       it.sha256 = [...h].map((b) => b.toString(16).padStart(2, "0")).join("");
     } catch (err) {
-      it.msg = "vingerafdruk lukte niet (bestand te groot voor de browser?)"; renderQueue(); return;
+      it.msg = "fingerprint failed (file too large for the browser?)"; renderQueue(); return;
     }
   }
   it.msg = "";
@@ -1192,7 +1253,7 @@ function renderFormats() {
     for (const t of targets) {
       const o = document.createElement("option");
       o.value = t;
-      o.textContent = "." + t + (savesDirect(t) ? "" : "  · opgeslagen in .zip");
+      o.textContent = "." + t + (savesDirect(t) ? "" : "  · saved in .zip");
       sel.append(o);
     }
     sel.value = chosen[c];
@@ -1249,7 +1310,7 @@ function refresh() {
   const skipped = cats().filter((c) => !hasTarget(c, chosen[c])).map((c) => chosen[c]);
   let hint = items.length > 1 ? "Geldt per bestand. Met % krijgt elk bestand een doel naar verhouding van zijn eigen grootte." :
     "Groter dan het origineel kan ook: bitrate, kwaliteit of resolutie gaan dan omhoog.";
-  if (skipped.length) hint += ` Voor .${skipped.join(", .")} geldt geen doelgrootte.`;
+  if (skipped.length) hint += ` A target size does not apply to .${skipped.join(", .")}.`;
   $("targetHint").textContent = hint;
   const zipped = [...new Set(fmts.filter((f) => !savesDirect(f)))];
   $("formatHint").hidden = !zipped.length;
@@ -1279,7 +1340,7 @@ function syncSel() {
   $("trimSel").style.left = a / 10 + "%";
   $("trimSel").style.width = Math.max(0, b - a) / 10 + "%";
   const s = selection();
-  $("trimLen").textContent = s ? fmtTime(s.len) + (duration ? ` van ${fmtTime(duration)}` : "") : "ongeldig";
+  $("trimLen").textContent = s ? fmtTime(s.len) + (duration ? ` of ${fmtTime(duration)}` : "") : "invalid";
 }
 function syncSliders() {
   if (!duration) return syncSel();
@@ -1310,7 +1371,7 @@ function readSettings() {
   const s = { quality: radio("quality") };
   if (radio("sizeMode") === "target") {
     const v = parseFloat($("targetSize").value);
-    if (!(v > 0)) fail("Vul een doelgrootte in, bijvoorbeeld 8 MB of 50 %.");
+    if (!(v > 0)) fail("Enter a target size, for example 8 MB or 50 %.");
     const unit = $("targetUnit").value;
     if (unit === "pct") s.targetPct = v / 100;
     else s.targetAbs = Math.round(v * { kb: 1024, mb: MB_, gb: 1024 * MB_ }[unit]);
@@ -1334,9 +1395,9 @@ function readSettings() {
   const it = single();
   if (it && (it.cat === "video" || it.cat === "audio")) {
     const a = parseTime($("trimStart").value), b = parseTime($("trimEnd").value);
-    if (Number.isNaN(a) || Number.isNaN(b)) fail("Controleer de knip-tijden: gebruik bijvoorbeeld 1:23.5 of 83.5.");
-    if (a != null && it.duration && a >= it.duration) fail("Het startpunt ligt na het einde van het bestand.");
-    if (a != null && b != null && b <= a) fail("Het eindpunt moet na het startpunt liggen.");
+    if (Number.isNaN(a) || Number.isNaN(b)) fail("Check the trim times: use for example 1:23.5 or 83.5.");
+    if (a != null && it.duration && a >= it.duration) fail("The start point is after the end of the file.");
+    if (a != null && b != null && b <= a) fail("The end point must be after the start point.");
     s.trim = { start: a || 0, end: b };
   }
   return s;
@@ -1360,9 +1421,9 @@ function optsFor(it, s) {
 
 $("goBtn").addEventListener("click", async () => {
   if (busy || (!items.length && !(mode === "arch" && arEntries.length))) return;
-  if (items.some((it) => it.state === "reading")) return showError("Even wachten: nog niet alle bestanden zijn gelezen.");
+  if (items.some((it) => it.state === "reading")) return showError("One moment: not all files have been read yet.");
   if (mode === "pdf") return runWorkbenchClick(runPdfWorkbench, showPdfResult, "PDF opbouwen");
-  if (mode === "arch") return runWorkbenchClick(runArchiveWorkbench, showArchResult, "Archief maken");
+  if (mode === "arch") return runWorkbenchClick(runArchiveWorkbench, showArchResult, "Making archive");
   let s;
   try { s = mode === "social" ? {} : readSettings(); } catch (err) { return showError(err.message); }
 
@@ -1423,6 +1484,7 @@ async function processItem(it, opts) {
     if (mode === "social") out = await socialItem(it);
     else if (cat === "image") out = await convertImage(opts);
     else if (cat === "other") out = await zipFile(opts);
+    else if (cat === "text") out = await convertText(opts);
     else if (cat === "pdf") out = await convertPdf(opts);
     else if (cat === "archive") out = await convertArchive(opts);
     else if (opts.fmt === "gif") out = await videoToGif(opts);
@@ -1468,16 +1530,16 @@ const AUDIO_RANGE = { mp3: [8e3, 320e3], m4a: [16e3, 320e3], ogg: [8e3, 320e3], 
 
 async function convertMedia(opts) {
   if (typeof VideoEncoder === "undefined" && typeof AudioEncoder === "undefined") {
-    fail("Je browser ondersteunt geen WebCodecs. Gebruik een recente Chrome, Edge, Safari of Firefox.");
+    fail("Your browser does not support WebCodecs. Use a recent Chrome, Edge, Safari or Firefox.");
   }
   const MB = await mediabunny();
   const { fmt } = opts;
   if (fmt === "mp3") { setProgress(0.01, "MP3-encoder laden"); await ensureMp3(); }
   const audioOnly = AUDIO_OUT.has(fmt) || cat === "audio";
   const len = opts.end - opts.start;
-  if (!(len > 0)) fail("Kan de duur van dit fragment niet bepalen.");
+  if (!(len > 0)) fail("Cannot determine the length of this fragment.");
   const keepAudio = info.hasAudio && !opts.removeAudio;
-  if (audioOnly && !info.hasAudio) fail("Dit bestand bevat geen geluid.");
+  if (audioOnly && !info.hasAudio) fail("This file has no audio.");
   if (fmt === "wav" && opts.target) fail(".wav is onverkleind; kies mp3, m4a of ogg voor een doelgrootte.");
 
   // bitrates bepalen
@@ -1488,13 +1550,13 @@ async function convertMedia(opts) {
     const total = opts.target * 8 * 0.95 / len;
     if (audioOnly) {
       const [lo, hi] = AUDIO_RANGE[fmt] || AUDIO_RANGE.mp4;
-      if (total < lo) fail(`Doelgrootte te klein: minimaal ongeveer ${human(lo * len / 8 / 0.95)} voor dit fragment.`);
+      if (total < lo) fail(`Target size too small: at least about ${human(lo * len / 8 / 0.95)} for this fragment.`);
       aBitrate = Math.min(Math.round(total), hi);
     } else {
       aBitrate = keepAudio ? (total > 1.5e6 ? 160e3 : total > 6e5 ? 128e3 : total > 2.5e5 ? 96e3 : total > 1e5 ? 64e3 : 32e3) : 0;
       vBitrate = Math.round(total - aBitrate);
       if (vBitrate < 30e3) {
-        fail(`Doelgrootte te klein voor ${fmtTime(len)} video. Minimaal ongeveer ${human((30e3 + aBitrate) * len / 8 / 0.95)}; knip korter of verwijder het geluid.`);
+        fail(`Target size too small for ${fmtTime(len)} of video. At least about ${human((30e3 + aBitrate) * len / 8 / 0.95)}; trim it or remove the audio.`);
       }
       if (!height && info.height) {
         for (const [lim, h] of [[25e4, 360], [5e5, 480], [12e5, 720], [3e6, 1080]]) {
@@ -1519,7 +1581,7 @@ async function convertMedia(opts) {
     }
   }
   if (opts.target && blob.size > opts.target * 1.05) {
-    fail(`Kleinst gehaald: ${human(blob.size)}. Knip korter, kies een lagere resolutie of verwijder het geluid.`);
+    fail(`Smallest reached: ${human(blob.size)}. Trim it, choose a lower resolution or remove the audio.`);
   }
   const outExt = fmt === "m4a" ? "m4a" : fmt;
   return { blob, name: stemOf(file.name) + (outExt === ext ? "_bewerkt" : "") + "." + outExt,
@@ -1543,7 +1605,7 @@ async function runConversion(MB, fmt, p, label) {
     const pref = av.vcodec ? [av.vcodec] : ["mp4", "mov"].includes(fmt) ? ["avc", "hevc", "vp9", "av1"] : codecs;
     const codec = await MB.getFirstEncodableVideoCodec(pref.filter((c) => codecs.includes(c)),
       { width: info.width, height: p.height || info.height });
-    if (!codec) fail(`Je browser kan geen video coderen voor .${fmt}. Probeer ${fmt === "mp4" ? "webm" : "mp4"} of een andere browser.`);
+    if (!codec) fail(`Your browser cannot encode video for .${fmt}. Try ${fmt === "mp4" ? "webm" : "mp4"} or another browser.`);
     video.codec = codec;
   }
   let audio = { discard: true };
@@ -1552,7 +1614,7 @@ async function runConversion(MB, fmt, p, label) {
     if (av.acodec && !codecs.includes(av.acodec)) fail(`A .${fmt} file cannot hold ${av.acodec.toUpperCase()} audio. Possible: ${codecs.join(", ").toUpperCase()}.`);
     const pref = av.acodec ? [av.acodec] : ["mp4", "m4a", "mov"].includes(fmt) ? ["aac", "opus"] : codecs;
     const codec = await MB.getFirstEncodableAudioCodec(pref.filter((c) => codecs.includes(c)));
-    if (!codec) fail(av.acodec ? `Your browser cannot encode ${av.acodec.toUpperCase()} audio. Try another codec or the desktop app.` : `Je browser kan geen audio coderen voor .${fmt}.`);
+    if (!codec) fail(av.acodec ? `Your browser cannot encode ${av.acodec.toUpperCase()} audio. Try another codec or the desktop app.` : `Your browser cannot encode audio for .${fmt}.`);
     audio = { codec, forceTranscode: true };
     if (!codec.startsWith("pcm") && codec !== "flac") audio.bitrate = (!p.opts.target && av.abr) || p.aBitrate;
     if (av.rate) audio.sampleRate = av.rate;
@@ -1571,7 +1633,7 @@ async function runConversion(MB, fmt, p, label) {
   });
   if (!conversion.isValid) {
     const reasons = conversion.discardedTracks.map((t) => t.reason).join(", ");
-    fail(`Deze conversie kan je browser niet uitvoeren (${reasons}). Probeer een ander formaat of Chrome/Edge.`);
+    fail(`Your browser cannot do this conversion (${reasons}). Try another format or Chrome/Edge.`);
   }
   conversion.onProgress = (f) => setProgress(f, label);
   await conversion.execute();
@@ -1584,7 +1646,7 @@ async function videoToGif(opts) {
   const { GIFEncoder, quantize, applyPalette } = await gifenc();
   const input = new MB.Input({ source: new MB.BlobSource(file), formats: MB.ALL_FORMATS });
   const track = await input.getPrimaryVideoTrack();
-  if (!track || !(await track.canDecode())) fail("Je browser kan deze video niet decoderen.");
+  if (!track || !(await track.canDecode())) fail("Your browser cannot decode this video.");
   let fps = Math.min(opts.gifFps || 12, 30);
   let width = opts.gifWidth || Math.min(info.width || 480, 480);
   const len = opts.end - opts.start;
@@ -1621,7 +1683,7 @@ async function videoToGif(opts) {
     if (width <= 200) colors = Math.max(32, colors / 2);
     blob = await encode(attempt);
   }
-  if (opts.target && blob.size > opts.target) fail(`GIF komt niet onder ${human(opts.target)} (${human(blob.size)}). Knip de video korter.`);
+  if (opts.target && blob.size > opts.target) fail(`The GIF does not get below ${human(opts.target)} (${human(blob.size)}). Trim the video.`);
   return { blob, name: stemOf(file.name) + ".gif", kind: "image" };
 }
 
@@ -1629,8 +1691,8 @@ async function videoToGif(opts) {
 const MAX_SIDE = 12000;
 async function convertImage(opts) {
   const { fmt } = opts;
-  setProgress(0.05, "Afbeelding laden");
-  let bmp = await createImageBitmap(file);
+  setProgress(0.05, "Loading image");
+  let bmp = await imageBitmap(file);
   let W = bmp.width, H = bmp.height;
   if (opts.scalePct) { W = Math.round(W * opts.scalePct / 100); H = Math.round(H * opts.scalePct / 100); }
   else if (opts.w || opts.h) {
@@ -1659,7 +1721,7 @@ async function fitLossy(enc, target, W, H) {
   }
   let scale = 1;
   for (let round = 0; round < 8; round++) {
-    setProgress(0.1 + round * 0.1, "Kwaliteit zoeken");
+    setProgress(0.1 + round * 0.1, "Finding quality");
     const small = await enc(scale, 5);
     if (small.size > target) { scale *= Math.sqrt(target / small.size) * 0.95; continue; }
     let lo = 5, hi = 95, best = small;
@@ -1670,7 +1732,7 @@ async function fitLossy(enc, target, W, H) {
     }
     return best;
   }
-  fail(`Kon niet onder ${human(target)} komen.`);
+  fail(`Could not get below ${human(target)}.`);
 }
 async function fitLossless(enc, target, W, H) {
   let b = await enc(1, 100);
@@ -1681,7 +1743,7 @@ async function fitLossless(enc, target, W, H) {
     scale *= Math.sqrt(target / b.size) * 0.97;
     b = await enc(scale, 100);
   }
-  if (b.size > target) fail(`Kon niet onder ${human(target)} komen.`);
+  if (b.size > target) fail(`Could not get below ${human(target)}.`);
   return b;
 }
 async function grow(enc, target, q, b, W, H) {
@@ -1707,7 +1769,7 @@ async function encodeImage(bmp, fmt, w, h, q) {
   if (fmt === "jpg" || fmt === "webp" || fmt === "png") {
     const type = "image/" + (fmt === "jpg" ? "jpeg" : fmt);
     const b = await c.convertToBlob({ type, quality: q / 100 });
-    if (b.type !== type) fail(`Je browser kan geen .${fmt} maken. Kies jpg of png.`);
+    if (b.type !== type) fail(`Your browser cannot make .${fmt}. Choose jpg or png.`);
     return b;
   }
   if (fmt === "pdf") {
@@ -1734,7 +1796,7 @@ async function encodeImage(bmp, fmt, w, h, q) {
     gif.finish();
     return new Blob([gif.bytes()], { type: "image/gif" });
   }
-  fail(`Formaat .${fmt} wordt niet ondersteund.`);
+  fail(`Format .${fmt} is not supported.`);
 }
 
 function rgbaToBmp(d, w, h) {
@@ -1788,12 +1850,12 @@ function jpegToPdf(jpg, w, h) {
 // ---------------------------------------------------------------- overige bestanden: zip
 async function zipFile(opts) {
   const { zip } = await fflate();
-  setProgress(0.2, "Inpakken");
+  setProgress(0.2, "Packing");
   const data = new Uint8Array(await file.arrayBuffer());
   const out = await new Promise((res, rej) => zip({ [file.name]: [data, { level: 9 }] }, (e, d) => e ? rej(e) : res(d)));
   const blob = new Blob([out], { type: "application/zip" });
   if (opts.target && blob.size > opts.target) {
-    fail(`Inpakken haalt ${human(blob.size)}, niet ${human(opts.target)}. Dit bestandstype is al gecomprimeerd en kan verliesvrij niet kleiner.`);
+    fail(`Packing reaches ${human(blob.size)}, not ${human(opts.target)}. This file type is already compressed and cannot get smaller without loss.`);
   }
   return { blob, name: file.name + ".zip", kind: "file" };
 }
@@ -1815,9 +1877,9 @@ function showSummary() {
   if (!done.length) {
     res.className = "result error";
     res.innerHTML = '<span class="head">!! FOUT</span>\n';
-    res.append(document.createTextNode(failed.length === 1 ? failed[0].err : "Geen enkel bestand is gelukt. Zie de meldingen in de lijst."));
+    res.append(document.createTextNode(failed.length === 1 ? failed[0].err : "No file succeeded. See the messages in the list."));
     res.hidden = false;
-    status("mislukt - zie de lijst");
+    status("failed - see the list");
     step(2);
     return;
   }
@@ -1828,11 +1890,11 @@ function showSummary() {
   const w = barWidth() - 8;
   const max = Math.max(before, after);
   const bar = (n) => { const k = Math.max(1, Math.round(n / max * w)); return "█".repeat(k) + "░".repeat(w - k); };
-  const head = failed.length ? `KLAAR: ${done.length} OK · ${failed.length} FOUT` : (done.length > 1 ? `STATUS: ${done.length} OK` : "STATUS: OK");
+  const head = failed.length ? `DONE: ${done.length} OK · ${failed.length} FAILED` : (done.length > 1 ? `STATUS: ${done.length} OK` : "STATUS: OK");
   res.innerHTML = `<span class="head"></span>
 <div class="cmp"><span class="lbl">${done.length > 1 ? "BESTANDEN " : "BESTAND   "}</span><span class="fn"></span>
 <span class="lbl">ORIGINEEL </span>${bar(before)} ${human(before)}
-<span class="lbl">NIEUW     </span>${bar(after)} ${human(after)}
+<span class="lbl">NEW       </span>${bar(after)} ${human(after)}
 <span class="lbl">VERSCHIL  </span><span class="down">${diff <= 0 ? "▼" : "▲"} ${Math.abs(diff).toFixed(1)}% ${diff <= 0 ? "kleiner" : "groter"}</span></div>`;
   res.querySelector(".head").textContent = head;
   const fn = res.querySelector(".fn");
@@ -1847,7 +1909,7 @@ function showSummary() {
       const el = document.createElement(out.kind === "image" ? "img" : out.kind);
       el.src = URL.createObjectURL(out.blob);
       if (out.kind !== "image") { el.controls = true; el.playsInline = true; }
-      el.alt = "Voorbeeld van het resultaat";
+      el.alt = "Preview of the result";
       el.onerror = () => scr.remove();
       scr.append(el);
       res.append(scr);
@@ -1856,7 +1918,7 @@ function showSummary() {
   const btn = document.createElement("button");
   btn.className = "save"; btn.type = "button";
   if (done.length > 1) {
-    btn.textContent = `[ ↓ ALLES OPSLAAN ALS .ZIP (${done.length}) ]`;
+    btn.textContent = `[ ↓ SAVE ALL AS .ZIP (${done.length}) ]`;
     btn.addEventListener("click", saveAll);
   } else {
     btn.textContent = savesDirect(extOf(done[0].out.name)) ? "[ ↓ OPSLAAN ]" : "[ ↓ OPSLAAN ALS .ZIP ]";
@@ -1874,7 +1936,7 @@ function showSummary() {
   }
   res.append(btn, note);
   res.hidden = false;
-  status(failed.length ? `klaar met ${failed.length} fout(en)` : `klaar: ${done.length} ${done.length === 1 ? "bestand" : "bestanden"} (${human(after)})`);
+  status(failed.length ? `done with ${failed.length} error(s)` : `done: ${done.length} ${done.length === 1 ? "file" : "files"} (${human(after)})`);
 }
 
 function setNote(msg) { const n = $("saveNote"); if (n) n.textContent = "// " + msg; status(msg); }
@@ -1902,41 +1964,41 @@ async function saveAll() {
   const done = items.filter((it) => it.state === "done");
   setNote("zip maken…");
   const blob = await zipBlob(done.map((it) => it.out));
-  await saveBlob(blob, `anything-converter-${done.length}-bestanden.zip`);
+  await saveBlob(blob, `anything-converter-${done.length}-files.zip`);
 }
 
 // In de Android-app: bestand in stukjes doorgeven aan Android, dat het in Downloads zet.
 async function androidSave(blob, name) {
   const A = window.AnythingAndroid;
-  if (!A.begin(name, blob.type || "application/octet-stream")) throw new Error("Opslaan op de telefoon lukte niet.");
+  if (!A.begin(name, blob.type || "application/octet-stream")) throw new Error("Saving on the phone failed.");
   const CH = 3 * 1024 * 1024; // veelvoud van 3: losse base64-stukken passen precies aan elkaar
   for (let o = 0; o < blob.size; o += CH) {
     const buf = new Uint8Array(await blob.slice(o, o + CH).arrayBuffer());
     let bin = "";
     for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
-    if (!A.chunk(btoa(bin))) throw new Error("Opslaan op de telefoon lukte niet.");
-    setNote(`opslaan ${Math.min(100, Math.round((o + CH) / blob.size * 100))}%`);
+    if (!A.chunk(btoa(bin))) throw new Error("Saving on the phone failed.");
+    setNote(`saving ${Math.min(100, Math.round((o + CH) / blob.size * 100))}%`);
   }
   A.end();
-  setNote("opgeslagen in Downloads/Anything Converter: " + name);
+  setNote("saved in Downloads/Anything Converter: " + name);
 }
 
 // In het eigen venster van de desktop-app: "Bewaar als"-venster via pywebview, in stukjes.
 async function nativeSave(blob, name) {
   const api = window.pywebview.api;
   const r = await api.save_begin(name);
-  if (r.cancelled) { setNote("opslaan geannuleerd"); return; }
+  if (r.cancelled) { setNote("saving cancelled"); return; }
   if (r.error) throw new Error(r.error);
   const CH = 3 * 1024 * 1024;
   for (let o = 0; o < blob.size; o += CH) {
     const buf = new Uint8Array(await blob.slice(o, o + CH).arrayBuffer());
     let bin = "";
     for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
-    if (!(await api.save_chunk(btoa(bin)))) { await api.save_abort(); throw new Error("opslaan mislukt"); }
-    setNote(`opslaan ${Math.min(100, Math.round((o + CH) / blob.size * 100))}%`);
+    if (!(await api.save_chunk(btoa(bin)))) { await api.save_abort(); throw new Error("saving failed"); }
+    setNote(`saving ${Math.min(100, Math.round((o + CH) / blob.size * 100))}%`);
   }
   const done = await api.save_end();
-  setNote("opgeslagen: " + (done.path || name));
+  setNote("saved: " + (done.path || name));
 }
 // Links naar buiten (downloads, VirusTotal) in de gewone browser openen, niet in het app-venster.
 document.addEventListener("click", (e) => {
@@ -1948,7 +2010,7 @@ document.addEventListener("click", (e) => {
 
 async function saveBlob(blob, name) {
   if (window.pywebview && window.pywebview.api) {
-    try { await nativeSave(blob, name); } catch (err) { setNote("opslaan mislukt: " + err.message); }
+    try { await nativeSave(blob, name); } catch (err) { setNote("saving failed: " + err.message); }
     return;
   }
   if (window.AnythingAndroid) {
@@ -1959,13 +2021,13 @@ async function saveBlob(blob, name) {
   if (dl) {
     try {
       await dl.save({ filename: name, data: blob });
-      setNote("opgeslagen: " + name);
+      setNote("saved: " + name);
     } catch (err) {
       setNote({
-        declined: "opslaan geannuleerd",
-        rate_limited: "er staat al een opslagvraag open, probeer het zo opnieuw",
-        too_large: "bestand is te groot om hier op te slaan; kies een kleinere doelgrootte",
-      }[err?.code] || "opslaan is hier niet beschikbaar (" + (err?.code || "onbekend") + ")");
+        declined: "saving cancelled",
+        rate_limited: "a save request is already open, try again in a moment",
+        too_large: "the file is too large to save here; choose a smaller target size",
+      }[err?.code] || "saving is not available here (" + (err?.code || "onbekend") + ")");
     }
     return;
   }
@@ -1983,7 +2045,7 @@ function showError(msg) {
   res.innerHTML = '<span class="head">!! FOUT</span>\n';
   res.append(document.createTextNode(msg));
   res.hidden = false;
-  status("fout - zie melding");
+  status("error - see message");
 }
 
 // ---------------------------------------------------------------- PDF: bibliotheken
@@ -2012,7 +2074,7 @@ async function openPdfJs(f) {
     try {
       return await lib.getDocument({ data, isEvalSupported: false, useSystemFonts: true, verbosity: 0 }).promise;
     } catch (err) {
-      if (err?.name === "PasswordException") fail("Deze PDF is beveiligd met een wachtwoord en kan niet geopend worden.");
+      if (err?.name === "PasswordException") fail("This PDF is protected with a password and cannot be opened.");
       throw err;
     }
   })();
@@ -2025,7 +2087,7 @@ async function openPdfLib(bytesOrFile) {
   try {
     return await PDFDocument.load(bytes, { updateMetadata: false });
   } catch (err) {
-    if (/encrypt/i.test(err?.message || "")) fail("Deze PDF is versleuteld; bewerken kan alleen zonder beveiliging.");
+    if (/encrypt/i.test(err?.message || "")) fail("This PDF is encrypted; it can only be edited without protection.");
     throw err;
   }
 }
@@ -2070,7 +2132,7 @@ async function compressPdfTo(blob, target) {
     if (!best || b.size < best.size) best = b;
     if (b.size <= target) return b;
   }
-  fail(`Kleinst haalbaar: ${human(best.size)}. ${human(target)} lukt niet; verwijder pagina's of kies een groter doel.`);
+  fail(`Smallest possible: ${human(best.size)}. ${human(target)} cannot be reached; remove pages or choose a larger target.`);
 }
 
 // ---------------------------------------------------------------- PDF in de converteer-modus
@@ -2080,7 +2142,7 @@ async function convertPdf(opts) {
   if (fmt === "pdf") {
     let blob;
     if (opts.target) {
-      if (opts.target >= file.size) fail("Een PDF groter maken heeft geen zin; kies een doel kleiner dan het origineel.");
+      if (opts.target >= file.size) fail("Making a PDF larger is pointless; choose a target smaller than the original.");
       blob = await compressPdfTo(file, opts.target);
     } else {
       const [dpi, q] = { high: [200, 0.85], medium: [130, 0.72], low: [96, 0.55] }[opts.quality];
@@ -2093,11 +2155,11 @@ async function convertPdf(opts) {
   if (fmt === "txt") {
     let text = "";
     for (let n = 1; n <= doc.numPages; n++) {
-      setProgress(n / doc.numPages, "Tekst lezen");
+      setProgress(n / doc.numPages, "Reading text");
       const tc = await (await doc.getPage(n)).getTextContent();
-      text += tc.items.map((it) => (it.str || "") + (it.hasEOL ? "\n" : "")).join("") + `\n\n--- pagina ${n} ---\n\n`;
+      text += tc.items.map((it) => (it.str || "") + (it.hasEOL ? "\n" : "")).join("") + `\n\n--- page ${n} ---\n\n`;
     }
-    if (!text.replace(/--- pagina \d+ ---|\s/g, "")) fail("Deze PDF bevat geen tekst (waarschijnlijk gescand). Tekstherkenning (OCR) zit er niet in.");
+    if (!text.replace(/--- pagina \d+ ---|\s/g, "")) fail("This PDF has no text (probably scanned). Text recognition (OCR) is in the desktop app.");
     return { blob: new Blob([text], { type: "text/plain" }), name: name + ".txt", kind: "file" };
   }
   // jpg / png per pagina
@@ -2105,7 +2167,7 @@ async function convertPdf(opts) {
   const type = fmt === "png" ? "image/png" : "image/jpeg";
   const pages = [];
   for (let n = 1; n <= doc.numPages; n++) {
-    setProgress((n - 1) / doc.numPages, `Pagina ${n}/${doc.numPages} renderen`);
+    setProgress((n - 1) / doc.numPages, `Rendering page ${n}/${doc.numPages}`);
     const c = await renderPdfPage(doc, n, dpi / 72);
     pages.push({ name: `${name}-p${String(n).padStart(3, "0")}.${fmt}`, blob: await canvasBlob(c, type, 0.9) });
   }
@@ -2160,8 +2222,8 @@ function renderPages() {
   const grid = $("pageGrid");
   grid.innerHTML = "";
   const selCount = pages.filter((p) => p.sel).length;
-  $("pagesTitle").textContent = `PAGINA'S (${pages.length})`;
-  $("selInfo").textContent = selCount ? `${selCount} geselecteerd` : "klik op pagina's om te selecteren";
+  $("pagesTitle").textContent = `PAGES (${pages.length})`;
+  $("selInfo").textContent = selCount ? `${selCount} selected` : "klik op pagina's om te selecteren";
   if (!pages.length) {
     grid.innerHTML = '<p class="dim">// geen PDF of afbeeldingen in de lijst. voeg ze toe met [ + TOEVOEGEN ].</p>';
     return;
@@ -2177,7 +2239,7 @@ function renderPages() {
   <button type="button" data-a="left" title="Naar voren" aria-label="Pagina ${i + 1} naar voren">◀</button>
   <button type="button" data-a="ccw" title="Linksom draaien" aria-label="Pagina ${i + 1} linksom draaien">-90</button>
   <button type="button" data-a="cw" title="Rechtsom draaien" aria-label="Pagina ${i + 1} rechtsom draaien">+90</button>
-  <button type="button" data-a="del" title="Verwijderen" aria-label="Pagina ${i + 1} verwijderen">✕</button>
+  <button type="button" data-a="del" title="Delete" aria-label="Delete page ${i + 1}">✕</button>
   <button type="button" data-a="right" title="Naar achteren" aria-label="Pagina ${i + 1} naar achteren">▶</button>
 </div>`;
     card.querySelector(".pg-src").textContent = p.item.cat === "pdf" ? `${stemOf(p.item.file.name)} · p${p.n}` : stemOf(p.item.file.name);
@@ -2213,7 +2275,7 @@ async function renderThumbs() {
         const vp = pg.getViewport({ scale: 1, rotation: pg.rotate });
         p.canvas = await renderPdfPage(doc, p.n, 230 / Math.max(vp.width, vp.height));
       } else {
-        const bmp = await createImageBitmap(p.item.file);
+        const bmp = await imageBitmap(p.item.file);
         const k = 230 / Math.max(bmp.width, bmp.height);
         const c = document.createElement("canvas");
         c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
@@ -2283,12 +2345,12 @@ $("pgRotCw").addEventListener("click", () => { targetsForTools().forEach((p) => 
 $("pgRotCcw").addEventListener("click", () => { targetsForTools().forEach((p) => (p.rot = (p.rot + 270) % 360)); renderPages(); });
 $("pgDel").addEventListener("click", () => {
   const sel = pages.filter((p) => p.sel);
-  if (!sel.length) return setPgInfo("selecteer eerst de pagina's die weg moeten");
+  if (!sel.length) return setPgInfo("first select the pages that should go");
   pages = pages.filter((p) => !p.sel); renderPages();
 });
 $("pgKeep").addEventListener("click", () => {
   const sel = pages.filter((p) => p.sel);
-  if (!sel.length) return setPgInfo("selecteer eerst de pagina's die je wilt houden");
+  if (!sel.length) return setPgInfo("first select the pages you want to keep");
   pages = sel; pages.forEach((p) => (p.sel = false)); renderPages();
 });
 $("pgReverse").addEventListener("click", () => { pages.reverse(); renderPages(); });
@@ -2306,12 +2368,12 @@ function parseRanges(text, n) {
   const out = [];
   for (const part of text.split(/[,;]+/).map((s) => s.trim()).filter(Boolean)) {
     const m = /^(\d+)?\s*(-)?\s*(\d+)?$/.exec(part);
-    if (!m || (!m[1] && !m[3])) fail(`Ongeldig bereik: "${part}". Gebruik bijvoorbeeld 1-3, 5, 8-`);
+    if (!m || (!m[1] && !m[3])) fail(`Invalid range: "${part}". Use for example 1-3, 5, 8-`);
     const a = m[1] ? +m[1] : 1, b = m[2] ? (m[3] ? +m[3] : n) : a;
     if (a < 1 || b > n || a > b) fail(`Bereik "${part}" valt buiten 1-${n}.`);
     out.push([a, b]);
   }
-  if (!out.length) fail("Vul minstens één bereik in, bijvoorbeeld 1-3, 4-6.");
+  if (!out.length) fail("Enter at least one range, for example 1-3, 4-6.");
   return out;
 }
 
@@ -2325,7 +2387,7 @@ async function buildPdf() {
 
   for (let i = 0; i < pages.length; i++) {
     const p = pages[i];
-    setProgress(i / pages.length * 0.6, `Pagina ${i + 1}/${pages.length} plaatsen`);
+    setProgress(i / pages.length * 0.6, `Placing page ${i + 1}/${pages.length}`);
     if (p.item.cat === "pdf") {
       if (!srcDocs.has(p.item)) srcDocs.set(p.item, await openPdfLib(p.item.file));
       const [cp] = await out.copyPages(srcDocs.get(p.item), [p.n - 1]);
@@ -2352,7 +2414,7 @@ async function buildPdf() {
   all.forEach((page, i) => {
     const box = page.getMediaBox(), rot = ((page.getRotation().angle % 360) + 360) % 360;
     if ($("pnOn").checked) {
-      const label = $("pnFormat").value === "of" ? `${i + 1} / ${all.length}` : $("pnFormat").value === "pagina" ? `Pagina ${i + 1}` : String(i + 1);
+      const label = $("pnFormat").value === "of" ? `${i + 1} / ${all.length}` : $("pnFormat").value === "pagina" ? `Page ${i + 1}` : String(i + 1);
       drawVisual(page, box, rot, font, label, 10, $("pnPos").value, rgb(0.2, 0.2, 0.2), degrees);
     }
     if (wmText) drawWatermark(page, box, rot, font, wmText, rgb(0.6, 0.6, 0.6), degrees);
@@ -2361,7 +2423,7 @@ async function buildPdf() {
   if ($("pdfAuthor").value.trim()) out.setAuthor($("pdfAuthor").value.trim());
   out.setProducer("Anything Converter");
   out.setCreator("Anything Converter");
-  setProgress(0.65, "PDF opslaan");
+  setProgress(0.65, "Saving PDF");
   return out;
 }
 
@@ -2369,7 +2431,7 @@ async function embedImage(out, it) {
   const e = it.ext;
   if (e === "png") return out.embedPng(new Uint8Array(await it.file.arrayBuffer()));
   // Via canvas, zodat de EXIF-draaiing van telefoonfoto's meegenomen wordt.
-  const bmp = await createImageBitmap(it.file);
+  const bmp = await imageBitmap(it.file);
   const c = new OffscreenCanvas(bmp.width, bmp.height), g = c.getContext("2d");
   const alpha = ["webp", "gif", "avif", "svg", "ico"].includes(e);
   if (!alpha) { g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); }
@@ -2410,14 +2472,14 @@ function toPage(vx, vy, rot, box) {
 }
 
 async function runPdfWorkbench() {
-  if (!pages.length) fail("Er zijn geen pagina's. Voeg PDF's of foto's toe.");
+  if (!pages.length) fail("There are no pages. Add PDFs or photos.");
   const outMode = radio("pdfOut");
   const ranges = outMode === "ranges" ? parseRanges($("pdfRanges").value, pages.length) : null;
   const comp = $("pdfCompress").value;
   let target = null;
   if (comp === "target") {
     const v = parseFloat($("pdfTarget").value);
-    if (!(v > 0)) fail("Vul een doelgrootte in voor de PDF, bijvoorbeeld 2 MB.");
+    if (!(v > 0)) fail("Enter a target size for the PDF, for example 2 MB.");
     target = Math.round(v * { kb: 1024, mb: MB_ }[$("pdfTargetUnit").value]);
   }
   const base = ($("pdfName").value.trim() || "samengevoegd").replace(/\.pdf$/i, "").replace(/[\\/:*?"<>|]+/g, "-");
@@ -2438,7 +2500,7 @@ async function runPdfWorkbench() {
 
   const blobs = [];
   for (let i = 0; i < parts.length; i++) {
-    setProgress(0.7 + 0.1 * i / parts.length, "PDF opslaan");
+    setProgress(0.7 + 0.1 * i / parts.length, "Saving PDF");
     let blob = new Blob([await parts[i].doc.save()], { type: "application/pdf" });
     if (comp === "light" || comp === "strong") {
       const [dpi, q] = comp === "light" ? [150, 0.78] : [96, 0.55];
@@ -2465,8 +2527,8 @@ function showPdfResult(out) {
   res.innerHTML = `<span class="head">STATUS: OK</span>
 <div class="cmp"><span class="lbl">BESTAND   </span><span class="fn"></span>
 <span class="lbl">INHOUD    </span>${out.pages} pagina's${out.count > 1 ? ` in ${out.count} PDF's` : ""}
-<span class="lbl">BRONNEN   </span>${bar(before)} ${human(before)}
-<span class="lbl">NIEUW     </span>${bar(after)} ${human(after)}</div>`;
+<span class="lbl">SOURCES   </span>${bar(before)} ${human(before)}
+<span class="lbl">NEW       </span>${bar(after)} ${human(after)}</div>`;
   res.querySelector(".fn").textContent = out.name;
   const btn = document.createElement("button");
   btn.className = "save"; btn.type = "button"; btn.textContent = "[ ↓ OPSLAAN ]";
@@ -2476,7 +2538,7 @@ function showPdfResult(out) {
   if ($("pdfCompress").value !== "none") note.textContent = "// gecomprimeerde pagina's zijn afbeeldingen geworden: tekst is niet meer te selecteren.";
   res.append(btn, note);
   res.hidden = false;
-  status(`klaar: ${out.name} (${human(after)})`);
+  status(`done: ${out.name} (${human(after)})`);
 }
 
 // ---------------------------------------------------------------- archieven (libarchive.js, meegeleverd in vendor/)
@@ -2563,7 +2625,7 @@ async function entryFile(e, many = false) {
     return await e.cf.extract();
   } catch (err) {
     if (st.enc || /passphrase|password/i.test(err?.message || "")) {
-      fail("Dit archief heeft een wachtwoord. Vul het in bij INHOUD (boven de boom) en probeer opnieuw.");
+      fail("This archive has a password. Enter it at CONTENTS (above the tree) and try again.");
     }
     throw err;
   }
@@ -2572,7 +2634,7 @@ async function extractAll(st) {
   try {
     await st.ar.extractFiles();
   } catch (err) {
-    if (/passphrase|password/i.test(err?.message || "")) fail("Dit archief heeft een wachtwoord. Vul het in bij INHOUD en probeer opnieuw.");
+    if (/passphrase|password/i.test(err?.message || "")) fail("This archive has a password. Enter it at CONTENTS and try again.");
     throw err;
   }
   const map = new Map();
@@ -2612,7 +2674,7 @@ async function doSyncArch() {
         st ??= await openArchive(it);
       } catch (err) {
         console.warn(err);
-        it.msg = "Dit archief kan niet gelezen worden (beschadigd of onbekend formaat).";
+        it.msg = "This archive cannot be read (damaged or unknown format).";
         renderQueue();
         continue;
       }
@@ -2639,7 +2701,7 @@ async function doSyncArch() {
     }
   }
   const first = archives[0];
-  if (!$("arName").value) $("arName").placeholder = first ? archStem(first.file.name) : "nieuw-archief";
+  if (!$("arName").value) $("arName").placeholder = first ? archStem(first.file.name) : "new-archive";
   renderArch();
 }
 
@@ -2693,9 +2755,9 @@ function renderArch() {
   const shown = q ? arEntries.filter((e) => e.path.toLowerCase().includes(q)) : arEntries;
   const on = arEntries.filter((e) => e.on);
   const sum = (l) => l.reduce((a, e) => a + (e.size || 0), 0);
-  $("archTitle").textContent = `INHOUD (${arEntries.length})`;
+  $("archTitle").textContent = `CONTENTS (${arEntries.length})`;
   $("arStats").textContent = arEntries.length
-    ? `${on.length} van ${arEntries.length} bestanden aangevinkt · ${human(sum(on))}` + (q ? ` · ${shown.length} gevonden` : "")
+    ? `${on.length} of ${arEntries.length} files ticked · ${human(sum(on))}` + (q ? ` · ${shown.length} found` : "")
     : "// leeg archief. voeg bestanden toe met [ + BESTANDEN TOEVOEGEN ] hieronder, of sleep ze op de pagina.";
   const lines = [];
   const LIMIT = 2500;
@@ -2729,7 +2791,7 @@ function renderArch() {
       row.innerHTML = `<span class="ar-pre"></span><button type="button" class="ar-box" data-dir></button>` +
         `<button type="button" class="ar-name ar-dir" data-toggle></button><span class="ar-size"></span><span class="ar-act"></span>`;
       row.querySelector(".ar-box").textContent = box;
-      row.querySelector(".ar-box").setAttribute("aria-label", `Map ${l.name} aan- of uitvinken`);
+      row.querySelector(".ar-box").setAttribute("aria-label", `tick or untick folder ${l.name}`);
       row.querySelector(".ar-name").textContent = (l.open ? "▾ " : "▸ ") + l.name + "/";
       row.querySelector(".ar-name").setAttribute("aria-expanded", String(l.open));
       row.querySelector(".ar-size").textContent = `${all.length} · ${human(sum(all))}`;
@@ -2740,11 +2802,11 @@ function renderArch() {
       row.innerHTML = `<span class="ar-pre"></span><button type="button" class="ar-box"></button>` +
         `<span class="ar-name"></span><span class="ar-size"></span><span class="ar-act"><button type="button" class="btn small" data-save>[↓]</button></span>`;
       row.querySelector(".ar-box").textContent = e.on ? "[x]" : "[ ]";
-      row.querySelector(".ar-box").setAttribute("aria-label", `${e.path} aan- of uitvinken`);
+      row.querySelector(".ar-box").setAttribute("aria-label", `tick or untick ${e.path}`);
       row.querySelector(".ar-name").textContent = (e.added ? "+ " : "") + e.path.split("/").pop();
       row.querySelector(".ar-name").title = e.path;
       row.querySelector(".ar-size").textContent = human(e.size || 0);
-      row.querySelector("[data-save]").setAttribute("aria-label", "Sla " + e.path + " los op");
+      row.querySelector("[data-save]").setAttribute("aria-label", "Sla " + e.path + " separately");
       row.dataset.key = e.key;
       row.classList.toggle("off", !e.on);
     }
@@ -2793,11 +2855,11 @@ $("arTree").addEventListener("click", async (ev) => {
     $("arTree").querySelector(`[data-key="${e.key}"] .ar-box`)?.focus();
   } else if (ev.target.closest("[data-save]")) {
     try {
-      status("uitpakken: " + e.path);
+      status("extracting: " + e.path);
       const f = await entryFile(e);
       await saveAny(f, e.path.split("/").pop());
     } catch (err) {
-      showError(err instanceof UserError ? err.message : "Uitpakken mislukt: " + (err?.message || err));
+      showError(err instanceof UserError ? err.message : "Extracting failed: " + (err?.message || err));
     }
   }
 });
@@ -2833,18 +2895,18 @@ async function packFiles(files, fmt, name, pw) {
     const z = await zipjs();
     const w = new z.ZipWriter(new z.BlobWriter("application/zip"), pw ? { password: pw, encryptionStrength: 3 } : {});
     for (let i = 0; i < files.length; i++) {
-      setProgress(0.7 + 0.3 * i / files.length, `Inpakken ${i + 1}/${files.length}`);
+      setProgress(0.7 + 0.3 * i / files.length, `Packing ${i + 1}/${files.length}`);
       await w.add(files[i].pathname, new z.BlobReader(files[i].file), { level: 6 });
     }
     return await w.close();
   }
   const m = await libarchive();
   const [format, compression, unwrap] = archSpec(m, fmt);
-  setProgress(0.75, `Inpakken als .${fmt}`);
+  setProgress(0.75, `Packing as .${fmt}`);
   const out = await m.Archive.write({ files, outputFileName: name, compression, format, passphrase: null });
-  if (!out || !out.size) fail(`Inpakken als .${fmt} is mislukt. Kies .zip.`);
+  if (!out || !out.size) fail(`Packing as .${fmt} failed. Choose .zip.`);
   if (!unwrap) return new Blob([out], { type: "application/octet-stream" });
-  if (typeof DecompressionStream === "undefined") fail(`Je browser is te oud voor .${fmt}. Kies .zip of .tar.gz.`);
+  if (typeof DecompressionStream === "undefined") fail(`Your browser is too old for .${fmt}. Choose .zip or .tar.gz.`);
   setProgress(0.95, `Afronden .${fmt}`);
   const raw = await new Response(out.stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
   return new Blob([raw], { type: "application/octet-stream" });
@@ -2852,14 +2914,14 @@ async function packFiles(files, fmt, name, pw) {
 
 async function runArchiveWorkbench() {
   const sel = arEntries.filter((e) => e.on);
-  if (!sel.length) fail("Er is niets aangevinkt. Vink de bestanden aan die in het nieuwe archief moeten.");
+  if (!sel.length) fail("Nothing is ticked. Tick the files that should go into the new archive.");
   const fmt = $("arFormat").value;
   const pw = fmt === "zip" && $("arPwOn").checked ? $("arPwNew").value : null;
-  if (fmt === "zip" && $("arPwOn").checked && !pw) fail("Vul een wachtwoord in, of zet het vinkje uit.");
+  if (fmt === "zip" && $("arPwOn").checked && !pw) fail("Enter a password, or untick the box.");
   const many = sel.length > 20;
   const files = [];
   for (let i = 0; i < sel.length; i++) {
-    setProgress(i / sel.length * 0.7, `Uitpakken ${i + 1}/${sel.length}`);
+    setProgress(i / sel.length * 0.7, `Extracting ${i + 1}/${sel.length}`);
     files.push({ file: await entryFile(sel[i], many), pathname: sel[i].path });
   }
   const base = ($("arName").value.trim() || $("arName").placeholder || "archief").replace(/[\\/:*?"<>|]+/g, "-");
@@ -2873,11 +2935,11 @@ async function runArchiveWorkbench() {
 // Converteer-modus: een heel archief omzetten naar een ander formaat
 async function convertArchive(opts) {
   let st = archState.get(current.it) || await openArchive(current.it);
-  if (st.locked) fail("Dit archief heeft een wachtwoord. Open het in de ARCHIEF-WERKBANK om het wachtwoord in te vullen.");
-  setProgress(0.05, "Uitpakken");
+  if (st.locked) fail("This archive has a password. Open it in the ARCHIVE WORKBENCH to enter the password.");
+  setProgress(0.05, "Extracting");
   st.all ??= await extractAll(st);
   const files = [...st.all].map(([pathname, file]) => ({ pathname, file }));
-  if (!files.length) fail("Dit archief is leeg.");
+  if (!files.length) fail("This archive is empty.");
   const name = `${archStem(file.name)}.${opts.fmt}`;
   return { blob: await packFiles(files, opts.fmt, name, null), name, kind: "file" };
 }
@@ -2893,8 +2955,8 @@ function showArchResult(out) {
   res.innerHTML = `<span class="head">STATUS: OK</span>
 <div class="cmp"><span class="lbl">BESTAND   </span><span class="fn"></span>
 <span class="lbl">INHOUD    </span>${out.count} bestanden
-<span class="lbl">BRONNEN   </span>${bar(before)} ${human(before)}
-<span class="lbl">NIEUW     </span>${bar(after)} ${human(after)}
+<span class="lbl">SOURCES   </span>${bar(before)} ${human(before)}
+<span class="lbl">NEW       </span>${bar(after)} ${human(after)}
 <span class="lbl">VERSCHIL  </span><span class="down">${diff <= 0 ? "▼" : "▲"} ${Math.abs(diff).toFixed(1)}% ${diff <= 0 ? "kleiner" : "groter"}</span></div>`;
   res.querySelector(".fn").textContent = out.name;
   const btn = document.createElement("button");
@@ -2905,7 +2967,7 @@ function showArchResult(out) {
   note.className = "note dim small"; note.id = "saveNote";
   res.append(btn, note);
   res.hidden = false;
-  status(`klaar: ${out.name} (${human(after)})`);
+  status(`done: ${out.name} (${human(after)})`);
 }
 
 // Elk bestand opslaan; binnen claude.ai worden niet-toegestane typen in een zip verpakt.
@@ -2932,16 +2994,16 @@ const SOCIAL = [
   ["Facebook", "fb-square", "post vierkant", 1080, 1080, { max: 10e6 }],
   ["Facebook", "fb-land", "post liggend / link", 1200, 630, { max: 10e6 }],
   ["Facebook", "fb-story", "story / reels 9:16", 1080, 1920, { vbr: 6e6 }],
-  ["Facebook", "fb-cover", "omslagfoto", 1640, 624, { max: 10e6, tip: "op de telefoon vallen de zijkanten weg: houd het belangrijkste in het midden" }],
+  ["Facebook", "fb-cover", "omslagfoto", 1640, 624, { max: 10e6, tip: "on phones the sides are cut off: keep the important part in the middle" }],
   ["Facebook", "fb-event", "evenementfoto", 1920, 1005],
   ["Facebook", "fb-pano", "panorama-carrousel 4:5 · swipen", 1080, 1350, { pano: true }],
   ["Facebook", "fb-profile", "profielfoto", 720, 720, { round: true }],
   ["YouTube", "yt-1080", "video 1080p 16:9", 1920, 1080, { vbr: 10e6 }],
-  ["YouTube", "yt-1440", "video 1440p 16:9 · scherper na upload", 2560, 1440, { vbr: 18e6, tip: "youtube geeft 1440p+ een betere codec: ook 1080p-materiaal oogt dan scherper" }],
+  ["YouTube", "yt-1440", "video 1440p 16:9 · scherper na upload", 2560, 1440, { vbr: 18e6, tip: "youtube gives 1440p+ a better codec: even 1080p footage then looks sharper" }],
   ["YouTube", "yt-4k", "video 4K 16:9", 3840, 2160, { vbr: 40e6 }],
   ["YouTube", "yt-shorts", "shorts 9:16", 1080, 1920, { vbr: 10e6 }],
   ["YouTube", "yt-thumb", "thumbnail", 1280, 720, { max: 2e6 }],
-  ["YouTube", "yt-banner", "kanaalbanner", 2560, 1440, { max: 6e6, tip: "alleen het midden (1546×423) is overal zichtbaar: zet tekst en logo daar", safe: [1546, 423] }],
+  ["YouTube", "yt-banner", "kanaalbanner", 2560, 1440, { max: 6e6, tip: "only the middle (1546×423) is visible everywhere: put text and logo there", safe: [1546, 423] }],
   ["YouTube", "yt-profile", "profielfoto", 800, 800, { round: true }],
   ["TikTok", "tt-video", "video 9:16", 1080, 1920, { vbr: 6e6 }],
   ["TikTok", "tt-photo", "foto 9:16", 1080, 1920],
@@ -3020,8 +3082,8 @@ function syncSocial() {
     `video      mp4 · h.264 + aac · ${(p.vbr / 1e6).toFixed(0)} Mbit/s`,
   ];
   if (p.tip) lines.push("tip        " + p.tip);
-  if (p.pano) lines.push("panorama   wordt in naadloze slides van " + p.w + "×" + p.h + " geknipt (alleen foto's)");
-  if (other) lines.push(`let op     ${other} bestand(en) zijn geen foto of video en worden overgeslagen`);
+  if (p.pano) lines.push("panorama   becomes seamless slides of " + p.w + "×" + p.h + " cropped (photos only)");
+  if (other) lines.push(`note       ${other} file(s) are not a photo or video and are skipped`);
   $("soInfo").textContent = lines.join("\n");
   drawSocialPreview();
 }
@@ -3029,7 +3091,7 @@ function syncSocial() {
 async function soBitmap(it) {
   if (soBitmaps.has(it)) return soBitmaps.get(it);
   let bmp = null;
-  if (it.cat === "image") bmp = await createImageBitmap(it.file);
+  if (it.cat === "image") bmp = await imageBitmap(it.file);
   else {
     // video: eerste beeld als voorbeeld
     try {
@@ -3206,8 +3268,8 @@ async function socialItem(it) {
   const st = soState(it);
   const base = `${stemOf(it.file.name)}-${p.id}`;
   if (it.cat === "image") {
-    setProgress(0.1, "Afbeelding laden");
-    const bmp = await createImageBitmap(it.file);
+    setProgress(0.1, "Loading image");
+    const bmp = await imageBitmap(it.file);
     if (p.pano) {
       const n = soPanoCount(bmp.width, bmp.height, p);
       const big = document.createElement("canvas");
@@ -3228,14 +3290,14 @@ async function socialItem(it) {
     c.width = p.w; c.height = p.h;
     soCompose(c.getContext("2d"), bmp, bmp.width, bmp.height, p.w, p.h, fit, st);
     bmp.close();
-    setProgress(0.8, "Opslaan als jpg");
+    setProgress(0.8, "Save as jpg");
     return { blob: await soJpeg(c, p.max), name: base + ".jpg", kind: "image" };
   }
   if (it.cat === "video") {
-    if (p.pano) fail("Een panorama-carrousel kan alleen van een foto.");
+    if (p.pano) fail("A panorama carousel can only be made from a photo.");
     return socialVideo(it, p, fit, base);
   }
-  fail("Dit is geen foto of video; social-media-formaten gelden alleen daarvoor.");
+  fail("This is not a photo or video; social media sizes only apply to those.");
 }
 
 async function socialVideo(it, p, fit, base) {
@@ -3243,7 +3305,7 @@ async function socialVideo(it, p, fit, base) {
   const input = new MB.Input({ source: new MB.BlobSource(it.file), formats: MB.ALL_FORMATS });
   const output = new MB.Output({ format: new MB.Mp4OutputFormat({ fastStart: "in-memory" }), target: new MB.BufferTarget() });
   const codec = await MB.getFirstEncodableVideoCodec(["avc", "hevc", "vp9", "av1"].filter((c) => new MB.Mp4OutputFormat().getSupportedVideoCodecs().includes(c)), { width: p.w, height: p.h });
-  if (!codec) fail("Je browser kan geen mp4-video maken. Gebruik Chrome of Edge.");
+  if (!codec) fail("Your browser cannot make mp4 video. Use Chrome or Edge.");
   const st = soState(it);
   const video = { codec, bitrate: p.vbr, forceTranscode: true, width: p.w, height: p.h, fit: fit === "cover" ? "cover" : "contain" };
   // bijsnijden met de gekozen uitsnede, of randen in de gekozen kleur: zelf tekenen per beeld
@@ -3258,7 +3320,7 @@ async function socialVideo(it, p, fit, base) {
   const audioCodec = await MB.getFirstEncodableAudioCodec(["aac", "opus"]);
   const audio = info.hasAudio && audioCodec ? { codec: audioCodec, bitrate: 192e3, forceTranscode: true } : { discard: true };
   const conv = await MB.Conversion.init({ input, output, video, audio, showWarnings: false });
-  if (!conv.isValid) fail("Deze video kan je browser niet omzetten (" + conv.discardedTracks.map((t) => t.reason).join(", ") + ").");
+  if (!conv.isValid) fail("Your browser cannot convert this video (" + conv.discardedTracks.map((t) => t.reason).join(", ") + ").");
   conv.onProgress = (f) => setProgress(f, `Video ${p.w}×${p.h}`);
   await conv.execute();
   return { blob: new Blob([output.target.buffer], { type: "video/mp4" }), name: base + ".mp4", kind: "video" };
@@ -3467,6 +3529,239 @@ const i18nHooks = [() => renderPresetOptions(trLine), () => {
     attributes: true, attributeFilter: ["placeholder", "title", "aria-label", "label"] });
 })();
 
+
+// ---------------------------------------------------------------- text -> PDF / HTML, new PDF, test files
+const PAGE = { a4: [595.28, 841.89], letter: [612, 792], a5: [419.53, 595.28] };
+async function textToPdf(text, { title = "", size = "a4", font = "Helvetica" } = {}) {
+  const L = await pdfLib();
+  const doc = await L.PDFDocument.create();
+  if (title) doc.setTitle(title);
+  doc.setCreator("Anything Converter");
+  const f = await doc.embedFont(L.StandardFonts[font] || L.StandardFonts.Helvetica);
+  const fb = await doc.embedFont(L.StandardFonts[font === "Courier" ? "CourierBold" : font === "TimesRoman" ? "TimesRomanBold" : "HelveticaBold"]);
+  const [W, H] = PAGE[size] || PAGE.a4, M = 56, fs = font === "Courier" ? 9.5 : 11, lh = fs * 1.4;
+  // standard PDF fonts only know WinAnsi characters: replace what they cannot draw
+  const clean = (t) => t.replace(/\t/g, "    ").replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+    .replace(/[–—]/g, "-").replace(/…/g, "...").replace(/[^\x0a\x20-\x7e\xa0-\xff€]/g, "?");
+  const wrap = (line) => {
+    const out = []; let cur = "";
+    for (const word of line.split(/(\s+)/)) {
+      if (f.widthOfTextAtSize(cur + word, fs) <= W - 2 * M) { cur += word; continue; }
+      if (cur.trim()) out.push(cur.trimEnd());
+      cur = word.trimStart();
+      while (f.widthOfTextAtSize(cur, fs) > W - 2 * M) {  // one very long word
+        let n = cur.length; while (n > 1 && f.widthOfTextAtSize(cur.slice(0, n), fs) > W - 2 * M) n--;
+        out.push(cur.slice(0, n)); cur = cur.slice(n);
+      }
+    }
+    out.push(cur.trimEnd());
+    return out;
+  };
+  let page = doc.addPage([W, H]), y = H - M;
+  if (title) { page.drawText(clean(title).slice(0, 90), { x: M, y: y - 16, size: 18, font: fb }); y -= 40; }
+  for (const raw of clean(text).split("\n")) {
+    for (const line of wrap(raw)) {
+      if (y < M + lh) { page = doc.addPage([W, H]); y = H - M; }
+      page.drawText(line, { x: M, y: y - fs, size: fs, font: f });
+      y -= lh;
+    }
+  }
+  const pages = doc.getPages();
+  pages.forEach((p, i) => p.drawText(`${i + 1} / ${pages.length}`, { x: W / 2 - 12, y: 28, size: 8, font: f }));
+  return new Blob([await doc.save()], { type: "application/pdf" });
+}
+
+async function convertText(opts) {
+  const text = await file.text();
+  const stem = stemOf(file.name);
+  setProgress(0.3, "Converting");
+  if (opts.fmt === "pdf") {
+    const blob = await textToPdf(text, { title: file.name, font: ["md", "txt", "markdown", "rtf"].includes(ext) ? "Helvetica" : "Courier" });
+    return { blob, name: stem + ".pdf", kind: "file" };
+  }
+  if (opts.fmt === "html") {
+    const esc = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const html = `<!doctype html><meta charset="utf-8"><title>${file.name.replace(/</g, "&lt;")}</title>` +
+      `<pre style="font:14px/1.5 ui-monospace,monospace;white-space:pre-wrap">${esc}</pre>\n`;
+    return { blob: new Blob([html], { type: "text/html" }), name: stem + ".html", kind: "file" };
+  }
+  if (opts.fmt === "txt") {
+    return { blob: new Blob([text.replace(/\r\n/g, "\n")], { type: "text/plain" }), name: stem + (ext === "txt" ? "_edited" : "") + ".txt", kind: "file" };
+  }
+  return zipFile(opts);
+}
+
+$("newPdfBtn").addEventListener("click", () => { $("newPdfBox").hidden = false; $("npText").focus(); });
+$("npClose").addEventListener("click", () => { $("newPdfBox").hidden = true; });
+$("npMake").addEventListener("click", async () => {
+  const title = $("npTitle").value.trim();
+  try {
+    status("making pdf…");
+    const blob = await textToPdf($("npText").value, { title, size: $("npSize").value, font: $("npFont").value });
+    const name = (title.replace(/[^\w .-]+/g, "").trim() || "document") + ".pdf";
+    await saveBlob(blob, name);
+    addFiles([new File([blob], name, { type: "application/pdf" })]);
+    status("pdf made: " + name);
+  } catch (e) {
+    status("pdf failed: " + e.message);
+    alert(e.message);
+  }
+});
+
+// Test files, made right here in the browser (nothing is downloaded).
+function testCanvas(w, h, label, t = 0) {
+  const c = new OffscreenCanvas(w, h), g = c.getContext("2d");
+  for (let i = 0; i < 7; i++) { g.fillStyle = `hsl(${i * 51 + t * 40},75%,50%)`; g.fillRect(i * w / 7, 0, w / 7 + 1, h * 0.7); }
+  g.fillStyle = "#111"; g.fillRect(0, h * 0.7, w, h * 0.3);
+  g.fillStyle = "#a6ff5c"; g.font = `bold ${Math.round(h / 9)}px monospace`;
+  g.fillText(label, w * 0.05, h * 0.9);
+  g.fillStyle = "#fff"; g.beginPath(); g.arc(w * (0.15 + 0.7 * ((t / 5) % 1)), h * 0.35, h / 10, 0, 7); g.fill();
+  return c;
+}
+function toneWav(seconds = 5, rate = 44100) {
+  const n = seconds * rate, buf = new DataView(new ArrayBuffer(44 + n * 4));
+  const w = (o, s) => [...s].forEach((ch, i) => buf.setUint8(o + i, ch.charCodeAt(0)));
+  w(0, "RIFF"); buf.setUint32(4, 36 + n * 4, true); w(8, "WAVEfmt "); buf.setUint32(16, 16, true);
+  buf.setUint16(20, 1, true); buf.setUint16(22, 2, true); buf.setUint32(24, rate, true); buf.setUint32(28, rate * 4, true);
+  buf.setUint16(32, 4, true); buf.setUint16(34, 16, true); w(36, "data"); buf.setUint32(40, n * 4, true);
+  for (let i = 0; i < n; i++) {
+    const t = i / rate, f = 440 * 2 ** Math.floor(t);  // a rising tone per second
+    const v = Math.sin(2 * Math.PI * f * t) * 0.3 * Math.min(1, (seconds - t) * 4);
+    buf.setInt16(44 + i * 4, v * 32767, true); buf.setInt16(46 + i * 4, v * 0.7 * 32767, true);
+  }
+  return new Blob([buf.buffer], { type: "audio/wav" });
+}
+async function testMedia(kind) {
+  const MB = await mediabunny();
+  const fmt = { mp4: () => new MB.Mp4OutputFormat({ fastStart: "in-memory" }), mov: () => new MB.MovOutputFormat({ fastStart: "in-memory" }),
+    mkv: () => new MB.MkvOutputFormat(), webm: () => new MB.WebMOutputFormat(), m4a: () => new MB.Mp4OutputFormat({ fastStart: "in-memory" }),
+    ogg: () => new MB.OggOutputFormat(), mp3: () => new MB.Mp3OutputFormat() }[kind]();
+  if (kind === "mp3") await ensureMp3();
+  const out = new MB.Output({ format: fmt, target: new MB.BufferTarget() });
+  const video = !["m4a", "ogg", "mp3"].includes(kind);
+  let canvas = null, vsrc = null;
+  if (video) {
+    const codecs = fmt.getSupportedVideoCodecs();
+    const vc = await MB.getFirstEncodableVideoCodec(kind === "webm" ? ["vp9", "vp8", "av1"] : ["avc", "hevc", "vp9", "av1"].filter((c) => codecs.includes(c)), { width: 640, height: 360 });
+    if (!vc) fail(`Your browser cannot encode video for .${kind}.`);
+    canvas = new OffscreenCanvas(640, 360);
+    vsrc = new MB.CanvasSource(canvas, { codec: vc, bitrate: 800e3 });
+    out.addVideoTrack(vsrc, { frameRate: 25 });
+  }
+  const acodecs = fmt.getSupportedAudioCodecs();
+  const ac = await MB.getFirstEncodableAudioCodec(kind === "mp3" ? ["mp3"] : ["webm", "ogg", "mkv"].includes(kind) ? ["opus", "vorbis"] : ["aac", "opus"].filter((c) => acodecs.includes(c)));
+  const asrc = ac ? new MB.AudioBufferSource({ codec: ac, bitrate: 128e3 }) : null;
+  if (asrc) out.addAudioTrack(asrc);
+  if (!video && !asrc) fail(`Your browser cannot encode audio for .${kind}.`);
+  out.setMetadataTags?.({ title: "Anything Converter test file", artist: "Anything Converter", date: new Date() });
+  await out.start();
+  if (asrc) {
+    const ctx = new OfflineAudioContext(2, 44100 * 5, 44100);
+    const ab = await ctx.decodeAudioData(await toneWav(5).arrayBuffer());
+    await asrc.add(ab);
+    asrc.close();
+  }
+  if (video) {
+    const g = canvas.getContext("2d");
+    for (let i = 0; i < 125; i++) {
+      g.drawImage(testCanvas(640, 360, `TEST ${(i / 25).toFixed(1)} s`, i / 25), 0, 0);
+      await vsrc.add(i / 25, 1 / 25);
+    }
+    vsrc.close();
+  }
+  await out.finalize();
+  const mime = { mp4: "video/mp4", mov: "video/quicktime", mkv: "video/x-matroska", webm: "video/webm", m4a: "audio/mp4", ogg: "audio/ogg", mp3: "audio/mpeg" }[kind];
+  return new Blob([out.target.buffer], { type: mime });
+}
+async function makeTestFile(kind) {
+  const F = (blob, name) => new File([blob], name, { type: blob.type });
+  const img = async (type, w = 1280, h = 720) => testCanvas(w, h, "TEST IMAGE").convertToBlob({ type, quality: 0.9 });
+  switch (kind) {
+    case "png": return [F(await img("image/png"), "test.png")];
+    case "jpg": return [F(await img("image/jpeg"), "test.jpg")];
+    case "webp": return [F(await img("image/webp"), "test.webp")];
+    case "bmp": {
+      const c = testCanvas(320, 180, "BMP"), d = c.getContext("2d").getImageData(0, 0, 320, 180).data;
+      const row = 320 * 3, size = 54 + row * 180, b = new DataView(new ArrayBuffer(size));
+      b.setUint16(0, 0x4d42, true); b.setUint32(2, size, true); b.setUint32(10, 54, true); b.setUint32(14, 40, true);
+      b.setInt32(18, 320, true); b.setInt32(22, 180, true); b.setUint16(26, 1, true); b.setUint16(28, 24, true);
+      for (let y = 0; y < 180; y++) for (let x = 0; x < 320; x++) {
+        const s = ((179 - y) * 320 + x) * 4, o = 54 + y * row + x * 3;
+        b.setUint8(o, d[s + 2]); b.setUint8(o + 1, d[s + 1]); b.setUint8(o + 2, d[s]);
+      }
+      return [F(new Blob([b.buffer], { type: "image/bmp" }), "test.bmp")];
+    }
+    case "gif": {
+      const { GIFEncoder, quantize, applyPalette } = await gifenc();
+      const gif = GIFEncoder();
+      for (let i = 0; i < 20; i++) {
+        const d = testCanvas(320, 180, "GIF", i / 4).getContext("2d").getImageData(0, 0, 320, 180).data;
+        const pal = quantize(d, 128);
+        gif.writeFrame(applyPalette(d, pal), 320, 180, { palette: pal, delay: 100 });
+      }
+      gif.finish();
+      return [F(new Blob([gif.bytes()], { type: "image/gif" }), "test.gif")];
+    }
+    case "svg": return [F(new Blob([`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">` +
+      [0, 1, 2, 3, 4, 5, 6].map((i) => `<rect x="${i * 91.4}" width="92" height="250" fill="hsl(${i * 51},75%,50%)"/>`).join("") +
+      `<rect y="250" width="640" height="110" fill="#111"/><text x="30" y="325" font-family="monospace" font-size="48" fill="#a6ff5c">TEST SVG</text></svg>`],
+      { type: "image/svg+xml" }), "test.svg")];
+    case "3img": return Promise.all([0, 1, 2].map(async (i) => F(await testCanvas(1920, 1080, `TEST IMAGE ${i + 1}`, i).convertToBlob({ type: "image/png" }), `test-image-${i + 1}.png`)));
+    case "wav": return [F(toneWav(5), "test.wav")];
+    case "mp4": case "webm": case "mov": case "mkv": case "m4a": case "ogg": case "mp3":
+      return [F(await testMedia(kind), `test.${kind}`)];
+    case "pdf": {
+      const L = await pdfLib();
+      const doc = await L.PDFDocument.create();
+      const f = await doc.embedFont(L.StandardFonts.HelveticaBold);
+      doc.setTitle("Anything Converter test PDF");
+      for (let i = 1; i <= 3; i++) {
+        const p = doc.addPage([595.28, 841.89]);
+        const png = await doc.embedPng(await (await testCanvas(800, 450, `PAGE ${i}`, i).convertToBlob({ type: "image/png" })).arrayBuffer());
+        p.drawText(`Test PDF - page ${i} of 3`, { x: 56, y: 770, size: 22, font: f });
+        p.drawImage(png, { x: 56, y: 400, width: 483, height: 272 });
+      }
+      return [F(new Blob([await doc.save()], { type: "application/pdf" }), "test.pdf")];
+    }
+    case "txt": return [F(new Blob(["Anything Converter test file\n\nThe quick brown fox jumps over the lazy dog.\n" + "Line ".repeat(40) + "\n"], { type: "text/plain" }), "test.txt")];
+    case "md": return [F(new Blob(["# Test document\n\nSome **bold** and *italic* text.\n\n- one\n- two\n- three\n\n| a | b |\n|---|---|\n| 1 | 2 |\n"], { type: "text/markdown" }), "test.md")];
+    case "csv": return [F(new Blob(["name,city,amount\nAnna,Utrecht,12.50\nBo,Ghent,7.25\nChris,Leeds,30\n"], { type: "text/csv" }), "test.csv")];
+    case "json": return [F(new Blob([JSON.stringify({ name: "Anything Converter", test: true, items: [1, 2, 3], nested: { a: "b" } }, null, 2)], { type: "application/json" }), "test.json")];
+    case "html": return [F(new Blob(["<!doctype html><meta charset=utf-8><title>Test</title><h1>Test page</h1><p>Hello <b>world</b>.</p>"], { type: "text/html" }), "test.html")];
+    case "zip": {
+      const { zipSync, strToU8 } = await fflate();
+      const data = zipSync({ "readme.txt": strToU8("Test archive\n"), "data/test.csv": strToU8("a,b\n1,2\n"),
+        "data/test.json": strToU8('{"ok": true}'), "images/test.png": new Uint8Array(await (await img("image/png", 320, 180)).arrayBuffer()) });
+      return [F(new Blob([data], { type: "application/zip" }), "test.zip")];
+    }
+    case "all": {
+      const out = [];
+      for (const k of ["mp4", "webm", "wav", "mp3", "m4a", "png", "jpg", "webp", "gif", "svg", "pdf", "txt", "md", "csv", "json", "zip"]) {
+        try { out.push(...await makeTestFile(k)); } catch (e) { console.warn(k, e); }
+      }
+      return out;
+    }
+  }
+  return [];
+}
+$("testBtn").addEventListener("click", async () => {
+  const kind = $("testSel").value;
+  if (!kind || busy) return;
+  const btn = $("testBtn");
+  btn.disabled = true;
+  status("making test file…");
+  try {
+    const files = await makeTestFile(kind);
+    if (!files.length) fail("No test file could be made in this browser.");
+    await addFiles(files);
+  } catch (e) {
+    status("test file failed: " + e.message);
+    alert(e.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 // ---------------------------------------------------------------- thema
 
 function setSkin(s) {
@@ -3478,7 +3773,7 @@ document.querySelectorAll(".skins button").forEach((b) => b.addEventListener("cl
 try { const s = localStorage.getItem("ac-skin"); if (s) setSkin(s); } catch {}
 
 if (typeof VideoEncoder === "undefined") {
-  notice("Let op: je browser ondersteunt geen WebCodecs, dus video en audio werken hier niet. Afbeeldingen en zip werken wel. Gebruik een recente Chrome, Edge, Safari of Firefox.", true);
+  notice("Note: your browser does not support WebCodecs, so video and audio do not work here. Images and zip do. Use a recent Chrome, Edge, Safari or Firefox.", true);
 }
 
 // /web/#pdf of /web/#arch: meteen de juiste werkbank openen (bijv. vanuit de desktop-app)

@@ -34,7 +34,7 @@ def run(cmd: list[str], timeout: Optional[int] = None, cwd: Optional[Path] = Non
         raise ConversionError(f"{cmd[0]} took too long and was stopped.") from exc
     if proc.returncode != 0:
         tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-6:]
-        raise ConversionError(f"{Path(cmd[0]).name} faalde:\n" + "\n".join(tail))
+        raise ConversionError(f"{Path(cmd[0]).name} failed:\n" + "\n".join(tail))
     return proc
 
 
