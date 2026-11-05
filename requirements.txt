@@ -20,3 +20,4 @@ winrt-Windows.Storage.Streams>=2.3; sys_platform == "win32"
 winrt-Windows.Foundation>=2.3; sys_platform == "win32"
 winrt-Windows.Foundation.Collections>=2.3; sys_platform == "win32"
 winrt-Windows.Globalization>=2.3; sys_platform == "win32"
+pyyaml>=6.0

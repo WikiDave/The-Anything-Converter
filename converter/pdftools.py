@@ -570,3 +570,80 @@ def text_to_document(text: str, dst: Path, fmt: str) -> Path:
     else:
         raise ConversionError(f"Tekst naar .{fmt} wordt niet ondersteund.")
     return dst
+
+
+# --------------------------------------------------------------------- PDF-werkbank (terminal/CLI)
+
+def parse_pages(spec: str, count: int) -> list[int]:
+    """'1-3,5,8-' -> [0,1,2,4,7,...] (0-gebaseerd). Leeg = alle pagina's."""
+    spec = (spec or "").replace(" ", "")
+    if not spec:
+        return list(range(count))
+    out: list[int] = []
+    for part in spec.split(","):
+        if not part:
+            continue
+        if "-" in part:
+            a, b = part.split("-", 1)
+            lo = int(a) if a else 1
+            hi = int(b) if b else count
+        else:
+            lo = hi = int(part)
+        if lo < 1 or hi > count or lo > hi:
+            raise ConversionError(f"Pagina's '{part}' bestaan niet (1-{count}).")
+        out.extend(range(lo - 1, hi))
+    return out
+
+
+def merge(files: list[Path], dst: Path) -> Path:
+    """PDF's en afbeeldingen samenvoegen tot één PDF, in de gegeven volgorde."""
+    fitz = _fitz()
+    out = fitz.open()
+    for f in files:
+        if f.suffix.lower() == ".pdf":
+            with fitz.open(f) as d:
+                if d.needs_pass:
+                    raise ConversionError(f"{f.name} is met een wachtwoord beveiligd.")
+                out.insert_pdf(d)
+        else:
+            with fitz.open(f) as img:
+                pdf = fitz.open("pdf", img.convert_to_pdf())
+                out.insert_pdf(pdf)
+    if not len(out):
+        raise ConversionError("Geen pagina's om samen te voegen.")
+    out.save(dst, garbage=3, deflate=True)
+    return dst
+
+
+def split(src: Path, out_dir: Path, spec: str = "") -> Path:
+    """Elke pagina een eigen PDF (zip), of alleen de gekozen pagina's als één PDF."""
+    fitz = _fitz()
+    doc = fitz.open(src)
+    if spec.strip():
+        dst = out_dir / f"{src.stem}_pagina-{spec.replace(',', '_')}.pdf"
+        new = fitz.open()
+        for i in parse_pages(spec, len(doc)):
+            new.insert_pdf(doc, from_page=i, to_page=i)
+        new.save(dst, garbage=3, deflate=True)
+        return dst
+    dst = out_dir / f"{src.stem}_losse-paginas.zip"
+    with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
+        for i in range(len(doc)):
+            one = fitz.open()
+            one.insert_pdf(doc, from_page=i, to_page=i)
+            z.writestr(f"{src.stem}_pagina_{i + 1:03d}.pdf", one.tobytes(garbage=3, deflate=True))
+    return dst
+
+
+def edit_pages(src: Path, dst: Path, delete: str = "", rotate: str = "", angle: int = 90) -> Path:
+    """Pagina's verwijderen en/of draaien."""
+    fitz = _fitz()
+    doc = fitz.open(src)
+    for i in parse_pages(rotate, len(doc)) if rotate.strip() else []:
+        doc[i].set_rotation((doc[i].rotation + angle) % 360)
+    if delete.strip():
+        doc.delete_pages(sorted(set(parse_pages(delete, len(doc)))))
+    if not len(doc):
+        raise ConversionError("Er blijven geen pagina's over.")
+    doc.save(dst, garbage=3, deflate=True)
+    return dst

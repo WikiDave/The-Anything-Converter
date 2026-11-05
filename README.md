@@ -41,28 +41,36 @@ Op het startscherm staat **[ GEREEDSCHAP ]** met snelle keuzes: kies een tegel, 
 | Checksum | CRC-32, Adler-32, MD4, MD5, RIPEMD-160, SHA-1/224/256/384/512, SHA3, BLAKE2, ook als HMAC met een sleutel |
 | Website | opslaan als PDF, PNG of JPG (met Chrome/Edge op je computer) |
 
-## Terminalversie (Windows Terminal, PowerShell, bash, SSH)
+## Terminalversie (elke terminal, ook via SSH)
 
-Dezelfde ASCII-layout als de web-app, maar als terminalprogramma: werkt in Windows Terminal/PowerShell, in
-bash/zsh op macOS en Linux, en via SSH op een server zonder scherm. Muis en toetsenbord werken allebei.
+Dezelfde ASCII-stijl als de web-app, met alles wat de desktop-app kan. Werkt in Windows Terminal, PowerShell,
+cmd, macOS Terminal en iTerm, Linux-terminals en de Linux-console, tmux/screen en via SSH. Muis en toetsenbord
+werken allebei; met `f1` zie je alle toetsen.
 
-- **Converteren**: bestand kiezen in de mapboom (of een pad plakken), formaat, kwaliteit of doelgrootte, knippen,
-  resolutie; het resultaat komt naast het bestand (of in een gekozen map) met een ORIGINEEL/NIEUW-vergelijking.
-- **Link & torrent**: video-links, magnet-links en .torrent-bestanden, met viruscheck na het downloaden.
-- **Virusscan**: elk bestand of map scannen; VirusTotal-sleutel instellen.
-- Toetsen: `ctrl+s` start, `ctrl+t` kleur (groen/amber/cyaan), `ctrl+o` pad, `ctrl+q` afsluiten.
+Tabbladen (ook met de toetsen 1 t/m 8): **omzetten** (met mappenlijst, alle opties, ook een hele map tegelijk),
+**tools** (dezelfde tegels als de desktop-app), **pdf** (samenvoegen, splitsen, draaien, verwijderen, comprimeren),
+**social** (exacte formaten en panorama-carrousel), **archief** (bekijken, uitpakken, inpakken), **link**
+(video-links en torrents), **controle** (virusscan, checksums) en **ocr/web** (tekst herkennen, schermafbeelding,
+website opslaan). Tekst kopiëren werkt ook via SSH (OSC 52).
 
-Starten: in de desktop-app klik je bovenin op **[ TERMINAL ]**: er opent een terminalvenster met de
-terminalversie. Op Windows staat ook **Anything Converter (terminal)** in het Startmenu, op Linux in het
-programmamenu. Of typ zelf:
+Drie manieren, voor elke terminal:
+
+| Manier | Wanneer |
+|---|---|
+| `anything-converter-tui` | volledig scherm (de gewone manier). Kleine vensters krijgen een compacte kop |
+| `anything-converter-tui --ascii` | oude consoles of lettertypes zonder kaderlijnen: alleen ASCII-tekens |
+| `anything-converter-tui --simpel` | genummerde menu's, zonder schermbesturing. Start vanzelf bij `TERM=dumb`, een pijp, of een heel klein venster |
+| `anything-converter-tui converteer a.mov --naar mp4` | opdrachten voor scripts; zie `--help` (converteer, formaten, pdf, archief, social, ocr, web, ophalen, scan, hash) |
+
+Starten na installeren:
 
 | Waar | Commando |
 |---|---|
-| Windows (na de .msi) | `anything-converter-tui` in een nieuwe terminal |
+| Windows (na de .msi) | `anything-converter-tui` in een nieuwe terminal, of **Anything Converter (terminal)** in het Startmenu |
+| macOS / Linux via Homebrew | `brew install anything-converter` (zie hieronder), daarna `anything-converter-tui` |
 | Ubuntu/Debian (.deb) | `anything-converter-tui` |
 | AppImage | `./AnythingConverter-Linux.AppImage tui` |
-| macOS | `"/Applications/Anything Converter.app/Contents/MacOS/anything-converter-tui"` |
-| Homebrew (macOS, Linux) | `brew install anything-converter` (zie hieronder) |
+| macOS (.dmg) | in de app op **[ TERMINAL ]** klikken, of `"/Applications/Anything Converter.app/Contents/MacOS/anything-converter-tui"` |
 | Vanuit de broncode / via SSH | `pip install -r requirements.txt` en `python tui.py [bestand]` |
 
 **Via Homebrew** (alleen de terminalversie, macOS en Linux; zonder Apple-melding):

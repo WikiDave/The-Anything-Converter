@@ -60,7 +60,7 @@ PACKAGES = ["converter", "textual", "rich", "flask", "werkzeug", "jinja2", "mark
             "blinker", "PIL", "pikepdf", "yt_dlp", "yt_dlp_ejs", "certifi", "libtorrent",
             "webview", "proxy_tools", "bottle", "typing_extensions",
             # PDF-gereedschap, Office-bestanden, 7z, spraakherkenning
-            "pymupdf", "fitz", "docx", "openpyxl", "pptx", "lxml", "py7zr", "numpy", "pywhispercpp"]
+            "pymupdf", "fitz", "docx", "openpyxl", "pptx", "lxml", "py7zr", "numpy", "pywhispercpp", "yaml"]
 if sys.platform == "win32":
     PACKAGES += ["clr_loader", "pythonnet", "winrt"]  # winrt: Windows-tekstherkenning
 elif sys.platform == "darwin":
@@ -73,8 +73,7 @@ build_exe = {
     "includes": ["app", "window"] + (["clr"] if sys.platform == "win32" else [])
                 + (["_pywhispercpp"] if importlib.util.find_spec("_pywhispercpp") else []),
     "include_files": include_files,
-    "excludes": ["tkinter", "unittest", "pytest", "test", "pydoc_data", "cx_Freeze", "fontTools",
-                 "yaml", "matplotlib", "pandas", "scipy", "IPython", "setuptools", "pip"],
+    "excludes": ["tkinter", "unittest", "pytest", "test", "pydoc_data", "cx_Freeze", "fontTools", "matplotlib", "pandas", "scipy", "IPython", "setuptools", "pip"],
     "include_msvcr": True,
     "optimize": 1,
 }
