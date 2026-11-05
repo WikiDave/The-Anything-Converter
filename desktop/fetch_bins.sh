@@ -31,7 +31,15 @@ case "$PLATFORM" in
     done
     ;;
   linux-x64)
-    get https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz "$TMP/ff.tar.xz"
+    # johnvansickle.com sometimes answers with an HTML page: check the archive, retry, then try the git build
+    ok=""
+    for url in https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
+               https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
+               https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz; do
+      if get "$url" "$TMP/ff.tar.xz" && xz -t "$TMP/ff.tar.xz" 2>/dev/null; then ok=1; break; fi
+      echo "::warning::no valid ffmpeg archive from $url; trying again"; sleep 20
+    done
+    [ -n "$ok" ] || { echo "ffmpeg download failed" >&2; exit 1; }
     tar -xJf "$TMP/ff.tar.xz" -C "$TMP"
     cp "$TMP"/ffmpeg-*-static/ffmpeg "$TMP"/ffmpeg-*-static/ffprobe "$BIN/"
     DENO_TARGET=x86_64-unknown-linux-gnu
