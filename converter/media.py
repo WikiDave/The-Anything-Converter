@@ -250,7 +250,7 @@ def _run_ffmpeg(args: list[str], duration: float, progress: Optional[ProgressFn]
     t.join(timeout=5)
     if proc.returncode != 0:
         tail = "".join(err_lines[-8:]).strip()
-        raise ConversionError("ffmpeg faalde:\n" + tail)
+        raise ConversionError("ffmpeg failed:\n" + tail)
 
 
 def _audio_bitrate_for(total_kbps: float) -> int:

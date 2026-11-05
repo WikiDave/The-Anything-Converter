@@ -32,6 +32,15 @@ def calibre() -> Optional[str]:
 def convert(src: Path, out_dir: Path, fmt: str, opts: dict, progress: Optional[ProgressFn] = None) -> Path:
     ext = src.suffix.lower().lstrip(".")
     dst = out_dir / f"{src.stem}{'_edited' if fmt == ext else ''}.{fmt}"
+    if ext == "ibooks":  # an Apple Books file is an EPUB with another name
+        import shutil
+        import tempfile
+        tmp = Path(tempfile.mkdtemp(prefix="ibooks-")) / f"{src.stem}.epub"
+        shutil.copyfile(src, tmp)
+        if fmt == "epub":
+            shutil.move(str(tmp), dst)
+            return dst
+        src, ext = tmp, "epub"
     tool = calibre()
     if tool:
         if progress:
@@ -89,6 +98,13 @@ def html_to_text(body: str) -> str:
 
 
 def read_epub(src: Path) -> tuple[str, str]:
+    try:
+        return _read_epub(src)
+    except (KeyError, zipfile.BadZipFile, ET.ParseError, StopIteration) as e:
+        raise ConversionError(f"This is not a valid EPUB e-book ({e.__class__.__name__}).") from e
+
+
+def _read_epub(src: Path) -> tuple[str, str]:
     with zipfile.ZipFile(src) as z:
         container = ET.fromstring(z.read("META-INF/container.xml"))
         opf_path = next(e.get("full-path") for e in container.iter() if e.tag.endswith("rootfile"))

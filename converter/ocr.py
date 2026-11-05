@@ -161,7 +161,7 @@ def _tesseract(path: Path) -> str:
     r = subprocess.run(["tesseract", str(path), "stdout", "-l", _tesseract_langs()], capture_output=True,
                        timeout=600, **NO_WINDOW)
     if r.returncode != 0:
-        raise ConversionError("Tesseract faalde: " + r.stderr.decode("utf-8", "replace")[-300:])
+        raise ConversionError("Tesseract failed: " + r.stderr.decode("utf-8", "replace")[-300:])
     return r.stdout.decode("utf-8", "replace").strip()
 
 

@@ -229,7 +229,10 @@ def web_html(path: Path) -> str:
         return part.get_content()
     if ext == "webarchive":
         import plistlib
-        data = plistlib.loads(path.read_bytes())
+        try:
+            data = plistlib.loads(path.read_bytes())
+        except Exception as e:  # noqa: BLE001
+            raise ConversionError("This is not a valid Safari web archive (.webarchive).") from e
         main = data.get("WebMainResource", {})
         raw = main.get("WebResourceData", b"")
         return raw.decode(main.get("WebResourceTextEncodingName") or "utf-8", "replace")

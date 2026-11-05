@@ -86,6 +86,12 @@ def targets(path: Path, category: str, patches: list[Path]) -> list[str]:
             out += ["iso", "cue"]
         else:  # cue, bin, img, ccd, mdf, mds
             out += ["iso", "cue", "wav", "chd", "cso"]
+            if ext == "cue":  # only offer .wav when the disc really has audio tracks
+                try:
+                    if not any(t["type"] == "AUDIO" for f in parse_cue(path) for t in f["tracks"]):
+                        out.remove("wav")
+                except (ConversionError, OSError, ValueError, KeyError):
+                    pass
         out += ["zip", "7z"]
         return out
     head = path.read_bytes()[:4] if path.stat().st_size >= 4 else b""

@@ -84,6 +84,7 @@ def _rom_sample(ext: str, d: Path) -> Path | None:
     elif ext == "nds":
         rom = bytearray(body * 4)
         rom[0:12] = title[:12]
+        rom[0x12] = 0  # unit code: plain DS (not DSi)
         rom[0x80:0x84] = (len(rom) // 2).to_bytes(4, "little")
         p.write_bytes(bytes(rom))
     elif ext == "ips":
@@ -94,6 +95,18 @@ def _rom_sample(ext: str, d: Path) -> Path | None:
 
 
 def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange lijst is hier het duidelijkst
+    if ext == "ibooks":  # Apple Books: an EPUB under another name
+        e = make_sample("epub", d)
+        return e.rename(d / "sample.ibooks") if e else None
+    if ext == "webarchive":
+        import plistlib
+        page = b"<html><head><title>Test page</title></head><body><h1>Test page</h1><p>Hello world.</p></body></html>"
+        p = d / "sample.webarchive"
+        p.write_bytes(plistlib.dumps({"WebMainResource": {"WebResourceData": page, "WebResourceMIMEType": "text/html",
+                                                          "WebResourceTextEncodingName": "UTF-8",
+                                                          "WebResourceURL": "https://example.com/"}},
+                                     fmt=plistlib.FMT_BINARY))
+        return p
     if ext in ("cue", "bin", "iso", "nes", "z64", "n64", "v64", "sfc", "smc", "gb", "gbc", "gba", "gen", "smd",
                "sms", "gg", "pce", "nds", "ips"):
         r = _rom_sample(ext, d)
