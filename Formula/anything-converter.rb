@@ -9,6 +9,11 @@ class AnythingConverter < Formula
   homepage "https://github.com/WikiDave/The-Anything-Converter"
   version "2.6.0"
 
+  # Standaard: Linux (x86_64). Elke combinatie van systeem en processor moet een download hebben,
+  # anders weigert nieuwere Homebrew de hele tap; Linux op ARM wordt daarom netjes geweigerd.
+  url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.6.0/anything-converter-tui-linux-x64.tar.gz"
+  sha256 "4df8d5fae914c902b1299bb2758bea9360bbd9e6543035a08a6bda20cff734a5"
+
   on_macos do
     on_arm do
       url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.6.0/anything-converter-tui-macos-arm64.tar.gz"
@@ -21,10 +26,7 @@ class AnythingConverter < Formula
   end
 
   on_linux do
-    on_intel do
-      url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.6.0/anything-converter-tui-linux-x64.tar.gz"
-      sha256 "4df8d5fae914c902b1299bb2758bea9360bbd9e6543035a08a6bda20cff734a5"
-    end
+    depends_on arch: :x86_64
   end
 
   # Kant-en-klaar programma (met eigen Python, ffmpeg en yt-dlp): niet strippen of aanpassen.
