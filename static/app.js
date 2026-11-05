@@ -366,6 +366,8 @@ function setup(data) {
   // reset velden
   for (const id of ["targetSize", "scalePct", "imgW", "imgH", "gifWidth", "gifFps", "trimStart", "trimEnd"]) $(id).value = "";
   $("removeAudio").checked = false; $("fastTrim").checked = false; $("height").value = ""; $("device").value = "";
+  document.querySelectorAll("#avBox input, #avBox select").forEach((el) => (el.value = ""));
+  $("avSource").textContent = ""; mediaInfoFor = null;
   document.querySelector("input[name=sizeMode][value=quality]").checked = true;
 
   setupPreview(data);
@@ -416,6 +418,10 @@ function refresh() {
   show($("targetBox"), t);
   show($("qualityBox"), !t && !(cat === "audio" && LOSSLESS_AUDIO.includes(fmt)));
   show($("videoBox"), toVideo);
+  const avOn = (toVideo || (isMedia && AUDIO_OUT.includes(fmt))) && !speech;
+  show($("avBox"), avOn);
+  document.querySelectorAll("#avBox .av-video").forEach((el) => show(el, toVideo));
+  if (avOn) loadMediaInfo();
   show($("gifBox"), cat === "video" && fmt === "gif");
   show($("imageBox"), cat === "image" && !textual);
   show($("trimBox"), isMedia);
@@ -511,6 +517,18 @@ $("goBtn").addEventListener("click", async () => {
     opts.device = $("device").value;
     opts.gif_width = $("gifWidth").value;
     opts.gif_fps = $("gifFps").value;
+  }
+  if ((cat === "video" || cat === "audio") && !$("avBox").classList.contains("hidden")) {
+    Object.assign(opts, {
+      vcodec: $("avVcodec").value, fps: $("avFps").value, video_bitrate: $("avVbr").value, crf: $("avCrf").value,
+      preset: $("avPreset").value, pix_fmt: $("avPix").value, streams: $("avStreams").value,
+      acodec: $("avAcodec").value, audio_bitrate: $("avAbr").value, sample_rate: $("avRate").value,
+      channels: $("avCh").value, volume: $("avVol").value, metadata: $("avMeta").value,
+      meta_title: $("metaTitle").value, meta_artist: $("metaArtist").value, meta_album: $("metaAlbum").value,
+      meta_date: $("metaDate").value, meta_comment: $("metaComment").value,
+    });
+    if (cat === "video" && $("avW").value) opts.width = $("avW").value;
+    if (cat === "video" && $("avH").value) opts.height = $("avH").value;
   }
   if (cat === "image") {
     opts.scale_percent = $("scalePct").value;
@@ -991,4 +1009,39 @@ async function newDb() {
   if (!r.ok) { status("FOUT: " + j.error); return; }
   localFile = null; setup(j); openDb();
   $("dbSql").value = "CREATE TABLE klanten (id INTEGER PRIMARY KEY, naam TEXT NOT NULL, plaats TEXT);\nINSERT INTO klanten (naam, plaats) VALUES ('Anna', 'Utrecht'), ('Bo', 'Gent');\nSELECT * FROM klanten;";
+}
+
+
+// ---------------------------------------------------------------- what is behind a media file
+let mediaInfoFor = null;
+async function loadMediaInfo() {
+  if (!current || mediaInfoFor === current.id) return;
+  mediaInfoFor = current.id;
+  const box = $("avSource");
+  box.textContent = "reading streams…";
+  try {
+    const r = await fetch(`/api/media/${current.id}`);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "?");
+    const kb = (b) => (b ? Math.round(b / 1000) + " kbps" : "");
+    const lines = [`SOURCE  ${d.container || "?"} · ${fmtTime(d.duration)} · ${kb(d.bitrate)}`];
+    for (const st of d.streams) {
+      const bits = [st.kind.toUpperCase(), (st.codec || "?").toUpperCase() + (st.profile ? ` (${st.profile})` : "")];
+      if (st.kind === "video") bits.push(`${st.width}×${st.height}`, st.fps ? st.fps + " fps" : "", st.pix_fmt || "",
+        st.cover ? "cover art" : "");
+      if (st.kind === "audio") bits.push(st.sample_rate ? st.sample_rate / 1000 + " kHz" : "", st.layout || (st.channels ? st.channels + " ch" : ""));
+      bits.push(kb(st.bitrate), st.language || "", st.title || "");
+      lines.push("  #" + st.index + " " + bits.filter(Boolean).join(" · "));
+    }
+    const tags = Object.entries(d.tags || {}).filter(([k]) => !/^(major_brand|minor_version|compatible_brands|encoder)$/i.test(k));
+    if (tags.length) lines.push("TAGS    " + tags.map(([k, v]) => `${k}=${v}`).join(" · "));
+    if (d.chapters) lines.push(`CHAPTERS ${d.chapters}`);
+    box.textContent = lines.join("\n");
+    const t = d.tags || {}, low = Object.fromEntries(Object.entries(t).map(([k, v]) => [k.toLowerCase(), v]));
+    $("metaTitle").placeholder = low.title || "keep"; $("metaArtist").placeholder = low.artist || "keep";
+    $("metaAlbum").placeholder = low.album || "keep"; $("metaDate").placeholder = low.date || low.creation_time || "keep";
+    $("metaComment").placeholder = low.comment || "keep";
+  } catch (e) {
+    box.textContent = "(could not read the streams: " + e.message + ")";
+  }
 }

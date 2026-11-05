@@ -178,6 +178,33 @@ def browser_app_window(url: str, closers: list) -> bool:
     return time.time() - t0 > 5
 
 
+def ensure_on_path(base: Path) -> None:
+    """Windows: put the install folder in the user's PATH so 'anything-converter-tui' works in every
+    new terminal, also when the installer's PATH entry got lost (or the app was copied by hand)."""
+    if sys.platform != "win32" or not getattr(sys, "frozen", False):
+        return
+    if not (base / "anything-converter-tui.exe").exists():
+        return
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0,
+                            winreg.KEY_READ | winreg.KEY_WRITE) as key:
+            try:
+                value, kind = winreg.QueryValueEx(key, "Path")
+            except FileNotFoundError:
+                value, kind = "", winreg.REG_EXPAND_SZ
+            parts = [x for x in value.split(";") if x]
+            if any(os.path.normcase(os.path.expandvars(x)).rstrip("\\") == os.path.normcase(str(base)).rstrip("\\")
+                   for x in parts):
+                return
+            winreg.SetValueEx(key, "Path", 0, kind, ";".join(parts + [str(base)]))
+        import ctypes  # tell running programs (Explorer) that the environment changed
+        ctypes.windll.user32.SendMessageTimeoutW(0xFFFF, 0x001A, 0, "Environment", 2, 2000, None)
+        print("added to PATH:", base)
+    except Exception as e:  # noqa: BLE001
+        print("could not add to PATH:", e)
+
+
 def main() -> None:
     base = app_dir()
     # Een GUI-app heeft geen console: schrijf uitvoer naar een logbestand (anders crasht print()).
@@ -187,6 +214,7 @@ def main() -> None:
     print(f"\n--- start {time.strftime('%Y-%m-%d %H:%M:%S')} vanuit {base}")
 
     prepare_environment(base)
+    ensure_on_path(base)
     sys.path.insert(0, str(base))
     from werkzeug.serving import make_server
 

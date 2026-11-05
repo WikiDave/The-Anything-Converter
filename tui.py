@@ -310,7 +310,30 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
                                                           ("nintendo-3ds", "Nintendo 3DS"), ("wii", "Wii"),
                                                           ("kindle-fire", "Kindle Fire"), ("blackberry", "BlackBerry"))],
                                      prompt="device: no preference", id="device", allow_blank=True)
+                    with Horizontal(classes="row", id="codec-row"):
+                        yield Select([(n, v) for v, n in (("h264", "H.264"), ("h265", "H.265/HEVC"), ("av1", "AV1"),
+                                                          ("vp9", "VP9"), ("prores", "ProRes"), ("mpeg4", "MPEG-4"),
+                                                          ("copy", "copy (no re-encode)"))],
+                                     prompt="video codec: auto", id="vcodec", allow_blank=True)
+                        yield Select([(f, f) for f in ("23.976", "24", "25", "29.97", "30", "50", "60")],
+                                     prompt="fps: original", id="fps", allow_blank=True)
+                    with Horizontal(classes="row", id="audio-row"):
+                        yield Select([(n, v) for v, n in (("aac", "AAC"), ("mp3", "MP3"), ("opus", "Opus"),
+                                                          ("flac", "FLAC"), ("ac3", "AC-3"), ("pcm", "PCM"),
+                                                          ("copy", "copy"))],
+                                     prompt="audio codec: auto", id="acodec", allow_blank=True)
+                        yield Select([(f"{k} kbps", k) for k in ("96", "128", "160", "192", "256", "320")],
+                                     prompt="audio bitrate: auto", id="abitrate", allow_blank=True)
+                    with Horizontal(classes="row"):
+                        yield Select([("44.1 kHz", "44100"), ("48 kHz", "48000"), ("22.05 kHz", "22050")],
+                                     prompt="sample rate: original", id="srate", allow_blank=True)
+                        yield Select([("mono", "mono"), ("stereo", "stereo"), ("5.1", "5.1")],
+                                     prompt="channels: original", id="channels", allow_blank=True)
+                    with Horizontal(classes="row"):
+                        yield Label("TITLE>", classes="prompt")
+                        yield Input(placeholder="keep", id="meta-title")
                     yield Checkbox("Remove audio", id="noaudio")
+                    yield Checkbox("Remove all metadata (privacy)", id="nometa")
                 with self.frame("SPEECH TO TEXT", id="f-speech"):
                     with Horizontal(classes="row"):
                         yield Select([(n, v) for v, n in (("auto", "language: automatic"), ("nl", "Nederlands"),
@@ -663,6 +686,10 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
             self.query_one("#f-trim").display = media
             self.query_one("#video-row").display = cat == "video" and not speech
             self.query_one("#noaudio").display = cat == "video" and not speech
+            self.query_one("#codec-row").display = cat == "video" and not speech and fmt != "gif"
+            for wid in ("#audio-row", "#srate", "#meta-title", "#nometa"):
+                w = self.query_one(wid)
+                (w.parent if wid in ("#srate", "#meta-title") else w).display = media and not speech
             self.query_one("#f-speech").display = speech
             self.query_one("#f-image").display = cat == "image" and not texty
             self.query_one("#f-patch").display = cat in ("rom",)
@@ -732,10 +759,16 @@ HelpScreen {{ align: center middle; background: #000000 70%; }}
                     v = self.query_one(wid, Input).value.strip()
                     if v:
                         opts[key] = v
-                for key, wid in (("height", "#height"), ("device", "#device")):
+                for key, wid in (("height", "#height"), ("device", "#device"), ("vcodec", "#vcodec"),
+                                 ("fps", "#fps"), ("acodec", "#acodec"), ("audio_bitrate", "#abitrate"),
+                                 ("sample_rate", "#srate"), ("channels", "#channels")):
                     v = self.query_one(wid, Select).value
                     if isinstance(v, str):
                         opts[key] = int(v) if key == "height" else v
+                if self.query_one("#meta-title", Input).value.strip():
+                    opts["meta_title"] = self.query_one("#meta-title", Input).value.strip()
+                if self.query_one("#nometa", Checkbox).value:
+                    opts["metadata"] = "strip"
                 if self.query_one("#noaudio", Checkbox).value:
                     opts["remove_audio"] = True
                 opts["language"] = self.query_one("#lang", Select).value

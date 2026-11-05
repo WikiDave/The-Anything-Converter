@@ -688,6 +688,54 @@ button.ar-name:hover, button.ar-name:focus-visible { outline: none; text-decorat
       </div>
     </fieldset>
 
+    <fieldset id="avBox" class="frame" hidden>
+      <legend>CODECS &amp; METADATA</legend>
+      <pre id="avSource" class="small dim no-i18n" style="white-space:pre-wrap;margin:0 0 10px"></pre>
+      <div class="grid" id="avVideoRow">
+        <label class="field"><span>VIDEO CODEC&gt;</span>
+          <span class="sel"><select id="avVcodec">
+            <option value="">automatic</option><option value="avc">H.264 / AVC</option>
+            <option value="hevc">H.265 / HEVC</option><option value="av1">AV1</option>
+            <option value="vp9">VP9</option><option value="vp8">VP8</option>
+          </select></span></label>
+        <label class="field"><span>FRAME RATE&gt;</span>
+          <span class="sel"><select id="avFps"><option value="">original</option>
+            <option>23.976</option><option>24</option><option>25</option><option>29.97</option><option>30</option>
+            <option>50</option><option>60</option><option>15</option></select></span></label>
+        <label class="field"><span>WIDTH PX&gt;</span><input id="avW" type="number" min="16" step="2" placeholder="auto"></label>
+        <label class="field"><span>HEIGHT PX&gt;</span><input id="avH" type="number" min="16" step="2" placeholder="auto"></label>
+        <label class="field"><span>VIDEO BITRATE kbps&gt;</span><input id="avVbr" type="number" min="50" placeholder="auto"></label>
+      </div>
+      <div class="grid">
+        <label class="field"><span>AUDIO CODEC&gt;</span>
+          <span class="sel"><select id="avAcodec">
+            <option value="">automatic</option><option value="aac">AAC</option><option value="opus">Opus</option>
+            <option value="mp3">MP3</option><option value="vorbis">Vorbis</option><option value="flac">FLAC</option>
+            <option value="pcm-s16">PCM 16-bit</option>
+          </select></span></label>
+        <label class="field"><span>AUDIO BITRATE kbps&gt;</span>
+          <span class="sel"><select id="avAbr"><option value="">auto</option>
+            <option>64</option><option>96</option><option>128</option><option>160</option><option>192</option>
+            <option>256</option><option>320</option></select></span></label>
+        <label class="field"><span>SAMPLE RATE&gt;</span>
+          <span class="sel"><select id="avRate"><option value="">original</option><option value="22050">22.05 kHz</option>
+            <option value="44100">44.1 kHz</option><option value="48000">48 kHz</option></select></span></label>
+        <label class="field"><span>CHANNELS&gt;</span>
+          <span class="sel"><select id="avCh"><option value="">original</option><option value="1">mono</option>
+            <option value="2">stereo</option></select></span></label>
+      </div>
+      <div class="grid">
+        <label class="field"><span>METADATA&gt;</span>
+          <span class="sel"><select id="avMeta"><option value="">keep</option>
+            <option value="strip">remove everything (privacy)</option></select></span></label>
+        <label class="field"><span>TITLE&gt;</span><input id="metaTitle" type="text" placeholder="keep"></label>
+        <label class="field"><span>ARTIST&gt;</span><input id="metaArtist" type="text" placeholder="keep"></label>
+        <label class="field"><span>ALBUM&gt;</span><input id="metaAlbum" type="text" placeholder="keep"></label>
+        <label class="field"><span>COMMENT&gt;</span><input id="metaComment" type="text" placeholder="keep"></label>
+      </div>
+      <p class="dim small">// in the browser your browser's own encoders are used; the desktop app also has ProRes, DNxHR, AC-3 and more.</p>
+    </fieldset>
+
     <fieldset id="gifBox" class="frame" hidden>
       <legend>GIF</legend>
       <div class="grid">
@@ -773,8 +821,8 @@ const EXT = {
   unsupportedVideo: new Set(["avi", "wmv", "flv", "mpg", "mpeg", "3gp", "vob"]),
 };
 const TARGETS = {
-  video: ["mp4", "webm", "gif", "mp3", "m4a", "wav"],
-  audio: ["mp3", "m4a", "ogg", "wav", "webm"],
+  video: ["mp4", "webm", "mov", "mkv", "gif", "mp3", "m4a", "wav"],
+  audio: ["mp3", "m4a", "ogg", "wav", "webm", "mkv"],
   image: ["jpg", "png", "webp", "gif", "pdf", "bmp", "ico"],
   pdf: ["pdf", "jpg", "png", "txt"],
   archive: ["zip", "7z", "tar.xz", "tar.gz", "tar.bz2", "tar", "iso"],
@@ -948,6 +996,36 @@ async function probeMedia(it) {
   it.duration = await input.computeDuration();
   it.info = { duration: it.duration, width: v?.displayWidth, height: v?.displayHeight, hasVideo: !!v, hasAudio: !!a };
   if (it.cat === "video" && !v) it.cat = "audio";
+}
+// What is behind the first video/audio file: codecs, resolution, frame rate, bitrates and tags.
+let streamsFor = null;
+async function showStreams() {
+  const it = items.find((x) => x.cat === "video" || x.cat === "audio");
+  if (!it || streamsFor === it) return;
+  streamsFor = it;
+  const box = $("avSource");
+  box.textContent = "reading streams…";
+  try {
+    const MB = await mediabunny();
+    const input = new MB.Input({ source: new MB.BlobSource(it.file), formats: MB.ALL_FORMATS });
+    const lines = [`SOURCE  ${it.file.name} · ${(await input.getFormat()).name} · ${fmtTime(await input.computeDuration())}`];
+    for (const t of await input.getTracks()) {
+      const st = await t.computePacketStats(200).catch(() => null);
+      const bits = [t.type.toUpperCase(), (t.codec || "?").toUpperCase()];
+      if (t.type === "video") bits.push(`${t.displayWidth}×${t.displayHeight}`, st ? st.averagePacketRate.toFixed(2) + " fps" : "");
+      if (t.type === "audio") bits.push(`${t.sampleRate / 1000} kHz`, `${t.numberOfChannels} ch`);
+      if (st && st.averageBitrate) bits.push(Math.round(st.averageBitrate / 1000) + " kbps");
+      if (t.languageCode && t.languageCode !== "und") bits.push(t.languageCode);
+      lines.push("  " + bits.filter(Boolean).join(" · "));
+    }
+    const tags = await input.getMetadataTags().catch(() => ({}));
+    const shown = Object.entries(tags).filter(([k, v]) => typeof v === "string" || typeof v === "number" || v instanceof Date);
+    if (shown.length) lines.push("TAGS    " + shown.map(([k, v]) => `${k}=${v instanceof Date ? v.toISOString().slice(0, 10) : v}`).join(" · "));
+    for (const k of ["title", "artist", "album", "comment"]) if (tags[k]) $("meta" + k[0].toUpperCase() + k.slice(1)).placeholder = tags[k];
+    box.textContent = lines.join("\n");
+  } catch (e) {
+    box.textContent = "(could not read the streams: " + e.message + ")";
+  }
 }
 async function probeImage(it) {
   const bmp = await createImageBitmap(it.file);
@@ -1154,7 +1232,12 @@ function refresh() {
   const target = radio("sizeMode") === "target";
   $("targetBox").hidden = !target;
   $("qualityBox").hidden = target;
-  $("videoBox").hidden = !(anyVideo && ["mp4", "webm"].includes(chosen.video));
+  $("videoBox").hidden = !(anyVideo && ["mp4", "webm", "mov", "mkv"].includes(chosen.video));
+  const avVideo = anyVideo && ["mp4", "webm", "mov", "mkv"].includes(chosen.video);
+  const avAudio = items.some((it) => it.cat === "audio" || (it.cat === "video" && AUDIO_OUT.has(chosen.video)));
+  $("avBox").hidden = !(avVideo || avAudio);
+  $("avVideoRow").hidden = !avVideo;
+  if (!$("avBox").hidden) showStreams();
   $("gifBox").hidden = !(anyVideo && chosen.video === "gif");
   $("imageBox").hidden = !items.some((it) => it.cat === "image");
   const it = single();
@@ -1234,6 +1317,15 @@ function readSettings() {
   }
   s.height = +$("height").value || null;
   s.removeAudio = $("removeAudio").checked;
+  s.av = {
+    vcodec: $("avVcodec").value, fps: +$("avFps").value || null, w: +$("avW").value || null,
+    h: +$("avH").value || null, vbr: +$("avVbr").value * 1000 || null, acodec: $("avAcodec").value,
+    abr: +$("avAbr").value * 1000 || null, rate: +$("avRate").value || null, ch: +$("avCh").value || null,
+    strip: $("avMeta").value === "strip",
+    tags: { title: $("metaTitle").value, artist: $("metaArtist").value, album: $("metaAlbum").value,
+            comment: $("metaComment").value },
+  };
+  if ($("avBox").hidden) s.av = {};
   s.gifWidth = +$("gifWidth").value || null;
   s.gifFps = +$("gifFps").value || null;
   s.scalePct = +$("scalePct").value || null;
@@ -1369,6 +1461,8 @@ const OUT_FORMAT = {
   mp3: (MB) => new MB.Mp3OutputFormat(),
   wav: (MB) => new MB.WavOutputFormat(),
   ogg: (MB) => new MB.OggOutputFormat(),
+  mov: (MB) => new MB.MovOutputFormat({ fastStart: "in-memory" }),
+  mkv: (MB) => new MB.MkvOutputFormat(),
 };
 const AUDIO_RANGE = { mp3: [8e3, 320e3], m4a: [16e3, 320e3], ogg: [8e3, 320e3], webm: [6e3, 320e3], mp4: [16e3, 320e3] };
 
@@ -1437,11 +1531,16 @@ async function runConversion(MB, fmt, p, label) {
   const format = OUT_FORMAT[fmt === "webm" && p.audioOnly ? "webm" : fmt](MB);
   const output = new MB.Output({ format, target: new MB.BufferTarget() });
 
-  const video = p.audioOnly ? { discard: true } : { bitrate: p.vBitrate, forceTranscode: true };
+  const av = p.opts.av || {};
+  const video = p.audioOnly ? { discard: true } : { bitrate: (!p.opts.target && av.vbr) || p.vBitrate, forceTranscode: true };
   if (!p.audioOnly) {
-    if (p.height) video.height = p.height;
+    if (av.w && av.h) { video.width = av.w; video.height = av.h; video.fit = "contain"; }
+    else if (av.w) video.width = av.w;
+    else if (av.h || p.height) video.height = av.h || p.height;
+    if (av.fps) video.frameRate = av.fps;
     const codecs = format.getSupportedVideoCodecs();
-    const pref = fmt === "mp4" ? ["avc", "hevc", "vp9", "av1"] : codecs;
+    if (av.vcodec && !codecs.includes(av.vcodec)) fail(`A .${fmt} file cannot hold ${av.vcodec.toUpperCase()} video. Possible: ${codecs.join(", ").toUpperCase()}.`);
+    const pref = av.vcodec ? [av.vcodec] : ["mp4", "mov"].includes(fmt) ? ["avc", "hevc", "vp9", "av1"] : codecs;
     const codec = await MB.getFirstEncodableVideoCodec(pref.filter((c) => codecs.includes(c)),
       { width: info.width, height: p.height || info.height });
     if (!codec) fail(`Je browser kan geen video coderen voor .${fmt}. Probeer ${fmt === "mp4" ? "webm" : "mp4"} of een andere browser.`);
@@ -1450,15 +1549,24 @@ async function runConversion(MB, fmt, p, label) {
   let audio = { discard: true };
   if (p.keepAudio || p.audioOnly) {
     const codecs = format.getSupportedAudioCodecs();
-    const pref = fmt === "mp4" || fmt === "m4a" ? ["aac", "opus"] : codecs;
+    if (av.acodec && !codecs.includes(av.acodec)) fail(`A .${fmt} file cannot hold ${av.acodec.toUpperCase()} audio. Possible: ${codecs.join(", ").toUpperCase()}.`);
+    const pref = av.acodec ? [av.acodec] : ["mp4", "m4a", "mov"].includes(fmt) ? ["aac", "opus"] : codecs;
     const codec = await MB.getFirstEncodableAudioCodec(pref.filter((c) => codecs.includes(c)));
-    if (!codec) fail(`Je browser kan geen audio coderen voor .${fmt}.`);
+    if (!codec) fail(av.acodec ? `Your browser cannot encode ${av.acodec.toUpperCase()} audio. Try another codec or the desktop app.` : `Je browser kan geen audio coderen voor .${fmt}.`);
     audio = { codec, forceTranscode: true };
-    if (!codec.startsWith("pcm") && codec !== "flac") audio.bitrate = p.aBitrate;
+    if (!codec.startsWith("pcm") && codec !== "flac") audio.bitrate = (!p.opts.target && av.abr) || p.aBitrate;
+    if (av.rate) audio.sampleRate = av.rate;
+    if (av.ch) audio.numberOfChannels = av.ch;
   }
   const conversion = await MB.Conversion.init({
     input, output, video, audio,
     trim: { start: p.opts.start, end: p.opts.end },
+    tags: (old) => {
+      if (av.strip) return {};
+      const t = { ...(old || {}) };
+      for (const [k, v] of Object.entries(av.tags || {})) if (v) t[k] = v;
+      return t;
+    },
     showWarnings: false,
   });
   if (!conversion.isValid) {
@@ -1467,7 +1575,7 @@ async function runConversion(MB, fmt, p, label) {
   }
   conversion.onProgress = (f) => setProgress(f, label);
   await conversion.execute();
-  const mime = { mp4: "video/mp4", webm: "video/webm", m4a: "audio/mp4", mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg" }[fmt];
+  const mime = { mov: "video/quicktime", mkv: "video/x-matroska", mp4: "video/mp4", webm: "video/webm", m4a: "audio/mp4", mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg" }[fmt];
   return new Blob([output.target.buffer], { type: mime });
 }
 

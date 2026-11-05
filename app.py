@@ -228,6 +228,19 @@ def file_hashes(uid):
     return jsonify(name=path.name, hashes=compute(path, str(data.get("key") or "") or None))
 
 
+@app.get("/api/media/<uid>")
+def media_details(uid):
+    """Everything behind a video/audio file: container, codecs, frame rate, bitrates, tracks and tags."""
+    from converter.media import media_info
+    up = uploads.get(uid)
+    if not up or not up["path"].exists():
+        return jsonify(error="File not found."), 404
+    try:
+        return jsonify(media_info(up["path"]))
+    except (ConversionError, ValueError) as e:
+        return jsonify(error=str(e)), 400
+
+
 @app.post("/api/ocr/screen")
 def ocr_screen():
     """Schermafbeelding maken (gebied kiezen) en de tekst herkennen. Alleen in de desktop-app/lokaal."""

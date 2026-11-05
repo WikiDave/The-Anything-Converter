@@ -318,3 +318,8 @@ a.btn { text-decoration: none; display: inline-block; }
   font-size: 13px; resize: vertical; }
 .db-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 6px 0; }
 .db-pager { margin: 0 0 8px; }
+
+/* codecs & metadata */
+.pair { display: flex; gap: 6px; }
+.pair input { width: 50%; min-width: 0; }
+.avsource { white-space: pre-wrap; margin: 0 0 10px; border-left: 2px solid var(--line, currentColor); padding-left: 8px; }

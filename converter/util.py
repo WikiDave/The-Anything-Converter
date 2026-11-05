@@ -90,5 +90,5 @@ def parse_time(value) -> Optional[float]:
 
 
 def ffprobe(path: Path) -> dict:
-    proc = run(["ffprobe", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", str(path)])
+    proc = run(["ffprobe", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", "-show_chapters", str(path)])
     return json.loads(proc.stdout or "{}")

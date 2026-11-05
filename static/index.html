@@ -286,6 +286,97 @@
       </div>
     </fieldset>
 
+    <!-- Codecs, frame rate, audio and metadata -->
+    <fieldset id="avBox" class="frame hidden">
+      <legend>CODECS &amp; METADATA</legend>
+      <pre id="avSource" class="avsource small dim"></pre>
+      <div class="grid av-video">
+        <label class="field"><span>VIDEO CODEC&gt;</span>
+          <span class="sel"><select id="avVcodec">
+            <option value="">automatic (best for the format)</option>
+            <option value="h264">H.264 / AVC</option>
+            <option value="h265">H.265 / HEVC</option>
+            <option value="av1">AV1</option>
+            <option value="vp9">VP9</option>
+            <option value="vp8">VP8</option>
+            <option value="prores">Apple ProRes 422 HQ</option>
+            <option value="dnxhd">DNxHR HQ</option>
+            <option value="mpeg4">MPEG-4 Part 2 (DivX/Xvid)</option>
+            <option value="mpeg2">MPEG-2</option>
+            <option value="mjpeg">Motion JPEG</option>
+            <option value="theora">Theora</option>
+            <option value="copy">copy (no re-encoding)</option>
+          </select></span></label>
+        <label class="field"><span>FRAME RATE&gt;</span>
+          <span class="sel"><select id="avFps">
+            <option value="">original</option>
+            <option>23.976</option><option>24</option><option>25</option><option>29.97</option><option>30</option>
+            <option>50</option><option>59.94</option><option>60</option><option>15</option><option>12</option>
+          </select></span></label>
+        <label class="field"><span>WIDTH × HEIGHT&gt;</span>
+          <span class="pair"><input id="avW" type="number" min="16" step="2" placeholder="auto">
+          <input id="avH" type="number" min="16" step="2" placeholder="auto"></span></label>
+        <label class="field"><span>VIDEO BITRATE kbps&gt;</span><input id="avVbr" type="number" min="50" placeholder="auto (by quality)"></label>
+        <label class="field"><span>CRF (0-51, lower = better)&gt;</span><input id="avCrf" type="number" min="0" max="63" placeholder="auto"></label>
+        <label class="field"><span>ENCODER SPEED&gt;</span>
+          <span class="sel"><select id="avPreset">
+            <option value="">medium</option><option>ultrafast</option><option>veryfast</option><option>fast</option>
+            <option>slow</option><option>veryslow</option>
+          </select></span></label>
+        <label class="field"><span>COLOUR DEPTH&gt;</span>
+          <span class="sel"><select id="avPix">
+            <option value="">8-bit (plays everywhere)</option>
+            <option value="10bit">10-bit (H.265 / AV1 / VP9)</option>
+          </select></span></label>
+        <label class="field"><span>STREAMS&gt;</span>
+          <span class="sel"><select id="avStreams">
+            <option value="">main video + first audio track</option>
+            <option value="all">all audio tracks + subtitles</option>
+          </select></span></label>
+      </div>
+      <div class="grid">
+        <label class="field"><span>AUDIO CODEC&gt;</span>
+          <span class="sel"><select id="avAcodec">
+            <option value="">automatic</option>
+            <option value="aac">AAC</option><option value="mp3">MP3</option><option value="opus">Opus</option>
+            <option value="vorbis">Vorbis</option><option value="flac">FLAC (lossless)</option>
+            <option value="alac">ALAC (lossless)</option><option value="ac3">AC-3 (Dolby Digital)</option>
+            <option value="eac3">E-AC-3</option><option value="pcm">PCM 16-bit</option>
+            <option value="pcm24">PCM 24-bit</option><option value="copy">copy (no re-encoding)</option>
+          </select></span></label>
+        <label class="field"><span>AUDIO BITRATE kbps&gt;</span>
+          <span class="sel"><select id="avAbr">
+            <option value="">auto (by quality)</option>
+            <option>64</option><option>96</option><option>128</option><option>160</option><option>192</option>
+            <option>256</option><option>320</option><option>448</option><option>640</option>
+          </select></span></label>
+        <label class="field"><span>SAMPLE RATE&gt;</span>
+          <span class="sel"><select id="avRate">
+            <option value="">original</option><option value="22050">22.05 kHz</option><option value="32000">32 kHz</option>
+            <option value="44100">44.1 kHz</option><option value="48000">48 kHz</option><option value="96000">96 kHz</option>
+          </select></span></label>
+        <label class="field"><span>CHANNELS&gt;</span>
+          <span class="sel"><select id="avCh">
+            <option value="">original</option><option value="mono">mono</option><option value="stereo">stereo</option>
+            <option value="5.1">5.1</option>
+          </select></span></label>
+        <label class="field"><span>VOLUME dB&gt;</span><input id="avVol" type="number" step="0.5" min="-30" max="30" placeholder="0"></label>
+      </div>
+      <div class="grid">
+        <label class="field"><span>METADATA&gt;</span>
+          <span class="sel"><select id="avMeta">
+            <option value="">keep (title, artist, dates, chapters)</option>
+            <option value="strip">remove everything (privacy)</option>
+          </select></span></label>
+        <label class="field"><span>TITLE&gt;</span><input id="metaTitle" type="text" placeholder="keep"></label>
+        <label class="field"><span>ARTIST&gt;</span><input id="metaArtist" type="text" placeholder="keep"></label>
+        <label class="field"><span>ALBUM&gt;</span><input id="metaAlbum" type="text" placeholder="keep"></label>
+        <label class="field"><span>DATE / YEAR&gt;</span><input id="metaDate" type="text" placeholder="keep"></label>
+        <label class="field"><span>COMMENT&gt;</span><input id="metaComment" type="text" placeholder="keep"></label>
+      </div>
+      <p class="dim small">// not every container holds every codec; you get a clear message if a choice does not fit.</p>
+    </fieldset>
+
     <!-- Spraak naar tekst -->
     <fieldset id="speechBox" class="frame hidden">
       <legend>SPRAAK NAAR TEKST</legend>

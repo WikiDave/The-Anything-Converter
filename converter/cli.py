@@ -190,6 +190,24 @@ def build_parser(with_file: bool = False) -> argparse.ArgumentParser:
     c.add_argument("--model", default="base", choices=["tiny", "base", "small", "medium"])
     c.add_argument("--translate", "--vertaal", dest="vertaal", action="store_true", help="translate speech to English")
     c.add_argument("--patch", type=Path, help="IPS/UPS/BPS patch for --to patch")
+    m = c.add_argument_group("video/audio: codecs, frame rate and metadata")
+    m.add_argument("--vcodec", choices=["h264", "h265", "av1", "vp9", "vp8", "prores", "dnxhd", "mpeg4", "mpeg2",
+                                        "mjpeg", "theora", "copy"])
+    m.add_argument("--fps", help="frame rate, e.g. 25, 29.97, 30, 60")
+    m.add_argument("--vbitrate", help="video bitrate in kbps, e.g. 4000")
+    m.add_argument("--crf", type=int, help="constant quality (lower = better), e.g. 23")
+    m.add_argument("--preset", choices=["ultrafast", "veryfast", "fast", "medium", "slow", "veryslow"])
+    m.add_argument("--10bit", dest="tenbit", action="store_true", help="10-bit colour (H.265/AV1/VP9)")
+    m.add_argument("--all-streams", action="store_true", help="keep all audio tracks and subtitles")
+    m.add_argument("--acodec", choices=["aac", "mp3", "opus", "vorbis", "flac", "alac", "ac3", "eac3", "pcm",
+                                        "pcm24", "copy"])
+    m.add_argument("--abitrate", help="audio bitrate in kbps, e.g. 192")
+    m.add_argument("--sample-rate", help="e.g. 44100 or 48000")
+    m.add_argument("--channels", help="mono, stereo, 5.1 or a number")
+    m.add_argument("--volume", help="change the volume in dB, e.g. -3 or 6")
+    m.add_argument("--strip-metadata", action="store_true", help="remove all tags and chapters (privacy)")
+    for k in ("title", "artist", "album", "date", "genre", "comment"):
+        m.add_argument(f"--{k}", dest=f"meta_{k}", help=f"set the {k} tag")
 
     f = sub.add_parser("formats", aliases=["formaten", "info"], help="what can this file become?")
     f.add_argument("bestand", type=Path, metavar="file")
@@ -267,6 +285,19 @@ def cmd_convert(a) -> int:
     if a.zonder_geluid:
         opts["remove_audio"] = True
     opts.update(language=a.taal, speech_model=a.model, translate=a.vertaal)
+    for k, v in (("vcodec", a.vcodec), ("fps", a.fps), ("video_bitrate", a.vbitrate), ("crf", a.crf),
+                 ("preset", a.preset), ("acodec", a.acodec), ("audio_bitrate", a.abitrate),
+                 ("sample_rate", a.sample_rate), ("channels", a.channels), ("volume", a.volume),
+                 *((f"meta_{k}", getattr(a, f"meta_{k}")) for k in ("title", "artist", "album", "date", "genre",
+                                                                     "comment"))):
+        if v not in (None, ""):
+            opts[k] = v
+    if a.tenbit:
+        opts["pix_fmt"] = "10bit"
+    if a.all_streams:
+        opts["streams"] = "all"
+    if a.strip_metadata:
+        opts["metadata"] = "strip"
     fails = 0
     for src in a.bestanden:
         say(f"> {src.name} -> .{opts['format']}")
@@ -287,6 +318,25 @@ def cmd_formats(a) -> int:
     from .formats import analyse, fmt_label
     info = analyse(a.bestand)
     say(f"{a.bestand.name}: {info['label']}, {human_size(a.bestand.stat().st_size)}")
+    if info["category"] in ("video", "audio"):
+        try:
+            from .media import media_info
+            d = media_info(a.bestand)
+            say(f"  container: {d['container']}, {d['duration']:.1f} s, {d['bitrate'] // 1000} kbps")
+            for st in d["streams"]:
+                bits = [st["kind"], (st["codec"] or "?") + (f" ({st['profile']})" if st.get("profile") else "")]
+                if st["kind"] == "video":
+                    bits += [f"{st['width']}x{st['height']}", f"{st['fps']} fps", st.get("pix_fmt") or ""]
+                if st["kind"] == "audio":
+                    bits += [f"{st['sample_rate']} Hz", st.get("layout") or f"{st.get('channels')} ch"]
+                if st.get("bitrate"):
+                    bits.append(f"{st['bitrate'] // 1000} kbps")
+                say("  #" + str(st["index"]) + " " + ", ".join(b for b in bits if b))
+            for k, v in d["tags"].items():
+                say(f"  tag {k}: {v}")
+        except ConversionError:
+            pass
+    say("can become:")
     for x in info["targets"]:
         lbl = fmt_label(info["category"], x)
         say(f"  .{x:<8} {lbl}")
