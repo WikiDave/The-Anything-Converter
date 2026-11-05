@@ -7,21 +7,21 @@
 class AnythingConverter < Formula
   desc "Converteer, verklein, vergroot en knip bestanden in je terminal"
   homepage "https://github.com/WikiDave/The-Anything-Converter"
-  version "2.6.0"
+  version "2.7.0"
 
   # Standaard: Linux (x86_64). Elke combinatie van systeem en processor moet een download hebben,
   # anders weigert nieuwere Homebrew de hele tap; Linux op ARM wordt daarom netjes geweigerd.
-  url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.6.0/anything-converter-tui-linux-x64.tar.gz"
-  sha256 "4df8d5fae914c902b1299bb2758bea9360bbd9e6543035a08a6bda20cff734a5"
+  url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.7.0/anything-converter-tui-linux-x64.tar.gz"
+  sha256 "99029f591c8696b66caec6624ebb8035754e6dce0b33e46e1cdd55b66a965e44"
 
   on_macos do
     on_arm do
-      url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.6.0/anything-converter-tui-macos-arm64.tar.gz"
-      sha256 "0bacef34d4aaeba08c872426a18bba46c823ee643e5b2ebf96e5fd2a8bc7a4c2"
+      url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.7.0/anything-converter-tui-macos-arm64.tar.gz"
+      sha256 "c456c1b97d3e7dd0d3486767a38e6fb5e0e00c8d3ede6737f6ca9d0751e1c918"
     end
     on_intel do
-      url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.6.0/anything-converter-tui-macos-x64.tar.gz"
-      sha256 "96b40d815af47b888eb591cfc8cc8874507591f7310df0aa67babd099551deef"
+      url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.7.0/anything-converter-tui-macos-x64.tar.gz"
+      sha256 "ac31ef2efd820d8f2630f69002b38bcfcd94a0a1323ba909e5d96846b329f158"
     end
   end
 
