@@ -110,6 +110,9 @@ input::placeholder, textarea::placeholder { font-family: var(--mono); }
 .drop p { margin: 6px 0; }
 .drop .big { font-size: 16px; font-weight: 700; color: var(--hi); margin-top: 14px; }
 .sample-row { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; }
+.test-row { align-items: center; }
+.test-row .sel { min-width: 260px; }
+#newPdfBox textarea { width: 100%; font: inherit; background: var(--bg); color: var(--hi); border: 1px solid var(--dim); padding: 8px; }
 .q-empty { padding: 8px 0; }
 .dl-frame { margin-top: 18px; }
 .dl-intro { margin: 0 0 12px; }
@@ -397,7 +400,43 @@ button.ar-name:hover, button.ar-name:focus-visible { outline: none; text-decorat
     <div class="sample-row">
       <button id="newArchBtn" class="btn" type="button">[ + NIEUW LEEG ARCHIEF ]</button>
       <button id="sampleBtn" class="btn" type="button">[ PROBEER MET 3 TESTBEELDEN ]</button>
+      <button id="newPdfBtn" class="btn" type="button">[ + NEW PDF ]</button>
     </div>
+    <div class="sample-row test-row">
+      <span class="prompt">TEST FILE&gt;</span>
+      <span class="sel"><select id="testSel" aria-label="Test file">
+        <option value="">choose a test file…</option>
+        <optgroup label="VIDEO"><option value="mp4">.mp4 · H.264 + AAC, 5 s</option><option value="webm">.webm · VP9 + Opus, 5 s</option>
+          <option value="mov">.mov · QuickTime, 5 s</option><option value="mkv">.mkv · Matroska, 5 s</option></optgroup>
+        <optgroup label="AUDIO"><option value="wav">.wav · tone, 5 s</option><option value="mp3">.mp3</option>
+          <option value="m4a">.m4a · AAC</option><option value="ogg">.ogg · Opus</option></optgroup>
+        <optgroup label="IMAGES"><option value="png">.png</option><option value="jpg">.jpg</option><option value="webp">.webp</option>
+          <option value="gif">.gif · animated</option><option value="bmp">.bmp</option><option value="svg">.svg</option>
+          <option value="3img">3 test images (.png)</option></optgroup>
+        <optgroup label="DOCUMENTS"><option value="pdf">.pdf · 3 pages</option><option value="txt">.txt</option>
+          <option value="md">.md · Markdown</option><option value="csv">.csv</option><option value="json">.json</option>
+          <option value="html">.html</option></optgroup>
+        <optgroup label="ARCHIVES"><option value="zip">.zip · 4 files</option></optgroup>
+        <optgroup label="EVERYTHING"><option value="all">one of each (16 files)</option></optgroup>
+      </select></span>
+      <button id="testBtn" class="btn" type="button">[ LOAD ]</button>
+    </div>
+    <fieldset class="frame" id="newPdfBox" hidden>
+      <legend>NEW PDF</legend>
+      <label class="field"><span>TITLE&gt;</span><input id="npTitle" type="text" value="My document"></label>
+      <label class="field"><span>TEXT&gt;</span><textarea id="npText" rows="8" spellcheck="true">Type or paste your text here.
+
+Every new line stays a new line; long lines wrap automatically.</textarea></label>
+      <div class="grid">
+        <label class="field"><span>PAGE&gt;</span><span class="sel"><select id="npSize"><option value="a4">A4</option><option value="letter">Letter</option><option value="a5">A5</option></select></span></label>
+        <label class="field"><span>FONT&gt;</span><span class="sel"><select id="npFont"><option value="Helvetica">Helvetica</option><option value="TimesRoman">Times</option><option value="Courier">Courier (mono)</option></select></span></label>
+      </div>
+      <div class="sample-row">
+        <button id="npMake" class="btn" type="button">[ CREATE PDF ]</button>
+        <button id="npClose" class="btn" type="button">[ CLOSE ]</button>
+      </div>
+      <p class="dim small">// the pdf is saved and also added to the list, so you can merge it, add images or compress it in the pdf workbench.</p>
+    </fieldset>
     <fieldset class="frame dl-frame" id="dlFrame">
       <legend>DOWNLOADS</legend>
       <p class="dl-intro">De converter als app voor je computer of telefoon. Op de computer zit alles erin, ook <strong>youtube- en andere video-links ophalen</strong> en <strong>torrents downloaden</strong>.</p>
@@ -819,6 +858,8 @@ const EXT = {
   archive: new Set(["zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "tbz", "tbz2", "xz", "txz", "zst", "tzst", "lz", "lzma",
     "cab", "iso", "jar", "cpio", "lzh", "lha", "xar", "ar"]),
   unsupportedVideo: new Set(["avi", "wmv", "flv", "mpg", "mpeg", "3gp", "vob"]),
+  text: new Set(["txt", "md", "markdown", "csv", "tsv", "json", "xml", "html", "htm", "log", "yaml", "yml", "ini",
+    "toml", "srt", "vtt", "py", "js", "ts", "css", "sql", "sh", "bat", "c", "cpp", "h", "java", "rs", "go", "rtf"]),
 };
 const TARGETS = {
   video: ["mp4", "webm", "mov", "mkv", "gif", "mp3", "m4a", "wav"],
@@ -826,9 +867,10 @@ const TARGETS = {
   image: ["jpg", "png", "webp", "gif", "pdf", "bmp", "ico"],
   pdf: ["pdf", "jpg", "png", "txt"],
   archive: ["zip", "7z", "tar.xz", "tar.gz", "tar.bz2", "tar", "iso"],
+  text: ["pdf", "html", "txt", "zip"],
   other: ["zip"],
 };
-const LABEL = { video: "Video", audio: "Audio", image: "Afbeelding", pdf: "PDF", archive: "Archief", other: "Overig" };
+const LABEL = { video: "Video", audio: "Audio", image: "Afbeelding", pdf: "PDF", archive: "Archief", text: "Text", other: "Overig" };
 // soortnamen per taal (video, audio, afbeelding, pdf, archief, overig)
 const CAT_I18N = {
   en: "Video|Audio|Image|PDF|Archive|Other", de: "Video|Audio|Bild|PDF|Archiv|Sonstiges",
@@ -843,10 +885,10 @@ function catName(c) {
   const row = CAT_I18N[globalThis.__lang];
   return row ? row.split("|")[CAT_ORDER_I18N.indexOf(c)] || LABEL[c] : LABEL[c];
 }
-const CAT_ORDER = ["video", "audio", "image", "pdf", "archive", "other"];
+const CAT_ORDER = ["video", "audio", "image", "pdf", "archive", "text", "other"];
 const AUDIO_OUT = new Set(["mp3", "m4a", "ogg", "wav"]);
 const NO_TARGET = new Set(["wav", "bmp", "ico"]);
-const hasTarget = (c, f) => (c === "archive" ? false : c === "pdf" ? f === "pdf" : !NO_TARGET.has(f));
+const hasTarget = (c, f) => (c === "archive" || c === "text" ? false : c === "pdf" ? f === "pdf" : !NO_TARGET.has(f));
 
 // De converters hieronder werken op "het huidige bestand"; processItem() zet deze per bestand.
 let file = null, cat = null, ext = "", info = {}, duration = 0;
@@ -953,6 +995,7 @@ function categorize(f) {
   if (EXT.video.has(e) || (f.type.startsWith("video/") && !EXT.audio.has(e))) return "video";
   if (EXT.audio.has(e) || f.type.startsWith("audio/")) return "audio";
   if (EXT.image.has(e) || f.type.startsWith("image/")) return "image";
+  if (EXT.text.has(e) || f.type.startsWith("text/")) return "text";
   return "other";
 }
 
@@ -1423,6 +1466,7 @@ async function processItem(it, opts) {
     if (mode === "social") out = await socialItem(it);
     else if (cat === "image") out = await convertImage(opts);
     else if (cat === "other") out = await zipFile(opts);
+    else if (cat === "text") out = await convertText(opts);
     else if (cat === "pdf") out = await convertPdf(opts);
     else if (cat === "archive") out = await convertArchive(opts);
     else if (opts.fmt === "gif") out = await videoToGif(opts);
@@ -3466,6 +3510,239 @@ const i18nHooks = [() => renderPresetOptions(trLine), () => {
   i18nObserver.observe(document.body, { subtree: true, childList: true, characterData: true,
     attributes: true, attributeFilter: ["placeholder", "title", "aria-label", "label"] });
 })();
+
+
+// ---------------------------------------------------------------- text -> PDF / HTML, new PDF, test files
+const PAGE = { a4: [595.28, 841.89], letter: [612, 792], a5: [419.53, 595.28] };
+async function textToPdf(text, { title = "", size = "a4", font = "Helvetica" } = {}) {
+  const L = await pdfLib();
+  const doc = await L.PDFDocument.create();
+  if (title) doc.setTitle(title);
+  doc.setCreator("Anything Converter");
+  const f = await doc.embedFont(L.StandardFonts[font] || L.StandardFonts.Helvetica);
+  const fb = await doc.embedFont(L.StandardFonts[font === "Courier" ? "CourierBold" : font === "TimesRoman" ? "TimesRomanBold" : "HelveticaBold"]);
+  const [W, H] = PAGE[size] || PAGE.a4, M = 56, fs = font === "Courier" ? 9.5 : 11, lh = fs * 1.4;
+  // standard PDF fonts only know WinAnsi characters: replace what they cannot draw
+  const clean = (t) => t.replace(/\t/g, "    ").replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+    .replace(/[–—]/g, "-").replace(/…/g, "...").replace(/[^\x0a\x20-\x7e\xa0-\xff€]/g, "?");
+  const wrap = (line) => {
+    const out = []; let cur = "";
+    for (const word of line.split(/(\s+)/)) {
+      if (f.widthOfTextAtSize(cur + word, fs) <= W - 2 * M) { cur += word; continue; }
+      if (cur.trim()) out.push(cur.trimEnd());
+      cur = word.trimStart();
+      while (f.widthOfTextAtSize(cur, fs) > W - 2 * M) {  // one very long word
+        let n = cur.length; while (n > 1 && f.widthOfTextAtSize(cur.slice(0, n), fs) > W - 2 * M) n--;
+        out.push(cur.slice(0, n)); cur = cur.slice(n);
+      }
+    }
+    out.push(cur.trimEnd());
+    return out;
+  };
+  let page = doc.addPage([W, H]), y = H - M;
+  if (title) { page.drawText(clean(title).slice(0, 90), { x: M, y: y - 16, size: 18, font: fb }); y -= 40; }
+  for (const raw of clean(text).split("\n")) {
+    for (const line of wrap(raw)) {
+      if (y < M + lh) { page = doc.addPage([W, H]); y = H - M; }
+      page.drawText(line, { x: M, y: y - fs, size: fs, font: f });
+      y -= lh;
+    }
+  }
+  const pages = doc.getPages();
+  pages.forEach((p, i) => p.drawText(`${i + 1} / ${pages.length}`, { x: W / 2 - 12, y: 28, size: 8, font: f }));
+  return new Blob([await doc.save()], { type: "application/pdf" });
+}
+
+async function convertText(opts) {
+  const text = await file.text();
+  const stem = stemOf(file.name);
+  setProgress(0.3, "Converting");
+  if (opts.fmt === "pdf") {
+    const blob = await textToPdf(text, { title: file.name, font: ["md", "txt", "markdown", "rtf"].includes(ext) ? "Helvetica" : "Courier" });
+    return { blob, name: stem + ".pdf", kind: "file" };
+  }
+  if (opts.fmt === "html") {
+    const esc = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const html = `<!doctype html><meta charset="utf-8"><title>${file.name.replace(/</g, "&lt;")}</title>` +
+      `<pre style="font:14px/1.5 ui-monospace,monospace;white-space:pre-wrap">${esc}</pre>\n`;
+    return { blob: new Blob([html], { type: "text/html" }), name: stem + ".html", kind: "file" };
+  }
+  if (opts.fmt === "txt") {
+    return { blob: new Blob([text.replace(/\r\n/g, "\n")], { type: "text/plain" }), name: stem + (ext === "txt" ? "_edited" : "") + ".txt", kind: "file" };
+  }
+  return zipFile(opts);
+}
+
+$("newPdfBtn").addEventListener("click", () => { $("newPdfBox").hidden = false; $("npText").focus(); });
+$("npClose").addEventListener("click", () => { $("newPdfBox").hidden = true; });
+$("npMake").addEventListener("click", async () => {
+  const title = $("npTitle").value.trim();
+  try {
+    status("making pdf…");
+    const blob = await textToPdf($("npText").value, { title, size: $("npSize").value, font: $("npFont").value });
+    const name = (title.replace(/[^\w .-]+/g, "").trim() || "document") + ".pdf";
+    await saveBlob(blob, name);
+    addFiles([new File([blob], name, { type: "application/pdf" })]);
+    status("pdf made: " + name);
+  } catch (e) {
+    status("pdf failed: " + e.message);
+    alert(e.message);
+  }
+});
+
+// Test files, made right here in the browser (nothing is downloaded).
+function testCanvas(w, h, label, t = 0) {
+  const c = new OffscreenCanvas(w, h), g = c.getContext("2d");
+  for (let i = 0; i < 7; i++) { g.fillStyle = `hsl(${i * 51 + t * 40},75%,50%)`; g.fillRect(i * w / 7, 0, w / 7 + 1, h * 0.7); }
+  g.fillStyle = "#111"; g.fillRect(0, h * 0.7, w, h * 0.3);
+  g.fillStyle = "#a6ff5c"; g.font = `bold ${Math.round(h / 9)}px monospace`;
+  g.fillText(label, w * 0.05, h * 0.9);
+  g.fillStyle = "#fff"; g.beginPath(); g.arc(w * (0.15 + 0.7 * ((t / 5) % 1)), h * 0.35, h / 10, 0, 7); g.fill();
+  return c;
+}
+function toneWav(seconds = 5, rate = 44100) {
+  const n = seconds * rate, buf = new DataView(new ArrayBuffer(44 + n * 4));
+  const w = (o, s) => [...s].forEach((ch, i) => buf.setUint8(o + i, ch.charCodeAt(0)));
+  w(0, "RIFF"); buf.setUint32(4, 36 + n * 4, true); w(8, "WAVEfmt "); buf.setUint32(16, 16, true);
+  buf.setUint16(20, 1, true); buf.setUint16(22, 2, true); buf.setUint32(24, rate, true); buf.setUint32(28, rate * 4, true);
+  buf.setUint16(32, 4, true); buf.setUint16(34, 16, true); w(36, "data"); buf.setUint32(40, n * 4, true);
+  for (let i = 0; i < n; i++) {
+    const t = i / rate, f = 440 * 2 ** Math.floor(t);  // a rising tone per second
+    const v = Math.sin(2 * Math.PI * f * t) * 0.3 * Math.min(1, (seconds - t) * 4);
+    buf.setInt16(44 + i * 4, v * 32767, true); buf.setInt16(46 + i * 4, v * 0.7 * 32767, true);
+  }
+  return new Blob([buf.buffer], { type: "audio/wav" });
+}
+async function testMedia(kind) {
+  const MB = await mediabunny();
+  const fmt = { mp4: () => new MB.Mp4OutputFormat({ fastStart: "in-memory" }), mov: () => new MB.MovOutputFormat({ fastStart: "in-memory" }),
+    mkv: () => new MB.MkvOutputFormat(), webm: () => new MB.WebMOutputFormat(), m4a: () => new MB.Mp4OutputFormat({ fastStart: "in-memory" }),
+    ogg: () => new MB.OggOutputFormat(), mp3: () => new MB.Mp3OutputFormat() }[kind]();
+  if (kind === "mp3") await ensureMp3();
+  const out = new MB.Output({ format: fmt, target: new MB.BufferTarget() });
+  const video = !["m4a", "ogg", "mp3"].includes(kind);
+  let canvas = null, vsrc = null;
+  if (video) {
+    const codecs = fmt.getSupportedVideoCodecs();
+    const vc = await MB.getFirstEncodableVideoCodec(kind === "webm" ? ["vp9", "vp8", "av1"] : ["avc", "hevc", "vp9", "av1"].filter((c) => codecs.includes(c)), { width: 640, height: 360 });
+    if (!vc) fail(`Your browser cannot encode video for .${kind}.`);
+    canvas = new OffscreenCanvas(640, 360);
+    vsrc = new MB.CanvasSource(canvas, { codec: vc, bitrate: 800e3 });
+    out.addVideoTrack(vsrc, { frameRate: 25 });
+  }
+  const acodecs = fmt.getSupportedAudioCodecs();
+  const ac = await MB.getFirstEncodableAudioCodec(kind === "mp3" ? ["mp3"] : ["webm", "ogg", "mkv"].includes(kind) ? ["opus", "vorbis"] : ["aac", "opus"].filter((c) => acodecs.includes(c)));
+  const asrc = ac ? new MB.AudioBufferSource({ codec: ac, bitrate: 128e3 }) : null;
+  if (asrc) out.addAudioTrack(asrc);
+  if (!video && !asrc) fail(`Your browser cannot encode audio for .${kind}.`);
+  out.setMetadataTags?.({ title: "Anything Converter test file", artist: "Anything Converter", date: new Date() });
+  await out.start();
+  if (asrc) {
+    const ctx = new OfflineAudioContext(2, 44100 * 5, 44100);
+    const ab = await ctx.decodeAudioData(await toneWav(5).arrayBuffer());
+    await asrc.add(ab);
+    asrc.close();
+  }
+  if (video) {
+    const g = canvas.getContext("2d");
+    for (let i = 0; i < 125; i++) {
+      g.drawImage(testCanvas(640, 360, `TEST ${(i / 25).toFixed(1)} s`, i / 25), 0, 0);
+      await vsrc.add(i / 25, 1 / 25);
+    }
+    vsrc.close();
+  }
+  await out.finalize();
+  const mime = { mp4: "video/mp4", mov: "video/quicktime", mkv: "video/x-matroska", webm: "video/webm", m4a: "audio/mp4", ogg: "audio/ogg", mp3: "audio/mpeg" }[kind];
+  return new Blob([out.target.buffer], { type: mime });
+}
+async function makeTestFile(kind) {
+  const F = (blob, name) => new File([blob], name, { type: blob.type });
+  const img = async (type, w = 1280, h = 720) => testCanvas(w, h, "TEST IMAGE").convertToBlob({ type, quality: 0.9 });
+  switch (kind) {
+    case "png": return [F(await img("image/png"), "test.png")];
+    case "jpg": return [F(await img("image/jpeg"), "test.jpg")];
+    case "webp": return [F(await img("image/webp"), "test.webp")];
+    case "bmp": {
+      const c = testCanvas(320, 180, "BMP"), d = c.getContext("2d").getImageData(0, 0, 320, 180).data;
+      const row = 320 * 3, size = 54 + row * 180, b = new DataView(new ArrayBuffer(size));
+      b.setUint16(0, 0x4d42, true); b.setUint32(2, size, true); b.setUint32(10, 54, true); b.setUint32(14, 40, true);
+      b.setInt32(18, 320, true); b.setInt32(22, 180, true); b.setUint16(26, 1, true); b.setUint16(28, 24, true);
+      for (let y = 0; y < 180; y++) for (let x = 0; x < 320; x++) {
+        const s = ((179 - y) * 320 + x) * 4, o = 54 + y * row + x * 3;
+        b.setUint8(o, d[s + 2]); b.setUint8(o + 1, d[s + 1]); b.setUint8(o + 2, d[s]);
+      }
+      return [F(new Blob([b.buffer], { type: "image/bmp" }), "test.bmp")];
+    }
+    case "gif": {
+      const { GIFEncoder, quantize, applyPalette } = await gifenc();
+      const gif = GIFEncoder();
+      for (let i = 0; i < 20; i++) {
+        const d = testCanvas(320, 180, "GIF", i / 4).getContext("2d").getImageData(0, 0, 320, 180).data;
+        const pal = quantize(d, 128);
+        gif.writeFrame(applyPalette(d, pal), 320, 180, { palette: pal, delay: 100 });
+      }
+      gif.finish();
+      return [F(new Blob([gif.bytes()], { type: "image/gif" }), "test.gif")];
+    }
+    case "svg": return [F(new Blob([`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">` +
+      [0, 1, 2, 3, 4, 5, 6].map((i) => `<rect x="${i * 91.4}" width="92" height="250" fill="hsl(${i * 51},75%,50%)"/>`).join("") +
+      `<rect y="250" width="640" height="110" fill="#111"/><text x="30" y="325" font-family="monospace" font-size="48" fill="#a6ff5c">TEST SVG</text></svg>`],
+      { type: "image/svg+xml" }), "test.svg")];
+    case "3img": return Promise.all([0, 1, 2].map(async (i) => F(await testCanvas(1920, 1080, `TEST IMAGE ${i + 1}`, i).convertToBlob({ type: "image/png" }), `test-image-${i + 1}.png`)));
+    case "wav": return [F(toneWav(5), "test.wav")];
+    case "mp4": case "webm": case "mov": case "mkv": case "m4a": case "ogg": case "mp3":
+      return [F(await testMedia(kind), `test.${kind}`)];
+    case "pdf": {
+      const L = await pdfLib();
+      const doc = await L.PDFDocument.create();
+      const f = await doc.embedFont(L.StandardFonts.HelveticaBold);
+      doc.setTitle("Anything Converter test PDF");
+      for (let i = 1; i <= 3; i++) {
+        const p = doc.addPage([595.28, 841.89]);
+        const png = await doc.embedPng(await (await testCanvas(800, 450, `PAGE ${i}`, i).convertToBlob({ type: "image/png" })).arrayBuffer());
+        p.drawText(`Test PDF - page ${i} of 3`, { x: 56, y: 770, size: 22, font: f });
+        p.drawImage(png, { x: 56, y: 400, width: 483, height: 272 });
+      }
+      return [F(new Blob([await doc.save()], { type: "application/pdf" }), "test.pdf")];
+    }
+    case "txt": return [F(new Blob(["Anything Converter test file\n\nThe quick brown fox jumps over the lazy dog.\n" + "Line ".repeat(40) + "\n"], { type: "text/plain" }), "test.txt")];
+    case "md": return [F(new Blob(["# Test document\n\nSome **bold** and *italic* text.\n\n- one\n- two\n- three\n\n| a | b |\n|---|---|\n| 1 | 2 |\n"], { type: "text/markdown" }), "test.md")];
+    case "csv": return [F(new Blob(["name,city,amount\nAnna,Utrecht,12.50\nBo,Ghent,7.25\nChris,Leeds,30\n"], { type: "text/csv" }), "test.csv")];
+    case "json": return [F(new Blob([JSON.stringify({ name: "Anything Converter", test: true, items: [1, 2, 3], nested: { a: "b" } }, null, 2)], { type: "application/json" }), "test.json")];
+    case "html": return [F(new Blob(["<!doctype html><meta charset=utf-8><title>Test</title><h1>Test page</h1><p>Hello <b>world</b>.</p>"], { type: "text/html" }), "test.html")];
+    case "zip": {
+      const { zipSync, strToU8 } = await fflate();
+      const data = zipSync({ "readme.txt": strToU8("Test archive\n"), "data/test.csv": strToU8("a,b\n1,2\n"),
+        "data/test.json": strToU8('{"ok": true}'), "images/test.png": new Uint8Array(await (await img("image/png", 320, 180)).arrayBuffer()) });
+      return [F(new Blob([data], { type: "application/zip" }), "test.zip")];
+    }
+    case "all": {
+      const out = [];
+      for (const k of ["mp4", "webm", "wav", "mp3", "m4a", "png", "jpg", "webp", "gif", "svg", "pdf", "txt", "md", "csv", "json", "zip"]) {
+        try { out.push(...await makeTestFile(k)); } catch (e) { console.warn(k, e); }
+      }
+      return out;
+    }
+  }
+  return [];
+}
+$("testBtn").addEventListener("click", async () => {
+  const kind = $("testSel").value;
+  if (!kind || busy) return;
+  const btn = $("testBtn");
+  btn.disabled = true;
+  status("making test file…");
+  try {
+    const files = await makeTestFile(kind);
+    if (!files.length) fail("No test file could be made in this browser.");
+    await addFiles(files);
+  } catch (e) {
+    status("test file failed: " + e.message);
+    alert(e.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 // ---------------------------------------------------------------- thema
 
