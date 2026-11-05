@@ -119,6 +119,31 @@ jobs:
             DIR="$(cd "$(dirname "$EXE")/../.." && pwd)"   # de .app-map
           fi
           NAME=$(echo "${{ matrix.platform }}" | sed 's/^mac-/macos-/')
+          if [ "${{ matrix.platform }}" != linux-x64 ]; then
+            # Homebrew rewrites the install name of every library to a long /opt/homebrew/... path.
+            # Libraries without header room for that make 'brew install' end in an error, so leave
+            # out the (optional) Python module they belong to; the app falls back without it.
+            STAGE="$RUNNER_TEMP/brew-stage"
+            rm -rf "$STAGE" && mkdir -p "$STAGE" && cp -R "$DIR" "$STAGE/"
+            APP="$STAGE/$(basename "$DIR")"
+            LONG="/opt/homebrew/opt/anything-converter/libexec/AnythingConverter.app/Contents/Resources/lib/a/very/long/path/to/make/sure/there/is/room/for/homebrew/relocation/xxxxxxxxxxxxxxxxxxxxxxxx.dylib"
+            find "$APP" -type f \( -name "*.dylib" -o -name "*.so" \) | while read -r f; do
+              t="$RUNNER_TEMP/padtest"; cp "$f" "$t"; chmod u+w "$t"
+              if ! install_name_tool -id "$LONG" "$t" 2>/dev/null; then
+                pkg=$(echo "$f" | sed -n 's#.*/Resources/lib/\([^/]*\)/.*#\1#p')
+                case " rawpy pillow_heif pywhispercpp _pywhispercpp libtorrent pydicom " in
+                  *" $pkg "*) ;;
+                  *) echo "::warning::Homebrew cannot relocate $f (part of $pkg, kept)"; rm -f "$t"; continue ;;
+                esac
+                if [ -n "$pkg" ] && [ -d "$APP/Contents/Resources/lib/$pkg" ]; then
+                  echo "::warning::Homebrew cannot relocate $(basename "$f"); leaving out lib/$pkg"
+                  rm -rf "$APP/Contents/Resources/lib/$pkg"
+                fi
+              fi
+              rm -f "$t"
+            done
+            DIR="$APP"
+          fi
           tar -czf "out/anything-converter-tui-$NAME.tar.gz" -C "$(dirname "$DIR")" "$(basename "$DIR")"
           ls -la out
 
