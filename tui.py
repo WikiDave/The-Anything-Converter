@@ -1117,5 +1117,17 @@ def __getattr__(name):
     raise AttributeError(name)
 
 
+def run() -> int:
+    try:
+        return main()
+    except BrokenPipeError:
+        # uitvoer naar een programma dat al gestopt is met lezen (bijv. 'head' of 'grep -q'): netjes stoppen
+        try:
+            sys.stdout = open(os.devnull, "w")
+        except OSError:
+            pass
+        return 0
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run())
