@@ -30,7 +30,7 @@ permissions:
 
 # Een nieuwe push op dezelfde branch stopt een oudere bouw die nog loopt.
 concurrency:
-  group: desktop-${{ github.ref }}
+  group: desktop-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
