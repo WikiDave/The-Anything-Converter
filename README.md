@@ -202,7 +202,7 @@ recommended), 7-Zip, Tesseract (text recognition), LibreOffice, pandoc, Ghostscr
 
 | System | Before `pipx install` |
 |---|---|
-| FreeBSD | `pkg install python311 py311-pipx py311-pillow py311-lxml py311-numpy py311-pikepdf ffmpeg` |
+| FreeBSD (tested: 15.1) | `pkg install python3 py312-pipx py312-sqlite3 py312-pillow py312-lxml py312-numpy ffmpeg` (`py312` = your Python version) |
 | OpenBSD | `pkg_add python%3.11 py3-pipx py3-pillow py3-lxml py3-numpy ffmpeg` |
 | NetBSD | `pkgin install python311 py311-pip py311-Pillow py311-lxml py311-numpy ffmpeg` |
 | Alpine | `apk add python3 pipx ffmpeg` |

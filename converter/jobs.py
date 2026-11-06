@@ -56,6 +56,9 @@ OPTIONAL_PKGS = {"fitz": "pdf", "pymupdf": "pdf", "pikepdf": "pdf", "py7zr": "ar
 
 def missing_module_message(e: ModuleNotFoundError) -> str:
     name = (e.name or "").split(".")[0]
+    if name in ("_sqlite3", "sqlite3"):
+        from .datafmt import SQLITE_MISSING
+        return SQLITE_MISSING
     extra = OPTIONAL_PKGS.get(name)
     hint = f'pip install "anything-converter[{extra}]"' if extra else f"pip install {name}"
     return (f"This conversion needs the optional Python package '{name}', which is not installed. "

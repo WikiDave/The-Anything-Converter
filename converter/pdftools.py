@@ -435,7 +435,27 @@ def _paras_html(text: str) -> str:
 
 
 def document_to_pdf(src: Path, dst: Path) -> Path:
-    """Word/Excel/PowerPoint/RTF/TXT/Markdown/HTML naar PDF zonder LibreOffice (eenvoudige opmaak)."""
+    """Word/Excel/PowerPoint/RTF/TXT/Markdown/HTML to PDF without LibreOffice (simple layout)."""
+    body, landscape = document_html(src)
+    return html_to_pdf(body, dst, landscape)
+
+
+def document_to_text(src: Path, dst: Path, fmt: str) -> Path:
+    """Word/Excel/PowerPoint/RTF to .txt or .html without LibreOffice (pure Python; works on every system)."""
+    body, _ = document_html(src)
+    if fmt == "html":
+        dst.write_text(f"<!doctype html><meta charset=utf-8><title>{html.escape(src.stem)}</title>\n{body}\n",
+                       encoding="utf-8")
+        return dst
+    text = re.sub(r"(?i)<br\s*/?>|</(p|h[1-6]|li|tr|div|pre|table)>", "\n", body)
+    text = re.sub(r"(?i)</t[dh]>", "\t", text)
+    text = html.unescape(re.sub(r"<[^>]+>", "", text))
+    text = re.sub(r"\n{3,}", "\n\n", "\n".join(line.rstrip() for line in text.splitlines()))
+    dst.write_text(text.strip() + "\n", encoding="utf-8")
+    return dst
+
+
+def document_html(src: Path) -> tuple[str, bool]:
     ext = src.suffix.lower().lstrip(".")
     landscape = False
     if ext == "txt":
@@ -454,7 +474,7 @@ def document_to_pdf(src: Path, dst: Path) -> Path:
         body, landscape = _pptx_html(src), True
     else:
         raise ConversionError(f".{ext} to PDF needs LibreOffice (free: libreoffice.org).")
-    return html_to_pdf(body, dst, landscape)
+    return body, landscape
 
 
 def _markdown_html(md: str) -> str:
@@ -532,7 +552,7 @@ def _pptx_html(src: Path) -> str:
     prs = Presentation(src)
     out = []
     for n, slide in enumerate(prs.slides, 1):
-        out.append(f"<h2>Dia {n}</h2>")
+        out.append(f"<h2>Slide {n}</h2>")
         for shape in slide.shapes:
             if shape.has_text_frame:
                 for p in shape.text_frame.paragraphs:

@@ -10,7 +10,10 @@ import gzip
 import io
 import json
 import shutil
-import sqlite3
+try:
+    import sqlite3
+except ImportError:  # e.g. FreeBSD without the py3x-sqlite3 package
+    sqlite3 = None
 import struct
 import subprocess
 import sys
@@ -301,6 +304,8 @@ def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange l
         (np.save if ext == "npy" else lambda f, a: np.savez(f, a=a))(str(p), np.arange(6).reshape(2, 3))
         return p
     if ext in ("sqlite", "sqlite3", "db", "db3"):
+        if sqlite3 is None:
+            return None
         con = sqlite3.connect(p)
         con.execute("create table people(name text, age int)")
         con.executemany("insert into people values(?,?)", [("Anna", 30), ("Bo", 25)])
@@ -343,7 +348,7 @@ def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange l
         from pptx import Presentation
         prs = Presentation()
         s = prs.slides.add_slide(prs.slide_layouts[1])
-        s.shapes.title.text = "Dia"
+        s.shapes.title.text = "Slide"
         prs.save(p)
         return p
     if ext == "pdf":
@@ -356,7 +361,7 @@ def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange l
         make_sample("pdf", d).rename(p)
         return p
     if ext == "rtf":
-        p.write_text(r"{\rtf1\ansi Hello {\b vet}\par wereld}", encoding="ascii")
+        p.write_text(r"{\rtf1\ansi Hello {\b bold}\par world}", encoding="ascii")
         return p
     if ext in ("odt", "ods", "odp", "odg", "doc", "xls", "ppt", "ott", "ots", "otp", "sxw", "sxc", "sxi", "dot", "xlt",
                "pot", "pps", "xlsb", "slk", "dif", "wps", "wks", "wk1", "123", "vsd", "vsdx", "pub", "rtf-lo"):
@@ -520,7 +525,7 @@ def make_sample(ext: str, d: Path) -> Path | None:  # noqa: C901 - één lange l
         return p
     if ext in ("uue", "uu"):
         import binascii
-        data = b"Hello uuencode wereld\n"
+        data = b"Hello uuencode world\n"
         p.write_text("begin 644 hallo.txt\n" + binascii.b2a_uu(data).decode() + "`\nend\n")
         return p
     if ext in ("cpio", "iso", "cab", "wim", "rar", "xar", "dmg", "squashfs"):

@@ -34,3 +34,15 @@ def test_pyproject_entry_points_exist():
     for target in {**data["project"]["scripts"], **data["project"]["gui-scripts"]}.values():
         mod, func = target.split(":")
         assert mod == "converter.entry" and callable(getattr(entry, func))
+
+
+def test_office_to_text_without_libreoffice(tmp_path, monkeypatch):
+    from converter import document, samples
+    monkeypatch.setattr(document, "have", lambda name: False)  # as on BSD / Alpine / Termux
+    for ext in ("docx", "xlsx", "pptx", "rtf"):
+        src = samples.make_sample(ext, tmp_path)
+        for fmt in ("txt", "html"):
+            d = tmp_path / f"o-{ext}-{fmt}"
+            d.mkdir()
+            out = document.process(src, d, "document", {"format": fmt})
+            assert out.stat().st_size > 5

@@ -127,7 +127,7 @@ jobs:
             PY=$(python3 -c 'import sys; print(f"python{sys.version_info[0]}.{sys.version_info[1]}")')
             V=$(python3 -c 'import sys; print(f"py{sys.version_info[0]}{sys.version_info[1]}")')
             echo "FreeBSD $(uname -r), $PY"
-            pkg install -y $V-pip $V-pillow $V-lxml $V-numpy $V-pyyaml || pkg install -y $V-pip $V-pillow $V-lxml $V-numpy
+            pkg install -y $V-pip $V-sqlite3 $V-pillow $V-lxml $V-numpy $V-pyyaml
             $PY -m venv --system-site-packages /tmp/ac
             /tmp/ac/bin/python -m pip install --prefer-binary dist/*.whl
             PATH="/tmp/ac/bin:$PATH" /tmp/ac/bin/python -I tools/smoke_pip.py

@@ -78,6 +78,10 @@ def process(src: Path, out_dir: Path, category: str, opts: dict, progress: Optio
             shutil.move(str(compressed), dst)
         return dst
 
+    # To plain text / HTML without LibreOffice (BSD, Alpine, servers, Termux): pure Python
+    if fmt in ("txt", "html") and ext in ("docx", "xlsx", "pptx", "rtf") and not (have("soffice") or have("libreoffice")):
+        return pdftools.document_to_text(src, dst, fmt)
+
     if opts.get("target_bytes") and fmt != "pdf":
         raise ConversionError("For documents a target size only works with PDF output. Choose PDF, or use 'zip' for other files.")
 

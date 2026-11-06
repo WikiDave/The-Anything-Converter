@@ -10,7 +10,10 @@ import csv
 import io
 import json
 import re
-import sqlite3
+try:
+    import sqlite3
+except ImportError:  # e.g. FreeBSD without the py3x-sqlite3 package
+    sqlite3 = None
 import zipfile
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -343,6 +346,7 @@ def write(obj, dst: Path, fmt: str, title: str = "data") -> Path:
 # --------------------------------------------------------------------------- databases
 
 def sqlite_tables(path: Path) -> dict[str, tuple[list[str], list[tuple]]]:
+    _need_sqlite()
     con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     try:
         out = {}
@@ -417,6 +421,7 @@ def convert_db(src: Path, out_dir: Path, fmt: str) -> Path:
         return dst
     if fmt == "sql":
         dst = out_dir / f"{stem}.sql"
+        _need_sqlite()
         con = sqlite3.connect(f"file:{src}?mode=ro", uri=True)
         dst.write_text("\n".join(con.iterdump()) + "\n", encoding="utf-8")
         con.close()
@@ -639,3 +644,12 @@ def convert(src: Path, out_dir: Path, fmt: str, opts: dict) -> Path:
     if ext in FINANCE:
         return write(finance_rows(src), dst, fmt, src.stem)
     return write(load(src), dst, fmt, src.stem)
+
+
+def _need_sqlite() -> None:
+    if sqlite3 is None:
+        raise ConversionError(SQLITE_MISSING)
+
+
+SQLITE_MISSING = ("This Python was installed without SQLite support. FreeBSD: pkg install py3XX-sqlite3 "
+                  "(XX = your Python version, e.g. py312-sqlite3); other systems: install Python's sqlite module.")
