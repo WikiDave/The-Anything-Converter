@@ -23,7 +23,7 @@ on:
       version:
         description: "Versie (bijv. 2.1.0)"
         required: true
-        default: "2.10.1"
+        default: "2.10.2"
 
 permissions:
   contents: read
@@ -173,12 +173,14 @@ jobs:
           OUT="$("$TUI" --version)"
           echo "$OUT"
           echo "$OUT" | grep -q "terminal"
-          # opdrachtregel en eenvoudige modus (zonder echte terminal)
+          # commands and simple mode (no real terminal)
           python -c "from PIL import Image; Image.new('RGB', (64, 48), 'red').save('tui-test.png')"
-          "$TUI" converteer tui-test.png --naar webp
+          "$TUI" convert tui-test.png --to webp
           test -s tui-test.webp
-          "$TUI" formaten tui-test.png | grep -q "webp"
-          printf 'q\n' | "$TUI" | grep -q "eenvoudige modus"
+          "$TUI" converteer tui-test.png --naar png   # the old Dutch names still work
+          "$TUI" formats tui-test.png | grep -q "webp"     # grep -q stops reading early: must not crash
+          printf 'q\n' | "$TUI" | grep -q "simple mode"
+          "$TUI" presets | grep -q "Web video"
 
       - name: Logbestand bij fouten
         if: failure()

@@ -1384,15 +1384,22 @@ def __getattr__(name):
     raise AttributeError(name)
 
 
+def _quiet_stdout() -> None:
+    """Point stdout at /dev/null so Python's final flush at exit cannot fail with a broken pipe."""
+    try:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+    except (OSError, ValueError, AttributeError):
+        pass
+
+
 def run() -> int:
     try:
-        return main()
+        code = main()
+        sys.stdout.flush()  # a reader that stopped early ('head', 'grep -q') shows up here, not at exit
+        return code
     except BrokenPipeError:
-        # uitvoer naar een programma dat al gestopt is met lezen (bijv. 'head' of 'grep -q'): netjes stoppen
-        try:
-            sys.stdout = open(os.devnull, "w")
-        except OSError:
-            pass
+        _quiet_stdout()
         return 0
 
 
