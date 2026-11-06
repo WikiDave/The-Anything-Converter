@@ -21,8 +21,8 @@ cat > "$APPDIR/anything-converter.desktop" <<'DESKTOP'
 [Desktop Entry]
 Type=Application
 Name=Anything Converter
-Comment=Converteer, verklein, vergroot en knip bestanden
-Exec=AnythingConverter
+Comment=Convert, shrink, enlarge and trim files
+Exec=AnythingConverter %F
 Icon=anything-converter
 Terminal=false
 Categories=AudioVideo;Graphics;Utility;

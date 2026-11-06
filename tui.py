@@ -347,6 +347,8 @@ HelpScreen {{ align: center middle; background: $background 70%; }}
                                      prompt="video codec: auto", id="vcodec", allow_blank=True)
                         yield Select([(f, f) for f in ("23.976", "24", "25", "29.97", "30", "50", "60")],
                                      prompt="fps: original", id="fps", allow_blank=True)
+                        yield Select([("video card: always", "on"), ("video card: off", "off")],
+                                     prompt="video card: automatic", id="hw", allow_blank=True)
                     with Horizontal(classes="row", id="audio-row"):
                         yield Select([(n, v) for v, n in (("aac", "AAC"), ("mp3", "MP3"), ("opus", "Opus"),
                                                           ("flac", "FLAC"), ("ac3", "AC-3"), ("pcm", "PCM"),
@@ -804,7 +806,7 @@ HelpScreen {{ align: center middle; background: $background 70%; }}
                     if v:
                         opts[key] = v
                 for key, wid in (("height", "#height"), ("device", "#device"), ("vcodec", "#vcodec"),
-                                 ("fps", "#fps"), ("acodec", "#acodec"), ("audio_bitrate", "#abitrate"),
+                                 ("fps", "#fps"), ("hw", "#hw"), ("acodec", "#acodec"), ("audio_bitrate", "#abitrate"),
                                  ("sample_rate", "#srate"), ("channels", "#channels")):
                     v = self.query_one(wid, Select).value
                     if isinstance(v, str):
@@ -1382,15 +1384,22 @@ def __getattr__(name):
     raise AttributeError(name)
 
 
+def _quiet_stdout() -> None:
+    """Point stdout at /dev/null so Python's final flush at exit cannot fail with a broken pipe."""
+    try:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+    except (OSError, ValueError, AttributeError):
+        pass
+
+
 def run() -> int:
     try:
-        return main()
+        code = main()
+        sys.stdout.flush()  # a reader that stopped early ('head', 'grep -q') shows up here, not at exit
+        return code
     except BrokenPipeError:
-        # uitvoer naar een programma dat al gestopt is met lezen (bijv. 'head' of 'grep -q'): netjes stoppen
-        try:
-            sys.stdout = open(os.devnull, "w")
-        except OSError:
-            pass
+        _quiet_stdout()
         return 0
 
 

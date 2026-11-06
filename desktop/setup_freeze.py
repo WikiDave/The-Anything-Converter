@@ -127,6 +127,17 @@ options = {
         "all_users": False,
         "initial_target_dir": r"[LocalAppDataFolder]\Programs\Anything Converter",
         "install_icon": str(ICONS / "app.ico"),
+        # Right-click any file > "Convert with Anything Converter" (Windows 11: under "Show more options").
+        # In the MSI's own Registry table, so uninstalling removes it again. Root -1 = HKCU for this
+        # per-user install.
+        "data": {"Registry": [
+            ("AcShell", -1, r"Software\Classes\*\shell\AnythingConverter", None,
+             "Convert with Anything Converter", "TARGETDIR"),
+            ("AcShellIcon", -1, r"Software\Classes\*\shell\AnythingConverter", "Icon",
+             "[TARGETDIR]AnythingConverter.exe", "TARGETDIR"),
+            ("AcShellCmd", -1, r"Software\Classes\*\shell\AnythingConverter\command", None,
+             '"[TARGETDIR]AnythingConverter.exe" "%1"', "TARGETDIR"),
+        ]},
         "summary_data": {"author": "Anything Converter", "comments": "Converteer, verklein, vergroot en knip bestanden"},
     },
     "bdist_mac": {

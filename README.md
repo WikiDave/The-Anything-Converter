@@ -31,6 +31,10 @@ resolution, frame rate, bitrates, audio tracks, sample rate, channels, tags, cha
 - **Streams**: main video + first audio track, or all audio tracks + subtitles.
 - **Metadata**: keep, edit (title, artist, album, date, comment) or remove everything for privacy.
 
+**Hardware acceleration**: H.264, H.265 and AV1 are encoded on the video card (NVIDIA NVENC, Intel Quick Sync,
+AMD AMF, Apple VideoToolbox, Linux VAAPI) when one works, often 5-20x faster. If a hardware encode fails it is redone
+in software automatically. Setting: *HARDWARE (VIDEO CARD)* in the app, `--hw auto|on|off` in the terminal.
+
 Example: MP4 with H.264, 1080p, 25 fps → MOV with H.265, AAC, 720p, 30 fps. If a container cannot hold a codec
 (e.g. H.265 in WebM) you get a clear message with the codecs that do fit. In the terminal:
 
@@ -77,6 +81,34 @@ The start screen has **TOOLS** tiles: choose a tile, choose a file, done.
 | Text editor / database | edit text files; view tables and run SQL on SQLite, .sql, CSV and Excel |
 | **Drives** | USB sticks, hard disks, SSDs and CD/DVD: **health** (SMART) and **safe formatting** (see below) |
 
+## Presets, batches and watch folders
+
+- **Presets**: 16 built in (web video, WhatsApp video, iPhone, archive MKV, GIF, MP3, FLAC, JPG, WebP, smaller
+  photos, documents to PDF, compress PDF, PDF to Word, speech to text/subtitles, EPUB) and your own: set everything up
+  for one file and click **[ SAVE AS PRESET ]**.
+- **Batch**: tool tile *Batch & watch folders* > choose a preset and many files at once; each result can be saved, or
+  all of them as one zip. Files the preset does not apply to are skipped.
+- **Watch folders** (desktop app): every new file in a folder is converted with a preset into an output folder
+  (default `<folder>/converted`, with the same subfolders). Files that are still being copied or downloaded are left
+  until they are complete; the original is never changed and nothing is overwritten or done twice, also after a
+  restart.
+- Terminal, also on a server, over SSH or in Docker:
+
+```
+anything-converter-tui presets
+anything-converter-tui convert ~/Videos --preset "web video"                # a whole folder
+anything-converter-tui watch ~/Inbox --preset "photos for the web"          # keeps watching (ctrl+c)
+anything-converter-tui watch ~/Inbox --preset "compress pdf" --existing --once   # for scripts and cron
+```
+
+## Right-click: "Convert with Anything Converter"
+
+- **Windows** (.msi): right-click any file > *Convert with Anything Converter* (Windows 11: *Show more options*).
+  Uninstalling removes the menu item again.
+- **Linux** (.deb / AppImage): *Open with > Anything Converter* in every file manager; in KDE Dolphin also a
+  right-click item.
+- If the app is already open, the file opens in that window instead of starting a second copy.
+
 ## Drives: health and safe formatting
 
 Desktop app: tile **Drives: health / format**. Terminal: `anything-converter-tui drives list|health|format`.
@@ -103,7 +135,7 @@ Terminal, iTerm, Linux terminals and console, tmux/screen, over SSH and in Docke
 | `anything-converter-tui` | full screen (the normal way) |
 | `anything-converter-tui --ascii` | old consoles or fonts without box lines: ASCII only |
 | `anything-converter-tui --simple` | numbered menus, no screen control. Starts by itself with `TERM=dumb`, a pipe or a tiny window |
-| `anything-converter-tui convert a.mov --to mp4` | commands for scripts: convert, formats, hash, pdf, archive, social, ocr, web, fetch, scan, sql, drives, serve (`--help`) |
+| `anything-converter-tui convert a.mov --to mp4` | commands for scripts: convert, formats, hash, pdf, archive, social, ocr, web, fetch, scan, sql, drives, serve, presets, watch (`--help`) |
 | `anything-converter-tui --theme c64` / `--colours "#ffcc00,#101010"` | colour theme or your own text/background colour |
 
 The Dutch command names from earlier versions (`converteer`, `--naar`, `--simpel`, …) still work.

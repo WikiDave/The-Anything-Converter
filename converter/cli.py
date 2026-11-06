@@ -174,13 +174,14 @@ def build_parser(with_file: bool = False) -> argparse.ArgumentParser:
         ap.add_argument("bestand", nargs="?", metavar="file", help="file to open straight away")
         ap.set_defaults(cmd=None)
         ap.epilog = ("Commands (more help: anything-converter-tui <command> --help):\n"
-                     "  convert, formats, hash, pdf, archive, social, ocr, web, fetch, scan, sql, drives, serve\n\n" + ap.epilog)
+                     "  convert, formats, hash, pdf, archive, social, ocr, web, fetch, scan, sql, drives, serve, presets, watch\n\n" + ap.epilog)
         return ap
     sub = ap.add_subparsers(dest="cmd", metavar="command")
 
     c = sub.add_parser("convert", aliases=["converteer"], help="convert files")
     c.add_argument("bestanden", nargs="+", type=Path, metavar="file")
-    c.add_argument("--to", "--naar", dest="naar", required=True, help="output format, e.g. mp4, jpg, docx, iso")
+    c.add_argument("--to", "--naar", dest="naar", help="output format, e.g. mp4, jpg, docx, iso")
+    c.add_argument("--preset", dest="use_preset", help="use a preset (see 'presets'), e.g. \"Web video\"")
     c.add_argument("--out", "--uit", dest="uit", type=Path, help="output folder (default: next to the file)")
     c.add_argument("--quality", "--kwaliteit", dest="kwaliteit", default="medium", choices=list(QUALITY))
     c.add_argument("--target", "--doel", dest="doel", help="target size, e.g. 8MB or 500KB")
@@ -201,8 +202,11 @@ def build_parser(with_file: bool = False) -> argparse.ArgumentParser:
     m.add_argument("--fps", help="frame rate, e.g. 25, 29.97, 30, 60")
     m.add_argument("--vbitrate", help="video bitrate in kbps, e.g. 4000")
     m.add_argument("--crf", type=int, help="constant quality (lower = better), e.g. 23")
-    m.add_argument("--preset", choices=["ultrafast", "veryfast", "fast", "medium", "slow", "veryslow"])
+    m.add_argument("--speed", dest="preset", choices=["ultrafast", "veryfast", "fast", "medium", "slow", "veryslow"],
+                   help="encoder speed (slower = smaller file)")
     m.add_argument("--10bit", dest="tenbit", action="store_true", help="10-bit colour (H.265/AV1/VP9)")
+    m.add_argument("--hw", choices=["auto", "on", "off"], default="auto",
+                   help="video card encoding (NVIDIA/Intel/AMD/Apple): auto = when it works, on = also for --target")
     m.add_argument("--all-streams", action="store_true", help="keep all audio tracks and subtitles")
     m.add_argument("--acodec", choices=["aac", "mp3", "opus", "vorbis", "flac", "alac", "ac3", "eac3", "pcm",
                                         "pcm24", "copy"])
@@ -278,6 +282,17 @@ def build_parser(with_file: bool = False) -> argparse.ArgumentParser:
                     help="127.0.0.1 = only this computer (default); 0.0.0.0 = the whole network")
     w2.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
 
+    pr = sub.add_parser("presets", help="list the presets (built-in and your own)")
+    pr.add_argument("--delete", metavar="NAME", help="delete one of your own presets")
+
+    wt = sub.add_parser("watch", help="watch a folder: convert every new file with a preset (ctrl+c = stop)")
+    wt.add_argument("folder", type=Path)
+    wt.add_argument("--preset", required=True, help="preset name (see 'presets')")
+    wt.add_argument("--out", type=Path, help="output folder (default: <folder>/converted)")
+    wt.add_argument("--existing", action="store_true", help="also convert the files that are already there")
+    wt.add_argument("--once", action="store_true", help="convert what is there now and stop (for scripts/cron)")
+    wt.add_argument("--interval", type=float, default=3.0, help="seconds between checks (default 3)")
+
     v = sub.add_parser("scan", help="check a file or folder for viruses")
     v.add_argument("pad", type=Path, metavar="path")
     return ap
@@ -295,7 +310,20 @@ def run_command(args) -> int:
 
 
 def cmd_convert(a) -> int:
-    opts: dict = {"format": a.naar.lower().lstrip("."), "quality": QUALITY[a.kwaliteit]}
+    base: dict = {}
+    kinds: list = []
+    if a.use_preset:
+        from . import presets
+        try:
+            pr = presets.get(a.use_preset)
+            base, kinds = dict(pr["opts"]), pr.get("for") or []
+        except KeyError:
+            raise ConversionError(f"Unknown preset: {a.use_preset}. See 'anything-converter-tui presets'.") from None
+    if not a.naar and not base.get("format"):
+        raise ConversionError("Give --to <format> or --preset <name>.")
+    opts: dict = dict(base, format=(a.naar or base["format"]).lower().lstrip("."))
+    if not a.use_preset or a.kwaliteit != "medium":
+        opts["quality"] = QUALITY[a.kwaliteit]
     if a.doel:
         opts["target_bytes"] = parse_size(a.doel, "mb")
     for k, v in (("trim_start", a.van), ("trim_end", a.tot), ("height", a.hoogte), ("device", a.apparaat),
@@ -314,12 +342,29 @@ def cmd_convert(a) -> int:
             opts[k] = v
     if a.tenbit:
         opts["pix_fmt"] = "10bit"
+    opts["hw"] = a.hw
     if a.all_streams:
         opts["streams"] = "all"
     if a.strip_metadata:
         opts["metadata"] = "strip"
+    files: list[Path] = []
+    for src in a.bestanden:  # a folder: every file in it (not in subfolders)
+        files += sorted(p for p in src.iterdir() if p.is_file() and not p.name.startswith(".")) if src.is_dir() else [src]
+    if kinds and len(files) > 1:  # a preset for photos skips the videos in a folder, and so on
+        from .detect import targets_for
+        keep = []
+        for f in files:
+            try:
+                ok = targets_for(f)[0] in kinds
+            except Exception:  # noqa: BLE001
+                ok = False
+            if ok:
+                keep.append(f)
+            else:
+                say(f"- {f.name}: skipped (the preset is for {', '.join(kinds)})")
+        files = keep
     fails = 0
-    for src in a.bestanden:
+    for src in files:
         say(f"> {src.name} -> .{opts['format']}")
         bar = Progress()
         try:
@@ -354,6 +399,10 @@ def cmd_formats(a) -> int:
                 say("  #" + str(st["index"]) + " " + ", ".join(b for b in bits if b))
             for k, v in d["tags"].items():
                 say(f"  tag {k}: {v}")
+            if info["category"] == "video":
+                from .media import hw_available
+                hw = [e for e in hw_available().values() if e]
+                say("  video card: " + (", ".join(hw) if hw else "no hardware encoder found (software)"))
         except ConversionError:
             pass
     say("can become:")
@@ -543,6 +592,52 @@ def cmd_serve(a) -> int:
     return 0
 
 
+def cmd_presets(a) -> int:
+    from . import presets
+    if a.delete:
+        presets.delete(a.delete)
+        say(f"deleted: {a.delete}")
+        return 0
+    for name, p in presets.all_presets().items():
+        o = ", ".join(f"{k} {v}" for k, v in p["opts"].items())
+        say(f"{'*' if not p['builtin'] else ' '} {name}")
+        say(f"    for {', '.join(p.get('for') or ['any file'])}: {o}")
+    say("(* = your own; save one in the app with [ SAVE AS PRESET ])")
+    return 0
+
+
+def cmd_watch(a) -> int:
+    import time
+    from . import presets
+    from .watch import Watcher
+    try:
+        name = presets.resolve(a.preset)
+    except KeyError:
+        raise ConversionError(f"Unknown preset: {a.preset}. See 'anything-converter-tui presets'.") from None
+    folder = a.folder.expanduser().resolve()
+    if not folder.is_dir():
+        raise ConversionError(f"Folder not found: {folder}")
+    out = (a.out or folder / "converted").expanduser()
+    rule = {"id": "cli-" + str(abs(hash((str(folder), name, str(out)))))[:10], "folder": str(folder), "preset": name,
+            "out": str(out), "recursive": True, "existing": a.existing, "enabled": True,
+            "since": 0 if a.existing else time.time()}
+    w = Watcher([rule], interval=a.interval,
+                on_event=lambda e: say(f"{e['time']}  {e['kind'].upper():<5} {e['file']}  {e['text']}"))
+    say(f"watching {folder}\n  preset: {name}\n  output: {out}\n  ctrl+c = stop")
+    try:
+        while True:
+            w.scan_once()
+            if a.once:  # a file is taken on the second look (it must have stopped growing)
+                time.sleep(2.5)
+                n = w.scan_once()
+                say(f"done: {n} file(s) converted")
+                return 0
+            time.sleep(a.interval)
+    except KeyboardInterrupt:
+        say("stopped")
+        return 0
+
+
 def cmd_drives(a) -> int:
     from . import drives
     if a.actie == "list":
@@ -618,7 +713,8 @@ COMMANDS = {"converteer": cmd_convert, "convert": cmd_convert, "formaten": cmd_f
             "info": cmd_formats, "hash": cmd_hash, "checksum": cmd_hash, "pdf": cmd_pdf, "archief": cmd_archive,
             "archive": cmd_archive, "social": cmd_social, "ocr": cmd_ocr, "web": cmd_web, "ophalen": cmd_fetch,
             "fetch": cmd_fetch, "scan": cmd_scan, "sql": cmd_sql,
-            "drives": cmd_drives, "schijven": cmd_drives, "serve": cmd_serve, "server": cmd_serve}
+            "drives": cmd_drives, "schijven": cmd_drives, "serve": cmd_serve, "server": cmd_serve,
+            "presets": cmd_presets, "watch": cmd_watch}
 
 
 # ============================================================================ eenvoudige modus

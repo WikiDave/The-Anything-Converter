@@ -336,3 +336,13 @@ a.btn { text-decoration: none; display: inline-block; }
 .drv-health { white-space: pre-wrap; border-left: 2px solid var(--fg); padding-left: 8px; }
 .drv-target { color: var(--hi); }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* batch & watch folders */
+#batchBox h3.sub { font-size: 13px; margin: 18px 0 6px; color: var(--hi); letter-spacing: .08em; }
+.b-list { margin: 8px 0; }
+.b-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 12px; align-items: center;
+  padding: 6px 0; border-bottom: 1px dashed var(--faint); }
+.b-row .b-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b-row .b-st { font-size: 12px; }
+.b-row .b-dl { display: flex; gap: 6px; }
+.w-log { white-space: pre-wrap; max-height: 220px; overflow: auto; }

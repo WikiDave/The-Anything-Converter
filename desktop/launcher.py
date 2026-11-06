@@ -125,6 +125,8 @@ def native_window(url: str, base: Path, closers: list) -> bool:
     if engine:
         print("venster:", engine)
         closers.append(window.close_all)
+        from app import app as flask_app
+        flask_app.config["FOCUS"] = window.focus
         window.run(url, storage, icon)
         return True
     # Linux: de systeem-Python heeft de GTK/WebKit-koppeling; pywebview zit als bronbestanden in pyweb/.
@@ -205,8 +207,32 @@ def ensure_on_path(base: Path) -> None:
         print("could not add to PATH:", e)
 
 
+def instance_file() -> Path:
+    return data_dir() / "instance.json"
+
+
+def hand_over(files: list[str]) -> bool:
+    """Is the app already open? Then give it these files and stop (no second window)."""
+    try:
+        inst = json.loads(instance_file().read_text(encoding="utf-8"))
+        port = int(inst["port"])
+        with urllib.request.urlopen(f"http://{HOST}:{port}/api/ping", timeout=2) as r:
+            if json.load(r).get("app") != "anything-converter":
+                return False
+        req = urllib.request.Request(f"http://{HOST}:{port}/api/open", data=json.dumps({"paths": files}).encode(),
+                                     headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return bool(json.load(r).get("ok"))
+    except Exception:  # noqa: BLE001 - no running app (or an old one): start normally
+        return False
+
+
 def main() -> None:
     base = app_dir()
+    # "Open with" / right-click: the files come as arguments
+    files = [str(Path(a).resolve()) for a in sys.argv[1:] if not a.startswith("-") and Path(a).is_file()]
+    if files and hand_over(files):
+        return
     # Een GUI-app heeft geen console: schrijf uitvoer naar een logbestand (anders crasht print()).
     log = open(log_file(), "a", encoding="utf-8", buffering=1)
     if sys.stdout is None or getattr(sys, "frozen", False):
@@ -225,6 +251,13 @@ def main() -> None:
     url = f"http://{HOST}:{port}/"
     print(f"running at {url}")
     threading.Thread(target=server.serve_forever, daemon=True).start()
+    import app as app_module
+    app_module.PENDING.extend(files)
+    app_module.start_watcher()
+    try:
+        instance_file().write_text(json.dumps({"port": port, "pid": os.getpid()}), encoding="utf-8")
+    except OSError:
+        pass
 
     closers: list = []
     stopped = threading.Event()
@@ -257,7 +290,12 @@ def main() -> None:
         webbrowser.open(url)
         stopped.wait()
     server.shutdown()
-    print("afgesloten")
+    try:
+        if json.loads(instance_file().read_text(encoding="utf-8")).get("pid") == os.getpid():
+            instance_file().unlink()
+    except (OSError, ValueError):
+        pass
+    print("closed")
     log.flush()
     os._exit(0)  # ook achtergrondtaken (downloads, torrents) stoppen
 

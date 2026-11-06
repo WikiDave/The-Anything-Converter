@@ -101,6 +101,40 @@
     <p class="dim small">// the disk with your operating system is never shown as formattable. windows asks for administrator permission; linux asks for your password.</p>
   </fieldset>
 
+  <!-- Batch: many files with one preset; watch folders: convert new files automatically -->
+  <fieldset id="batchBox" class="frame hidden">
+    <legend>BATCH &amp; WATCH FOLDERS</legend>
+    <div class="row">
+      <span class="prompt">PRESET&gt;</span>
+      <span class="sel grow"><select id="bPreset" aria-label="Preset"></select></span>
+      <button id="bDelPreset" class="btn small hidden" type="button">[ DELETE PRESET ]</button>
+      <button id="bClose" class="btn" type="button">[ CLOSE ]</button>
+    </div>
+    <p class="dim small" id="bPresetInfo"></p>
+    <h3 class="sub">BATCH</h3>
+    <div class="row">
+      <button id="bPick" class="btn" type="button">[ + CHOOSE FILES ]</button>
+      <input id="bInput" type="file" multiple hidden>
+      <button id="bZip" class="btn hidden" type="button">[ ↓ ALL AS .ZIP ]</button>
+      <span class="dim small" id="bSummary"></span>
+    </div>
+    <div id="bList" class="b-list"></div>
+    <div id="watchPart">
+      <h3 class="sub">WATCH FOLDERS</h3>
+      <p class="dim small">// every new file in the folder is converted with the preset into the output folder. the original stays untouched; nothing is overwritten. works while the app is open.</p>
+      <div class="grid">
+        <label class="field"><span>FOLDER&gt;</span><span class="pair"><input id="wFolder" type="text" placeholder="/path/to/folder"><button id="wBrowse" class="btn small hidden" type="button">[ … ]</button></span></label>
+        <label class="field"><span>OUTPUT FOLDER&gt;</span><input id="wOut" type="text" placeholder="(empty = &lt;folder&gt;/converted)"></label>
+      </div>
+      <div class="row">
+        <label class="check"><input id="wExisting" type="checkbox"><span>also convert files that are already there</span></label>
+        <button id="wAdd" class="btn" type="button">[ + WATCH THIS FOLDER ]</button>
+      </div>
+      <div id="wRules" class="b-list"></div>
+      <pre id="wLog" class="small dim w-log"></pre>
+    </div>
+  </fieldset>
+
   <!-- Test files: try what the converter does with each kind of file -->
   <fieldset class="frame" id="sampleBox">
     <legend>TEST FILES</legend>
@@ -372,6 +406,12 @@
             <option value="">8-bit (plays everywhere)</option>
             <option value="10bit">10-bit (H.265 / AV1 / VP9)</option>
           </select></span></label>
+        <label class="field"><span>HARDWARE (VIDEO CARD)&gt;</span>
+          <span class="sel"><select id="avHw">
+            <option value="">automatic (faster when possible)</option>
+            <option value="on">always, also for a target size</option>
+            <option value="off">off (software only)</option>
+          </select></span></label>
         <label class="field"><span>STREAMS&gt;</span>
           <span class="sel"><select id="avStreams">
             <option value="">main video + first audio track</option>
@@ -501,6 +541,7 @@
       <label class="check"><input id="fastTrim" type="checkbox"><span>Fast trim without re-encoding <em>(cuts on a keyframe)</em></span></label>
     </fieldset>
 
+    <button id="savePresetBtn" class="btn small" type="button" title="Save these settings as a preset for batches and watch folders">[ SAVE AS PRESET ]</button>
     <button id="goBtn" class="go" type="button">[ ▶ START ]</button>
 
     <div id="progress" class="hidden">
