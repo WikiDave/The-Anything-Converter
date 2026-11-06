@@ -499,12 +499,12 @@ $("resetBtn").addEventListener("click", () => {
   step(1); status("ready");
 });
 
-$("goBtn").addEventListener("click", async () => {
-  if (!current) return;
+// The settings on screen as conversion options (also what a preset saves); null when something is wrong.
+function collectOpts() {
   const fmt = $("format").value;
   const opts = { format: fmt };
   if (radio("sizeMode") === "target") {
-    if (!(+$("targetSize").value > 0)) { alert("Enter a target size."); return; }
+    if (!(+$("targetSize").value > 0)) { alert("Enter a target size."); return null; }
     opts.target_size = $("targetSize").value;
     opts.target_unit = $("targetUnit").value;
   } else {
@@ -537,7 +537,7 @@ $("goBtn").addEventListener("click", async () => {
   }
   if (cat === "video" || cat === "audio") {
     const s = parseTime($("trimStart").value), e = parseTime($("trimEnd").value);
-    if (Number.isNaN(s) || Number.isNaN(e) || (s != null && e != null && e <= s)) { alert("Check the trim times."); return; }
+    if (Number.isNaN(s) || Number.isNaN(e) || (s != null && e != null && e <= s)) { alert("Check the trim times."); return null; }
     opts.trim_start = s; opts.trim_end = e;
     if (TEXT_OUT.includes(fmt)) {
       opts.language = $("speechLang").value;
@@ -547,12 +547,19 @@ $("goBtn").addEventListener("click", async () => {
     opts.fast_trim = $("fastTrim").checked && fmt === current.ext;
   }
 
+  return opts;
+}
+
+$("goBtn").addEventListener("click", async () => {
+  if (!current) return;
+  const opts = collectOpts();
+  if (!opts) return;
   $("goBtn").disabled = true;
   $("goBtn").textContent = "[ BUSY... ]";
   step(4);
   show($("result"), false);
   show($("progress"), true);
-  setProgress(0, "Versturen…");
+  setProgress(0, "Sending…");
   try {
     const r = await fetch("/api/convert", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: current.id, options: opts }) });
     const job = await r.json();
@@ -735,7 +742,7 @@ const TOOLS = [
   ["#", "SHA", "Checksum / hash", "*", "hash"],
   ["TXT", "✎", "Edit text", "*", "edit"], ["+", "TXT", "New text file", null, "newtext"],
   ["SQL", "▦", "Open database", ".sqlite,.sqlite3,.db,.db3,.sql,.csv,.tsv,.xlsx,.dbf,.json", "db"],
-  ["USB", "HDD", "Drives: health / format", null, "drives"], ["+", "DB", "New database", null, "newdb"], ["*", "ZIP", "Pack (zip, 7z)", "*", "zip"],
+  ["USB", "HDD", "Drives: health / format", null, "drives"], ["▤▤", "AUTO", "Batch & watch folders", null, "batch"], ["+", "DB", "New database", null, "newdb"], ["*", "ZIP", "Pack (zip, 7z)", "*", "zip"],
 ];
 (function buildTools() {
   const grid = $("toolGrid");
@@ -763,6 +770,7 @@ function runTool(accept, fmt, label) {
   if (fmt === "newtext") return newText();
   if (fmt === "newdb") return newDb();
   if (fmt === "drives") return openDrives();
+  if (fmt === "batch") return openBatch();
   if (fmt === "edit" || fmt === "db") {
     afterUpload = fmt; presetFormat = null;
     fileInput.accept = accept === "*" ? "" : accept;
@@ -1238,3 +1246,175 @@ $("drvGo").addEventListener("click", async () => {
     show(bar, false); $("drvConfirm").value = "";
   }
 });
+
+
+// ---------------------------------------------------------------- presets, batch, watch folders
+let presetList = [], isDesktop = false, batchJobs = [];
+fetch("/api/ping").then((r) => r.json()).then((p) => { isDesktop = !!p.desktop; }).catch(() => {});
+
+async function loadPresets(selectName) {
+  try {
+    presetList = (await (await fetch("/api/presets")).json()).presets || [];
+  } catch { presetList = []; }
+  const sel = $("bPreset");
+  sel.innerHTML = "";
+  for (const [label, own] of [["YOUR PRESETS", true], ["BUILT-IN", false]]) {
+    const items = presetList.filter((p) => !p.builtin === own);
+    if (!items.length) continue;
+    const og = document.createElement("optgroup");
+    og.label = label;
+    for (const p of items) og.append(new Option(p.name, p.name));
+    sel.append(og);
+  }
+  if (selectName) sel.value = selectName;
+  presetInfo();
+}
+function presetInfo() {
+  const p = presetList.find((x) => x.name === $("bPreset").value);
+  show($("bDelPreset"), !!p && !p.builtin);
+  if (!p) { $("bPresetInfo").textContent = ""; return; }
+  const o = Object.entries(p.opts).map(([k, v]) => k === "target_bytes" ? `target ${human(v)}` : `${k} ${v}`).join(" · ");
+  $("bPresetInfo").textContent = `// for: ${(p.for || []).join(", ") || "any file"} · ${o}`;
+}
+$("bPreset").addEventListener("change", presetInfo);
+$("bDelPreset").addEventListener("click", async () => {
+  const name = $("bPreset").value;
+  if (!confirm(`Delete the preset "${name}"?`)) return;
+  await fetch("/api/presets/" + encodeURIComponent(name), { method: "DELETE" });
+  loadPresets();
+});
+$("bClose").addEventListener("click", () => show($("batchBox"), false));
+
+function openBatch() {
+  show($("batchBox"), true);
+  show($("watchPart"), isDesktop);
+  show($("wBrowse"), !!(window.pywebview && window.pywebview.api && window.pywebview.api.pick_folder));
+  $("batchBox").scrollIntoView({ behavior: "smooth" });
+  loadPresets($("bPreset").value);
+  if (isDesktop) refreshWatch();
+}
+
+// save the current settings as a preset
+$("savePresetBtn").addEventListener("click", async () => {
+  if (!current) return;
+  const opts = collectOpts();
+  if (!opts) return;
+  for (const k of ["trim_start", "trim_end", "fast_trim"]) delete opts[k];  // belong to one file
+  const name = prompt("Name for this preset (for batches and watch folders):", `${current.label} to .${opts.format}`);
+  if (!name) return;
+  const r = await fetch("/api/presets", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, for: [current.category], opts }) });
+  const d = await r.json();
+  if (!r.ok) { alert(d.error); return; }
+  status(`preset saved: ${name}`);
+  loadPresets(name);
+});
+
+// batch: upload several files, convert each with the preset
+$("bPick").addEventListener("click", () => $("bInput").click());
+$("bInput").addEventListener("change", async () => {
+  const files = [...$("bInput").files];
+  $("bInput").value = "";
+  const preset = $("bPreset").value;
+  if (!files.length || !preset) return;
+  const list = $("bList");
+  list.innerHTML = ""; batchJobs = []; show($("bZip"), false);
+  const rows = files.map((f) => {
+    const row = document.createElement("div");
+    row.className = "b-row";
+    row.innerHTML = '<span class="b-name"></span><span class="b-st dim">waiting</span><span class="b-dl"></span>';
+    row.querySelector(".b-name").textContent = f.name;
+    list.append(row);
+    return row;
+  });
+  const ids = [];
+  for (let i = 0; i < files.length; i++) {
+    rows[i].querySelector(".b-st").textContent = "uploading…";
+    const fd = new FormData(); fd.append("file", files[i]);
+    try {
+      const r = await fetch("/api/upload", { method: "POST", body: fd });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      ids.push(d.id); rows[i].dataset.uid = d.id;
+      rows[i].querySelector(".b-st").textContent = "queued";
+    } catch (e) { rows[i].querySelector(".b-st").textContent = "!! " + e.message; }
+  }
+  const r = await fetch("/api/batch", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids, preset }) });
+  const d = await r.json();
+  if (!r.ok) { alert(d.error); return; }
+  const byUid = Object.fromEntries((d.items || []).map((x) => [x.id, x]));
+  const pending = [];
+  for (const row of rows) {
+    const it = byUid[row.dataset.uid];
+    if (!it) continue;
+    if (it.error) { row.querySelector(".b-st").textContent = "skipped: " + it.error; continue; }
+    pending.push([row, it.job]);
+  }
+  let done = 0, failed = 0;
+  await Promise.all(pending.map(async ([row, jid]) => {
+    for (;;) {
+      const j = await (await fetch("/api/job/" + jid)).json();
+      row.querySelector(".b-st").textContent = j.status === "done" ? `OK ${human(j.size)}` :
+        j.status === "error" ? "!! " + j.error : `${Math.round(j.progress * 100)}% ${j.message.toLowerCase()}`;
+      if (j.status === "done") {
+        done++; batchJobs.push(jid);
+        const a = document.createElement("a");
+        a.className = "btn small"; a.textContent = "[↓]"; a.href = `/api/download/${jid}`;
+        row.querySelector(".b-dl").append(a);
+        return;
+      }
+      if (j.status === "error") { failed++; return; }
+      await new Promise((res) => setTimeout(res, 800));
+    }
+  }));
+  $("bSummary").textContent = `${done} done${failed ? ` · ${failed} failed` : ""}`;
+  show($("bZip"), batchJobs.length > 0);
+});
+$("bZip").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = "/api/batch/zip?jobs=" + batchJobs.join(",");
+  document.body.append(a); a.click(); a.remove();
+});
+
+// watch folders
+$("wBrowse").addEventListener("click", async () => {
+  const f = await window.pywebview.api.pick_folder();
+  if (f) $("wFolder").value = f;
+});
+$("wAdd").addEventListener("click", async () => {
+  const r = await fetch("/api/watch", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ folder: $("wFolder").value.trim(), out: $("wOut").value.trim(), preset: $("bPreset").value,
+      existing: $("wExisting").checked }) });
+  const d = await r.json();
+  if (!r.ok) { alert(d.error); return; }
+  $("wFolder").value = ""; $("wOut").value = "";
+  refreshWatch();
+});
+async function refreshWatch() {
+  if ($("batchBox").classList.contains("hidden") || !isDesktop) return;
+  try {
+    const d = await (await fetch("/api/watch")).json();
+    const box = $("wRules");
+    box.innerHTML = "";
+    for (const r of d.rules || []) {
+      const row = document.createElement("div");
+      row.className = "b-row";
+      row.innerHTML = '<span class="b-name"></span><span class="b-st dim"></span><span class="b-dl"></span>';
+      row.querySelector(".b-name").textContent = `${r.folder}  →  ${r.out}`;
+      row.querySelector(".b-st").textContent = `${r.preset} · ${r.enabled ? "watching" : "paused"}${r.exists ? "" : " · folder missing"} · ${r.files_seen} file(s) seen`;
+      const tog = document.createElement("button");
+      tog.className = "btn small"; tog.type = "button"; tog.textContent = r.enabled ? "[ PAUSE ]" : "[ RESUME ]";
+      tog.addEventListener("click", async () => { await fetch("/api/watch/" + r.id, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: !r.enabled }) }); refreshWatch(); });
+      const del = document.createElement("button");
+      del.className = "btn small"; del.type = "button"; del.textContent = "[ REMOVE ]";
+      del.addEventListener("click", async () => { await fetch("/api/watch/" + r.id, { method: "DELETE" }); refreshWatch(); });
+      row.querySelector(".b-dl").append(tog, del);
+      box.append(row);
+    }
+    if (!(d.rules || []).length) box.textContent = "(no folders watched yet)";
+    $("wLog").textContent = (d.busy ? `> converting ${d.busy}…\n` : "") +
+      (d.log || []).slice(0, 15).map((e) => `${e.time}  ${e.kind.toUpperCase().padEnd(5)} ${e.file}  ${e.text}`).join("\n");
+  } catch {}
+}
+setInterval(refreshWatch, 3000);

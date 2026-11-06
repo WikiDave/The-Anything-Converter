@@ -343,6 +343,134 @@ def pending_files():
     return jsonify(files=out)
 
 
+# --------------------------------------------------------------------------- presets, batch, watch folders
+from converter import presets as preset_store  # noqa: E402
+from converter.watch import Watcher  # noqa: E402
+
+watcher = Watcher()
+
+
+def _local_desktop():
+    if not DESKTOP or request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify(error="Watch folders only work in the desktop app on this computer."), 403
+    return None
+
+
+@app.get("/api/presets")
+def presets_list():
+    return jsonify(presets=[dict(v, name=k) for k, v in preset_store.all_presets().items()])
+
+
+@app.post("/api/presets")
+def presets_save():
+    data = request.get_json(force=True, silent=True) or {}
+    opts = {k: v for k, v in (data.get("opts") or {}).items() if v not in (None, "", False)}
+    try:
+        if opts.get("target_size"):
+            opts["target_bytes"] = parse_size(opts.pop("target_size"), opts.pop("target_unit", "mb"))
+        opts.pop("target_unit", None)
+        p = preset_store.save(str(data.get("name", "")), list(data.get("for") or []), opts)
+    except (ValueError, ConversionError) as e:
+        return jsonify(error=str(e)), 400
+    return jsonify(ok=True, preset=p)
+
+
+@app.delete("/api/presets/<path:name>")
+def presets_delete(name):
+    preset_store.delete(name)
+    return jsonify(ok=True)
+
+
+@app.post("/api/batch")
+def batch_start():
+    """Convert several uploaded files with one preset."""
+    data = request.get_json(force=True, silent=True) or {}
+    try:
+        preset = preset_store.get(str(data.get("preset", "")))
+    except KeyError:
+        return jsonify(error="Unknown preset."), 400
+    out = []
+    for uid in data.get("ids") or []:
+        up = uploads.get(str(uid))
+        if not up or not up["path"].exists():
+            out.append({"id": uid, "error": "upload not found"})
+            continue
+        opts = dict(preset["opts"])
+        if preset.get("for") and up["category"] not in preset["for"] or opts["format"] not in up.get("targets", []):
+            out.append({"id": uid, "name": up["path"].name, "error": f"{up['category']} file: preset does not apply"})
+            continue
+        job = jobs.submit(up["path"], up["category"], opts)
+        out.append({"id": uid, "name": up["path"].name, "job": job.id})
+    return jsonify(items=out)
+
+
+@app.get("/api/batch/zip")
+def batch_zip():
+    """All finished results of a batch in one zip."""
+    import zipfile
+    ids = [x for x in request.args.get("jobs", "").split(",") if x]
+    files = [j.result for j in (jobs.get(i) for i in ids) if j and j.result and Path(j.result).is_file()]
+    if not files:
+        return jsonify(error="No finished results."), 404
+    dst = Path(tempfile.mkdtemp(prefix="batch-", dir=WORK)) / f"anything-converter-{len(files)}-files.zip"
+    names: set[str] = set()
+    with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
+        for f in files:
+            name, i = f.name, 2
+            while name in names:
+                name = f"{f.stem}_{i}{f.suffix}"
+                i += 1
+            names.add(name)
+            z.write(f, name)
+    return send_file(dst, as_attachment=True, download_name=dst.name)
+
+
+@app.get("/api/watch")
+def watch_status():
+    if (deny := _local_desktop()):
+        return deny
+    return jsonify(watcher.status())
+
+
+@app.post("/api/watch")
+def watch_add():
+    if (deny := _local_desktop()):
+        return deny
+    data = request.get_json(force=True, silent=True) or {}
+    try:
+        rule = Watcher.add_rule(str(data.get("folder", "")), str(data.get("preset", "")), str(data.get("out") or ""),
+                                bool(data.get("recursive", True)), bool(data.get("existing")))
+    except KeyError:
+        return jsonify(error="Unknown preset."), 400
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+    watcher.start()
+    return jsonify(ok=True, rule=rule)
+
+
+@app.post("/api/watch/<rule_id>")
+def watch_update(rule_id):
+    if (deny := _local_desktop()):
+        return deny
+    data = request.get_json(force=True, silent=True) or {}
+    Watcher.update_rule(rule_id, enabled=bool(data.get("enabled", True)))
+    return jsonify(ok=True)
+
+
+@app.delete("/api/watch/<rule_id>")
+def watch_remove(rule_id):
+    if (deny := _local_desktop()):
+        return deny
+    Watcher.remove_rule(rule_id)
+    return jsonify(ok=True)
+
+
+def start_watcher() -> None:
+    """Desktop app: watch the saved folders in the background."""
+    if DESKTOP and Watcher.get_rules(watcher):
+        watcher.start()
+
+
 @app.get("/api/update")
 def update_check():
     """Newer release on GitHub? (shown as a notice in the app)"""

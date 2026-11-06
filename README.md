@@ -81,6 +81,26 @@ The start screen has **TOOLS** tiles: choose a tile, choose a file, done.
 | Text editor / database | edit text files; view tables and run SQL on SQLite, .sql, CSV and Excel |
 | **Drives** | USB sticks, hard disks, SSDs and CD/DVD: **health** (SMART) and **safe formatting** (see below) |
 
+## Presets, batches and watch folders
+
+- **Presets**: 16 built in (web video, WhatsApp video, iPhone, archive MKV, GIF, MP3, FLAC, JPG, WebP, smaller
+  photos, documents to PDF, compress PDF, PDF to Word, speech to text/subtitles, EPUB) and your own: set everything up
+  for one file and click **[ SAVE AS PRESET ]**.
+- **Batch**: tool tile *Batch & watch folders* > choose a preset and many files at once; each result can be saved, or
+  all of them as one zip. Files the preset does not apply to are skipped.
+- **Watch folders** (desktop app): every new file in a folder is converted with a preset into an output folder
+  (default `<folder>/converted`, with the same subfolders). Files that are still being copied or downloaded are left
+  until they are complete; the original is never changed and nothing is overwritten or done twice, also after a
+  restart.
+- Terminal, also on a server, over SSH or in Docker:
+
+```
+anything-converter-tui presets
+anything-converter-tui convert ~/Videos --preset "web video"                # a whole folder
+anything-converter-tui watch ~/Inbox --preset "photos for the web"          # keeps watching (ctrl+c)
+anything-converter-tui watch ~/Inbox --preset "compress pdf" --existing --once   # for scripts and cron
+```
+
 ## Right-click: "Convert with Anything Converter"
 
 - **Windows** (.msi): right-click any file > *Convert with Anything Converter* (Windows 11: *Show more options*).
@@ -115,7 +135,7 @@ Terminal, iTerm, Linux terminals and console, tmux/screen, over SSH and in Docke
 | `anything-converter-tui` | full screen (the normal way) |
 | `anything-converter-tui --ascii` | old consoles or fonts without box lines: ASCII only |
 | `anything-converter-tui --simple` | numbered menus, no screen control. Starts by itself with `TERM=dumb`, a pipe or a tiny window |
-| `anything-converter-tui convert a.mov --to mp4` | commands for scripts: convert, formats, hash, pdf, archive, social, ocr, web, fetch, scan, sql, drives, serve (`--help`) |
+| `anything-converter-tui convert a.mov --to mp4` | commands for scripts: convert, formats, hash, pdf, archive, social, ocr, web, fetch, scan, sql, drives, serve, presets, watch (`--help`) |
 | `anything-converter-tui --theme c64` / `--colours "#ffcc00,#101010"` | colour theme or your own text/background colour |
 
 The Dutch command names from earlier versions (`converteer`, `--naar`, `--simpel`, …) still work.

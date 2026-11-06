@@ -253,6 +253,7 @@ def main() -> None:
     threading.Thread(target=server.serve_forever, daemon=True).start()
     import app as app_module
     app_module.PENDING.extend(files)
+    app_module.start_watcher()
     try:
         instance_file().write_text(json.dumps({"port": port, "pid": os.getpid()}), encoding="utf-8")
     except OSError:

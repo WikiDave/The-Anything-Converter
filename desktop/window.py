@@ -60,6 +60,17 @@ class Api:
             return None
         return res if isinstance(res, str) else res[0]
 
+    def pick_folder(self):
+        """Folder dialog for watch folders; returns the chosen path or ''."""
+        import webview
+        win = webview.active_window() or webview.windows[0]
+        dialog = getattr(webview, "FileDialog", None)
+        kind = dialog.FOLDER if dialog else webview.FOLDER_DIALOG
+        res = win.create_file_dialog(kind, directory=str(Path.home()))
+        if not res:
+            return ""
+        return res if isinstance(res, str) else res[0]
+
     def save_url(self, path: str):
         """Bestand van de lokale server opslaan (resultaat, origineel, torrent-bestand)."""
         if not isinstance(path, str) or not path.startswith("/"):
