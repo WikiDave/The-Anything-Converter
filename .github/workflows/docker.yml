@@ -48,13 +48,16 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish
+      - name: QEMU (to build the ARM64 image too)
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+        uses: docker/setup-qemu-action@v3
+      - name: Publish (x64 + ARM64, e.g. Raspberry Pi, Apple Silicon, ARM servers)
         if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/wikidave/the-anything-converter:latest
             ghcr.io/wikidave/the-anything-converter:${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'manual' }}

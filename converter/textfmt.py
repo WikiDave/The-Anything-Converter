@@ -79,7 +79,8 @@ def _font_path() -> Path | None:
     out = Path(tempfile.gettempdir()) / "ac-mono-regular.ttf"
     if out.exists():
         return out
-    for cand in (Path(__file__).resolve().parent.parent / "static" / "fonts" / "ac-mono-Regular.woff2",):
+    from .paths import static_dir
+    for cand in (static_dir() / "fonts" / "ac-mono-Regular.woff2",):
         if cand.exists():
             try:
                 from fontTools.ttLib import TTFont

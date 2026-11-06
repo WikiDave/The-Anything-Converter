@@ -1,0 +1,128 @@
+# Runs everywhere: installs the Python package (pip / pipx) on as many systems and processors as CI offers,
+# and checks that converting and the web interface work there.
+#   Linux x64 + ARM64, macOS Apple Silicon, Windows x64 + ARM64, Alpine (musl), FreeBSD.
+name: Everywhere (pip)
+
+on:
+  push:
+    branches: [main, claude/anything-converter]
+    paths:
+      - "converter/**"
+      - "app.py"
+      - "tui.py"
+      - "static/**"
+      - "pyproject.toml"
+      - "setup.py"
+      - "tools/smoke_pip.py"
+      - ".github/workflows/portable.yml"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portable-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wheel:
+    name: Build the package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          python -m pip install --upgrade build
+          python -m build --outdir dist
+          ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*
+
+  pip:
+    name: ${{ matrix.name }}
+    needs: wheel
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "Linux x64", os: ubuntu-latest, extras: "[full]", ffmpeg: apt }
+          - { name: "Linux ARM64", os: ubuntu-24.04-arm, extras: "[full]", ffmpeg: apt }
+          - { name: "macOS Apple Silicon", os: macos-latest, extras: "[full]", ffmpeg: brew }
+          - { name: "Windows x64", os: windows-latest, extras: "[full]", ffmpeg: none }
+          - { name: "Windows ARM64", os: windows-11-arm, extras: "", ffmpeg: none }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: ffmpeg
+        run: |
+          case "${{ matrix.ffmpeg }}" in
+            apt) sudo apt-get update -q && sudo apt-get install -y -q ffmpeg ;;
+            brew) brew install ffmpeg ;;
+          esac
+      - name: Install (clean virtual environment, like pipx does)
+        run: |
+          python -m venv ac
+          BIN=ac/bin; [ -d ac/Scripts ] && BIN=ac/Scripts
+          echo "$(pwd -W 2>/dev/null || pwd)/$BIN" >> "$GITHUB_PATH"
+          "$BIN/python" -m pip install --prefer-binary "$(ls dist/*.whl)${{ matrix.extras }}"
+      - name: Smoke test
+        run: python -I tools/smoke_pip.py ${{ matrix.extras == '[full]' && '--full' || '' }}
+      - name: pipx works too
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          python -m pip install pipx
+          python -m pipx install "$(ls dist/*.whl)"
+          ~/.local/bin/anything-converter-tui --version
+
+  alpine:
+    name: Alpine Linux (musl)
+    needs: wheel
+    runs-on: ubuntu-latest
+    container: python:3.12-alpine
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - run: |
+          apk add --no-cache ffmpeg
+          python -m venv /opt/ac
+          /opt/ac/bin/pip install --prefer-binary dist/*.whl
+          PATH="/opt/ac/bin:$PATH" /opt/ac/bin/python -I tools/smoke_pip.py
+
+  freebsd:
+    name: FreeBSD
+    needs: wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          prepare: |
+            pkg install -y python311 py311-pip py311-pillow py311-lxml py311-numpy py311-yaml py311-pikepdf ffmpeg
+          run: |
+            set -e
+            python3.11 -m venv --system-site-packages /tmp/ac
+            /tmp/ac/bin/python -m pip install --prefer-binary dist/*.whl
+            PATH="/tmp/ac/bin:$PATH" /tmp/ac/bin/python -I tools/smoke_pip.py

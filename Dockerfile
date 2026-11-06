@@ -15,7 +15,12 @@ COPY --from=denoland/deno:bin-2.1.4 /deno /usr/local/bin/deno
 
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# ARM64 (Raspberry Pi, ARM servers): the optional speech and torrent extras have no ready-made package there and
+# would take hours to compile, so that image is built without them (the app says so when you need them)
+ARG TARGETARCH
+RUN if [ "$TARGETARCH" = "arm64" ]; then grep -vE '^(pywhispercpp|libtorrent)' requirements.txt > /tmp/req.txt; \
+    else cp requirements.txt /tmp/req.txt; fi \
+    && pip install --no-cache-dir --prefer-binary -r /tmp/req.txt
 COPY . .
 
 # 'anything-converter-tui' works inside the container, also via 'docker exec -it' or over SSH

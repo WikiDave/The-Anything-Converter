@@ -1,16 +1,16 @@
-# Homebrew-formule voor de terminalversie van Anything Converter.
-# Installeren:
+# Homebrew formula for the terminal version of Anything Converter.
+# Install:
 #   brew tap wikidave/anything-converter https://github.com/WikiDave/The-Anything-Converter
-#   brew trust wikidave/anything-converter   (nieuwere Homebrew: taps van buiten moet je vertrouwen)
+#   brew trust wikidave/anything-converter   (newer Homebrew: outside taps must be trusted)
 #   brew install anything-converter
-# De release-workflow werkt versie en sha256 hieronder automatisch bij (desktop/update_formula.py).
+# The release workflow updates the version and sha256 values below (desktop/update_formula.py).
 class AnythingConverter < Formula
-  desc "Converteer, verklein, vergroot en knip bestanden in je terminal"
+  desc "Convert, shrink, enlarge and trim almost any file in your terminal"
   homepage "https://github.com/WikiDave/The-Anything-Converter"
   version "2.10.1"
 
-  # Standaard: Linux (x86_64). Elke combinatie van systeem en processor moet een download hebben,
-  # anders weigert nieuwere Homebrew de hele tap; Linux op ARM wordt daarom netjes geweigerd.
+  # Default: Linux (x86_64). Every combination of system and processor has its own download
+  # (newer Homebrew refuses a tap where one is missing): macOS Apple Silicon/Intel, Linux x86_64/ARM64.
   url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.10.1/anything-converter-tui-linux-x64.tar.gz"
   sha256 "1549d857bed647bde196644e645fd5effd7b3b2016f6dfcf645fc8d4dee45a5b"
 
@@ -26,10 +26,13 @@ class AnythingConverter < Formula
   end
 
   on_linux do
-    depends_on arch: :x86_64
+    on_arm do
+      url "https://github.com/WikiDave/The-Anything-Converter/releases/download/v2.10.1/anything-converter-tui-linux-arm64.tar.gz"
+      sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+    end
   end
 
-  # Kant-en-klaar programma (met eigen Python, ffmpeg en yt-dlp): niet strippen of aanpassen.
+  # Ready-made program (with its own Python, ffmpeg and yt-dlp): do not strip or change it.
   skip_clean "libexec"
 
   def install
@@ -44,8 +47,8 @@ class AnythingConverter < Formula
 
   def caveats
     <<~EOS
-      Starten:  anything-converter-tui [bestand]
-      Werkt in Terminal, iTerm, bash/zsh en via SSH. Afsluiten met ctrl+q.
+      Start:  anything-converter-tui [file]
+      Works in Terminal, iTerm, bash/zsh and over SSH. Quit with ctrl+q.
     EOS
   end
 

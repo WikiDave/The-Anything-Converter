@@ -28,16 +28,17 @@ Terminal=false
 Categories=AudioVideo;Graphics;Utility;
 DESKTOP
 
-# Het icoon moet bovenin de AppDir staan met de naam uit Icon=
+# the icon must sit at the top of the AppDir with the name from Icon=
 cp "$HERE/icons/app-256.png" "$APPDIR/anything-converter.png"
 chmod -R a+rX "$APPDIR"
 chmod 0755 "$APPDIR/AppRun"
 
 TOOL="$WORK/appimagetool"
+case "$(uname -m)" in aarch64|arm64) AI_ARCH=aarch64 ;; *) AI_ARCH=x86_64 ;; esac
 curl -fsSL --retry 4 -o "$TOOL" \
-  https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+  "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$AI_ARCH.AppImage"
 chmod +x "$TOOL"
-# Zonder FUSE draaien (CI-machines)
-APPIMAGE_EXTRACT_AND_RUN=1 ARCH=x86_64 "$TOOL" "$APPDIR" "$OUT"
+# run without FUSE (CI machines)
+APPIMAGE_EXTRACT_AND_RUN=1 ARCH=$AI_ARCH "$TOOL" "$APPDIR" "$OUT"
 chmod 0755 "$OUT"
-echo "gemaakt: $OUT"
+echo "made: $OUT"

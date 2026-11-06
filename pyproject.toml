@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "anything-converter"
+dynamic = ["version"]
+description = "Convert (almost) any file: video, audio, images, PDF, documents, e-books, archives, and more. Terminal, browser and desktop."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "WikiDave" }]
+keywords = ["converter", "ffmpeg", "pdf", "video", "audio", "image", "tui", "batch"]
+classifiers = [
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Operating System :: OS Independent",
+    "Operating System :: POSIX :: BSD :: FreeBSD",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Video :: Conversion",
+    "Topic :: Utilities",
+]
+# The core works anywhere Python runs (Linux on any CPU, FreeBSD/OpenBSD/NetBSD, macOS, Windows, WSL, Termux,
+# Raspberry Pi, servers, Docker): only pure Python or packages that every Unix can build.
+# ffmpeg, 7-Zip, Tesseract, LibreOffice... are found on the PATH when installed (pkg / apt / brew / ...).
+dependencies = [
+    "flask>=3.0",
+    "textual>=0.60",
+    "pillow>=10.0",
+    "pyyaml>=6.0",
+    "pygments>=2.15",
+    "yt-dlp",
+    "python-docx>=1.1",
+    "openpyxl>=3.1",
+    "python-pptx>=0.6.23",
+    "fonttools>=4.40",
+    "asn1crypto>=1.5",
+    "fitdecode>=0.10",
+    "pefile>=2023.2.7",
+    "tnefparse>=1.4",
+    "ezdxf>=1.1",
+    "pydicom>=2.4",
+]
+
+[project.optional-dependencies]
+pdf = ["pikepdf>=8.0", "pymupdf>=1.23"]
+archives = ["py7zr>=0.20", "zstandard>=0.22", "lz4>=4.3", "brotli>=1.1"]
+mail = ["extract-msg>=0.48"]
+crypto = ["cryptography>=42"]
+3d = ["trimesh>=4.0"]
+raw = ["rawpy>=0.19", "pillow-heif>=0.16"]
+speech = ["pywhispercpp>=1.2"]
+torrent = ["libtorrent>=2.0"]
+desktop = [
+    "pywebview>=5.0",
+    "pyobjc-framework-Vision; sys_platform == 'darwin'",
+    "winrt-runtime; sys_platform == 'win32'",
+    "winrt-Windows.Foundation; sys_platform == 'win32'",
+    "winrt-Windows.Foundation.Collections; sys_platform == 'win32'",
+    "winrt-Windows.Graphics.Imaging; sys_platform == 'win32'",
+    "winrt-Windows.Media.Ocr; sys_platform == 'win32'",
+    "winrt-Windows.Globalization; sys_platform == 'win32'",
+    "winrt-Windows.Storage; sys_platform == 'win32'",
+    "winrt-Windows.Storage.Streams; sys_platform == 'win32'",
+]
+# everything that has ready-made wheels on Linux, macOS and Windows (not speech/torrent/desktop: heavier)
+full = ["anything-converter[pdf,archives,mail,crypto,3d,raw]"]
+all = ["anything-converter[full,speech,torrent,desktop]"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+anything-converter-tui = "converter.entry:tui"
+anything-converter = "converter.entry:web"
+
+[project.gui-scripts]
+anything-converter-desktop = "converter.entry:desktop"
+
+[project.urls]
+Homepage = "https://github.com/WikiDave/The-Anything-Converter"
+"Browser version" = "https://wikidave.github.io/The-Anything-Converter/"
+Issues = "https://github.com/WikiDave/The-Anything-Converter/issues"
+
+[tool.setuptools]
+packages = ["converter"]
+include-package-data = false
+
+[tool.setuptools.package-data]
+converter = ["formaten.txt"]
+
+[tool.setuptools.dynamic]
+version = { file = "VERSION" }

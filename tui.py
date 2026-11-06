@@ -26,13 +26,8 @@ from converter.util import ConversionError, human_size, parse_size  # noqa: E402
 
 
 def _version() -> str:
-    exe = Path(sys.executable).resolve().parent
-    for cand in (Path(__file__).resolve().parent / "VERSION", exe / "VERSION", exe.parent / "Resources" / "VERSION"):
-        try:
-            return cand.read_text().strip()
-        except OSError:
-            pass
-    return "?"
+    from converter.paths import version
+    return version()
 
 
 VERSION = _version()
@@ -1393,9 +1388,9 @@ def _quiet_stdout() -> None:
         pass
 
 
-def run() -> int:
+def run(argv: list[str] | None = None) -> int:
     try:
-        code = main()
+        code = main(argv)
         sys.stdout.flush()  # a reader that stopped early ('head', 'grep -q') shows up here, not at exit
         return code
     except BrokenPipeError:

@@ -281,6 +281,7 @@ def build_parser(with_file: bool = False) -> argparse.ArgumentParser:
     w2.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"),
                     help="127.0.0.1 = only this computer (default); 0.0.0.0 = the whole network")
     w2.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
+    w2.add_argument("--open", action="store_true", help="also open it in the web browser")
 
     pr = sub.add_parser("presets", help="list the presets (built-in and your own)")
     pr.add_argument("--delete", metavar="NAME", help="delete one of your own presets")
@@ -588,6 +589,10 @@ def cmd_serve(a) -> int:
     else:
         say("  !! reachable by everyone on the network; only do this on a trusted network. ctrl+c = stop")
     from werkzeug.serving import run_simple
+    if getattr(a, "open", False):
+        import threading
+        import webbrowser
+        threading.Timer(1.2, webbrowser.open, [f"http://localhost:{a.port}"]).start()
     run_simple(a.host, a.port, app, threaded=True, use_reloader=False)
     return 0
 

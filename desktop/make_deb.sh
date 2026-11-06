@@ -3,6 +3,7 @@
 # Gebruik: desktop/make_deb.sh <build_exe-map> <versie> <uitvoer.deb>
 set -euo pipefail
 SRC="$1"; VERSION="$2"; OUT="$3"
+case "$(uname -m)" in aarch64|arm64) DEB_ARCH=arm64 ;; *) DEB_ARCH=amd64 ;; esac
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PKG="$(mktemp -d)/pkg"
 mkdir -p "$PKG/DEBIAN" "$PKG/opt/anything-converter" "$PKG/usr/bin" \
@@ -53,7 +54,7 @@ Package: anything-converter
 Version: $VERSION
 Section: utils
 Priority: optional
-Architecture: amd64
+Architecture: $DEB_ARCH
 Installed-Size: $SIZE_KB
 Depends: python3, python3-gi, gir1.2-gtk-3.0, gir1.2-webkit2-4.1 | gir1.2-webkit2-4.0
 Recommends: tesseract-ocr, tesseract-ocr-nld, tesseract-ocr-eng

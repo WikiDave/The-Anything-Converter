@@ -1,6 +1,6 @@
-"""Zet versie en sha256-waarden in Formula/anything-converter.rb (gebruikt door de release-workflow).
+"""Puts the version and sha256 values in Formula/anything-converter.rb (used by the release workflow).
 
-Gebruik: python desktop/update_formula.py <versie> <map-met-tar.gz-bestanden>
+Usage: python desktop/update_formula.py <version> <folder-with-tar.gz-files>
 """
 import hashlib
 import re
@@ -21,7 +21,7 @@ def main(version: str, folder: str) -> None:
         return f'{m.group(1)}{name}"\n{m.group(3)}sha256 "{digest}"'
 
     text, n = re.subn(r'(url "[^"]*/)([^/"]+\.tar\.gz)"\n(\s*)sha256 "[0-9a-f]{64}"', fill, text)
-    assert n == 3, f"verwachtte 3 downloads, vond {n}"
+    assert n == 4, f"expected 4 downloads, found {n}"
     FORMULA.write_text(text)
     print(text)
 

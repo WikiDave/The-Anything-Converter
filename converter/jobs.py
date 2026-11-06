@@ -47,7 +47,29 @@ class Job:
         return d
 
 
+# optional Python packages -> the pip extra that brings them (pip install "anything-converter[full]")
+OPTIONAL_PKGS = {"fitz": "pdf", "pymupdf": "pdf", "pikepdf": "pdf", "py7zr": "archives", "zstandard": "archives",
+                 "lz4": "archives", "brotli": "archives", "extract_msg": "mail", "cryptography": "crypto",
+                 "trimesh": "3d", "rawpy": "raw", "pillow_heif": "raw", "pywhispercpp": "speech",
+                 "libtorrent": "torrent"}
+
+
+def missing_module_message(e: ModuleNotFoundError) -> str:
+    name = (e.name or "").split(".")[0]
+    extra = OPTIONAL_PKGS.get(name)
+    hint = f'pip install "anything-converter[{extra}]"' if extra else f"pip install {name}"
+    return (f"This conversion needs the optional Python package '{name}', which is not installed. "
+            f"Install it with: {hint}  (or the whole set: pip install \"anything-converter[full]\")")
+
+
 def run_conversion(src: Path, out_dir: Path, category: str, opts: dict, progress=None) -> Path:
+    try:
+        return _run_conversion(src, out_dir, category, opts, progress)
+    except ModuleNotFoundError as e:
+        raise ConversionError(missing_module_message(e)) from e
+
+
+def _run_conversion(src: Path, out_dir: Path, category: str, opts: dict, progress=None) -> Path:
     from . import families
     from .detect import analyse_path, extension
     fmt = (opts.get("format") or "").lower()

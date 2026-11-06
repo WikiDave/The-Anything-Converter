@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Haalt ffmpeg, ffprobe, deno en 7-Zip op voor één platform en zet ze in desktop/bin/.
-# Gebruik: desktop/fetch_bins.sh win-x64 | mac-arm64 | mac-x64 | linux-x64
+# Downloads ffmpeg, ffprobe, deno and 7-Zip for one platform into desktop/bin/.
+# Usage: desktop/fetch_bins.sh win-x64 | mac-arm64 | mac-x64 | linux-x64 | linux-arm64
 set -euo pipefail
 PLATFORM="$1"
 DENO_VERSION="v2.5.6"
@@ -30,27 +30,28 @@ case "$PLATFORM" in
       find "$TMP/$tool" -type f -name "$tool" -exec cp {} "$BIN/$tool" \;
     done
     ;;
-  linux-x64)
+  linux-x64|linux-arm64)
     # johnvansickle.com sometimes answers with an HTML page: check the archive, retry, then try the git build
+    if [ "$PLATFORM" = linux-arm64 ]; then FFA=arm64; DENO_TARGET=aarch64-unknown-linux-gnu
+    else FFA=amd64; DENO_TARGET=x86_64-unknown-linux-gnu; fi
     ok=""
-    for url in https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
-               https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
-               https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz; do
+    for url in "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-$FFA-static.tar.xz" \
+               "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-$FFA-static.tar.xz" \
+               "https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-$FFA-static.tar.xz"; do
       if get "$url" "$TMP/ff.tar.xz" && xz -t "$TMP/ff.tar.xz" 2>/dev/null; then ok=1; break; fi
       echo "::warning::no valid ffmpeg archive from $url; trying again"; sleep 20
     done
     [ -n "$ok" ] || { echo "ffmpeg download failed" >&2; exit 1; }
     tar -xJf "$TMP/ff.tar.xz" -C "$TMP"
     cp "$TMP"/ffmpeg-*-static/ffmpeg "$TMP"/ffmpeg-*-static/ffprobe "$BIN/"
-    DENO_TARGET=x86_64-unknown-linux-gnu
     ;;
   *)
-    echo "onbekend platform: $PLATFORM" >&2
+    echo "unknown platform: $PLATFORM" >&2
     exit 1
     ;;
 esac
 
-# 7-Zip (officiële builds van 7-zip.org, via GitHub). Mislukt dit, dan werkt de rest gewoon.
+# 7-Zip (official builds from 7-zip.org, via GitHub). If this fails, the rest still works.
 SZ="https://github.com/ip7z/7zip/releases/download/$SEVENZIP_VERSION"
 SZV="${SEVENZIP_VERSION//./}"
 (
@@ -64,12 +65,12 @@ SZV="${SEVENZIP_VERSION//./}"
       get "$SZ/7z$SZV-mac.tar.xz" "$TMP/7z.tar.xz"
       mkdir -p "$TMP/7z" && tar -xJf "$TMP/7z.tar.xz" -C "$TMP/7z"
       cp "$TMP/7z/7zz" "$BIN/" ;;
-    linux-x64)
-      get "$SZ/7z$SZV-linux-x64.tar.xz" "$TMP/7z.tar.xz"
+    linux-x64|linux-arm64)
+      get "$SZ/7z$SZV-${PLATFORM}.tar.xz" "$TMP/7z.tar.xz"
       mkdir -p "$TMP/7z" && tar -xJf "$TMP/7z.tar.xz" -C "$TMP/7z"
       cp "$TMP/7z/7zz" "$BIN/" ;;
   esac
-) || echo "::warning::7-Zip ophalen mislukt; exotische archieven werken dan alleen als 7-Zip los geïnstalleerd is."
+) || echo "::warning::downloading 7-Zip failed; exotic archives then only work when 7-Zip is installed separately."
 
 get "https://github.com/denoland/deno/releases/download/$DENO_VERSION/deno-$DENO_TARGET.zip" "$TMP/deno.zip"
 unzip_to "$TMP/deno.zip" "$BIN"

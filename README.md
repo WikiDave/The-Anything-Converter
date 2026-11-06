@@ -150,6 +150,7 @@ The Dutch command names from earlier versions (`converteer`, `--naar`, `--simpel
 | AppImage | `./AnythingConverter-Linux.AppImage tui` |
 | macOS (.dmg) | **[ TERMINAL ]** in the app, or `"/Applications/Anything Converter.app/Contents/MacOS/anything-converter-tui"` |
 | Docker | see below |
+| **Any other system** (FreeBSD, OpenBSD, NetBSD, Termux, WSL, Raspberry Pi, ...) | `pipx install` (see [Install anywhere](#install-anywhere-pip--pipx)) |
 | From source | `pip install -r requirements.txt` and `python tui.py` |
 
 Homebrew does not run on Windows itself (only inside WSL); use Scoop or the .msi there.
@@ -162,7 +163,60 @@ anything-converter-tui
 ```
 
 Update with `brew upgrade anything-converter` / `scoop update anything-converter`. The Homebrew formula and the
-Scoop manifest are updated automatically with every release.
+Scoop manifest are updated automatically with every release. Homebrew works on macOS (Apple Silicon and Intel) and
+on Linux (x64 and ARM64).
+
+### Install anywhere (pip / pipx)
+
+Wherever Python 3.10+ runs, Anything Converter runs: every Linux on any processor, FreeBSD, OpenBSD, NetBSD,
+macOS, Windows (also ARM), WSL, Android with Termux, a Raspberry Pi, a server without a screen.
+
+```
+pipx install "anything-converter[full] @ git+https://github.com/WikiDave/The-Anything-Converter@main"
+anything-converter-tui        # terminal version (and all commands: convert, watch, drives, serve, ...)
+anything-converter            # the full app, opened in your web browser
+anything-converter-desktop    # the app in its own window (needs the [desktop] extra)
+```
+
+Each release also has the package as a `.whl` file: `pipx install "./anything_converter-<version>-py3-none-any.whl[full]"`.
+
+The core is pure Python plus a few common libraries. Heavier parts are optional **extras**: if one is missing, the
+app keeps working and tells you which extra a conversion needs.
+
+| Extra | Adds |
+|---|---|
+| `[full]` | everything below except speech, torrent and desktop: the usual choice |
+| `[pdf]` | PDF tools (merge, split, compress, PDF → images/Word) |
+| `[archives]` | 7z, zstd, lz4, brotli |
+| `[mail]` | Outlook .msg |
+| `[crypto]` | certificates and keys |
+| `[3d]` | 3D models |
+| `[raw]` | camera RAW and HEIC photos |
+| `[speech]` | speech to text / subtitles (whisper) |
+| `[torrent]` | torrents and magnet links |
+| `[desktop]` | the own window (pywebview) |
+| `[all]` | all of the above |
+
+Programs the app uses when they are installed (from your package manager): **ffmpeg** (video/audio, strongly
+recommended), 7-Zip, Tesseract (text recognition), LibreOffice, pandoc, Ghostscript.
+
+| System | Before `pipx install` |
+|---|---|
+| FreeBSD | `pkg install python311 py311-pipx py311-pillow py311-lxml py311-numpy py311-pikepdf ffmpeg` |
+| OpenBSD | `pkg_add python%3.11 py3-pipx py3-pillow py3-lxml py3-numpy ffmpeg` |
+| NetBSD | `pkgin install python311 py311-pip py311-Pillow py311-lxml py311-numpy ffmpeg` |
+| Alpine | `apk add python3 pipx ffmpeg` |
+| Android (Termux) | `pkg install python python-pillow python-lxml python-numpy ffmpeg` then `pip install pipx` |
+| Debian / Ubuntu / Raspberry Pi OS | `sudo apt install pipx ffmpeg` |
+| Fedora | `sudo dnf install pipx ffmpeg-free` |
+| Arch | `sudo pacman -S python-pipx ffmpeg` |
+| macOS | `brew install pipx ffmpeg` |
+| Windows | `winget install Python.Python.3.12 Gyan.FFmpeg` then `py -m pip install --user pipx` |
+
+On the BSDs and Termux, use `pipx install --system-site-packages ...` so pipx uses the packages above instead of
+compiling them. Every push is tested on Linux x64 and ARM64, macOS, Windows x64 and ARM64, Alpine and FreeBSD
+(`.github/workflows/portable.yml`). The package names for the other systems may differ a little per version;
+please open an issue when one is wrong.
 
 ### Over SSH
 
@@ -201,9 +255,12 @@ Download the installer for your system from the
 | Mac with M1–M4 | `AnythingConverter-macOS-AppleSilicon.dmg` |
 | Mac with Intel | `AnythingConverter-macOS-Intel.dmg` |
 | Ubuntu / Debian / Mint | `AnythingConverter-Linux.deb` |
-| Other Linux | `AnythingConverter-Linux.AppImage` |
+| Ubuntu / Debian on ARM64 (Raspberry Pi 4/5, ARM servers, Asahi) | `AnythingConverter-Linux-ARM64.deb` |
+| Other Linux | `AnythingConverter-Linux.AppImage` (ARM64: `AnythingConverter-Linux-ARM64.AppImage`) |
+| Windows on ARM | the normal `.msi` (Windows runs it through its built-in x64 emulation) |
 | Android 10+ | `AnythingConverter-Android.apk` |
 | iPhone / iPad | no file: open the web app in Safari → Share → Add to Home Screen |
+| FreeBSD, OpenBSD, other systems | [Install anywhere (pip / pipx)](#install-anywhere-pip--pipx) |
 
 ffmpeg, yt-dlp, 7-Zip and Deno are included. The converter opens in its **own window** (WebView2 on Windows,
 WebKit on macOS and Linux); close the window = quit. For Word/Excel/PowerPoint conversions install

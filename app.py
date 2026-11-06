@@ -22,19 +22,14 @@ from converter import settings as user_settings
 from converter import virus
 from converter.util import ConversionError, parse_size
 
-# In de desktop-app wijst CONVERTER_BASE naar de map met static/ (naast het programma).
-BASE = Path(os.environ.get("CONVERTER_BASE") or Path(__file__).parent)
+# Where static/ lives: next to app.py, next to the desktop program, or inside the pip package.
+from converter import paths as _paths  # noqa: E402
+BASE = _paths.root()
 DESKTOP = os.environ.get("CONVERTER_DESKTOP") == "1"
+
+
 def _read_version() -> str:
-    exe = Path(sys.executable).resolve().parent
-    # macOS-app: bestanden kunnen in Contents/MacOS of Contents/Resources staan
-    for cand in (BASE / "VERSION", Path(__file__).parent / "VERSION", exe / "VERSION",
-                 exe.parent / "Resources" / "VERSION"):
-        try:
-            return cand.read_text().strip()
-        except OSError:
-            pass
-    return "0.0.0"
+    return _paths.version()
 
 
 VERSION = _read_version()

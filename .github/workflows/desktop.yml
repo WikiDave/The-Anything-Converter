@@ -53,6 +53,9 @@ jobs:
           - name: Linux
             os: ubuntu-22.04
             platform: linux-x64
+          - name: Linux (ARM64)
+            os: ubuntu-22.04-arm
+            platform: linux-arm64
     defaults:
       run:
         shell: bash
@@ -74,7 +77,13 @@ jobs:
           # voor PDF-compressie, dus daar laten we het weg.
           if [ "${{ matrix.platform }}" = mac-x64 ]; then grep -v '^pikepdf' requirements.txt > req.txt
           else cp requirements.txt req.txt; fi
-          pip install -r req.txt "cx_Freeze==8.7.2"
+          if ! pip install -r req.txt "cx_Freeze==8.7.2"; then
+            # a new processor (Linux ARM64) may lack ready-made packages for the optional extras
+            # (speech, torrent, camera RAW): build without them; the app shows how to add them
+            echo "::warning::not every optional package installs on ${{ matrix.platform }}; building without them"
+            grep -vE '^(pywhispercpp|libtorrent|rawpy|pillow-heif)' req.txt > req2.txt
+            pip install -r req2.txt "cx_Freeze==8.7.2"
+          fi
 
       - name: ffmpeg, ffprobe en Deno ophalen
         run: bash desktop/fetch_bins.sh ${{ matrix.platform }}
@@ -101,25 +110,26 @@ jobs:
           echo "EXE=$(find build -path '*.app/Contents/MacOS/AnythingConverter' | head -1)" >> "$GITHUB_ENV"
 
       - name: Bouwen (Linux .deb + .AppImage)
-        if: matrix.platform == 'linux-x64'
+        if: startsWith(matrix.platform, 'linux')
         run: |
           python desktop/setup_freeze.py build_exe
           BUILD=$(ls -d build/exe.*)
           mkdir -p out
-          bash desktop/make_deb.sh "$BUILD" "$(cat VERSION)" out/AnythingConverter-Linux.deb
-          bash desktop/make_appimage.sh "$BUILD" out/AnythingConverter-Linux.AppImage
+          SUF=$([ "${{ matrix.platform }}" = linux-arm64 ] && echo "-ARM64" || echo "")
+          bash desktop/make_deb.sh "$BUILD" "$(cat VERSION)" "out/AnythingConverter-Linux$SUF.deb"
+          bash desktop/make_appimage.sh "$BUILD" "out/AnythingConverter-Linux$SUF.AppImage"
           echo "EXE=$BUILD/AnythingConverter" >> "$GITHUB_ENV"
 
       - name: Terminalversie inpakken voor Homebrew (macOS, Linux)
         if: matrix.platform != 'win-x64'
         run: |
-          if [ "${{ matrix.platform }}" = linux-x64 ]; then
+          if [[ "${{ matrix.platform }}" == linux-* ]]; then
             DIR="$(dirname "$EXE")"
           else
             DIR="$(cd "$(dirname "$EXE")/../.." && pwd)"   # de .app-map
           fi
           NAME=$(echo "${{ matrix.platform }}" | sed 's/^mac-/macos-/')
-          if [ "${{ matrix.platform }}" != linux-x64 ]; then
+          if [[ "${{ matrix.platform }}" == mac-* ]]; then
             # Homebrew rewrites the install name of every library to a long /opt/homebrew/... path.
             # Libraries without header room for that make 'brew install' end in an error, so leave
             # out the (optional) Python module they belong to; the app falls back without it.
@@ -150,7 +160,7 @@ jobs:
           ls -la out
 
       - name: GTK/WebKit voor het programmavenster (Linux)
-        if: matrix.platform == 'linux-x64'
+        if: startsWith(matrix.platform, 'linux')
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.1 xvfb
@@ -158,9 +168,9 @@ jobs:
       - name: Rooktest (starten in eigen venster, converteren, afsluiten)
         env:
           EXPECT_WINDOW: native
-          ALLOW_NO_SPEECH: ${{ matrix.platform == 'mac-x64' && '1' || '0' }}
+          ALLOW_NO_SPEECH: ${{ (matrix.platform == 'mac-x64' || matrix.platform == 'linux-arm64') && '1' || '0' }}
         run: |
-          if [ "${{ matrix.platform }}" = linux-x64 ]; then
+          if [[ "${{ matrix.platform }}" == linux-* ]]; then
             xvfb-run -a python desktop/smoke_test.py "$EXE"
           else
             python desktop/smoke_test.py "$EXE"
@@ -237,9 +247,31 @@ jobs:
           path: out/*
           if-no-files-found: error
 
+  python-package:
+    name: Python package (pip / pipx)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Version
+        if: inputs.version
+        run: echo "${{ inputs.version }}" > VERSION
+      - name: Build wheel and sdist
+        run: |
+          python -m pip install --upgrade build
+          python -m build --outdir out
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-package
+          path: out/*
+          if-no-files-found: error
+
   release:
     name: Publiceren
-    needs: [build, android]
+    needs: [build, android, python-package]
     if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -252,29 +284,33 @@ jobs:
       - name: Release-tekst
         run: |
           cat > notes.md <<'EOF'
-          ## Installeren
+          ## Install
 
-          | Systeem | Bestand |
+          | System | File / command |
           |---|---|
-          | Windows 10/11 | `AnythingConverter-Windows.msi` |
-          | Mac met M1/M2/M3/M4 | `AnythingConverter-macOS-AppleSilicon.dmg` |
-          | Mac met Intel | `AnythingConverter-macOS-Intel.dmg` |
-          | Ubuntu / Debian / Mint | `AnythingConverter-Linux.deb` |
-          | Andere Linux | `AnythingConverter-Linux.AppImage` |
+          | Windows 10/11 | `AnythingConverter-Windows.msi` (or `AnythingConverter-Windows-portable.zip`, no install needed) |
+          | Windows on ARM | the same `.msi` (runs through Windows' built-in x64 emulation) |
+          | Mac with M1/M2/M3/M4 | `AnythingConverter-macOS-AppleSilicon.dmg` |
+          | Mac with Intel | `AnythingConverter-macOS-Intel.dmg` |
+          | Ubuntu / Debian / Mint (PC) | `AnythingConverter-Linux.deb` |
+          | Ubuntu / Debian on ARM (Raspberry Pi 4/5 64-bit, ARM servers, Asahi) | `AnythingConverter-Linux-ARM64.deb` |
+          | Other Linux (PC / ARM) | `AnythingConverter-Linux.AppImage` / `AnythingConverter-Linux-ARM64.AppImage` |
           | Android 10+ | `AnythingConverter-Android.apk` |
-          | iPhone / iPad | geen bestand: open de web-app in Safari → Deel → Zet op beginscherm |
+          | iPhone / iPad | no file: open the web app in Safari → Share → Add to Home Screen |
+          | FreeBSD, OpenBSD, NetBSD, Termux, WSL, any system with Python 3.10+ | `pipx install "anything-converter[full] @ git+https://github.com/WikiDave/The-Anything-Converter@main"`, or the `.whl` file below (ffmpeg from your package manager; see the README) |
           | Terminal (Windows) | `scoop bucket add wikidave https://github.com/WikiDave/The-Anything-Converter` and `scoop install anything-converter` (or the .msi: then `anything-converter-tui` works in every new PowerShell window) |
-          | Docker | `docker run -p 8000:8000 ghcr.io/wikidave/the-anything-converter` (web) or `docker run -it --rm -v "$PWD:/data" ghcr.io/wikidave/the-anything-converter anything-converter-tui` |
-          | Terminal (macOS/Linux) | `brew tap wikidave/anything-converter https://github.com/WikiDave/The-Anything-Converter` `brew trust wikidave/anything-converter` en `brew install anything-converter` |
+          | Terminal (macOS / Linux, also ARM) | `brew tap wikidave/anything-converter https://github.com/WikiDave/The-Anything-Converter`, `brew trust wikidave/anything-converter` and `brew install anything-converter` |
+          | Docker (x64 and ARM64) | `docker run -p 8000:8000 ghcr.io/wikidave/the-anything-converter` (web) or `docker run -it --rm -v "$PWD:/data" ghcr.io/wikidave/the-anything-converter anything-converter-tui` |
+          | Nothing to install | https://wikidave.github.io/The-Anything-Converter/ (works in any modern browser, files never leave your device) |
 
-          ffmpeg, yt-dlp en Deno zitten erin. De converter opent in een eigen programmavenster;
-          venster dicht = programma af. Met **[ TERMINAL ]** bovenin open je de terminalversie.
+          ffmpeg, yt-dlp and Deno are included in the installers. The converter opens in its own window;
+          closing the window quits the program. **[ TERMINAL ]** at the top opens the terminal version.
 
-          **Eerste keer openen** (de app is niet betaald ondertekend):
-          - **Windows**: "Windows heeft uw pc beschermd" → **Meer informatie** → **Toch uitvoeren**.
-          - **macOS** ("Apple kon niet verifiëren…"): klik **Gereed**, ga naar **Systeeminstellingen → Privacy en beveiliging** en klik onderaan **Toch openen**. Of in Terminal: `xattr -dr com.apple.quarantine "/Applications/Anything Converter.app"`
-          - **Linux AppImage**: rechtsklik → Eigenschappen → "Uitvoeren als programma" aanzetten.
-          - **Android**: open het .apk-bestand en sta "Installeren van onbekende apps" toe voor je browser.
+          **Opening it the first time** (the app is not yet signed with a paid certificate):
+          - **Windows**: "Windows protected your PC" → **More info** → **Run anyway**.
+          - **macOS** ("Apple could not verify…"): click **Done**, go to **System Settings → Privacy & Security** and click **Open Anyway** at the bottom. Or in Terminal: `xattr -dr com.apple.quarantine "/Applications/Anything Converter.app"`
+          - **Linux AppImage**: right-click → Properties → enable "Allow executing file as program".
+          - **Android**: open the .apk file and allow "Install unknown apps" for your browser.
           EOF
       - uses: softprops/action-gh-release@v2
         with:
@@ -314,6 +350,24 @@ jobs:
             cd ..
           done
 
+  # PyPI (pip install anything-converter): switched off until the owner sets it up once:
+  # pypi.org -> Publishing -> add a "trusted publisher" for this repo + workflow desktop.yml + environment pypi,
+  # then in GitHub: Settings -> Variables -> Actions -> PYPI_PUBLISH = true. No password or token is stored.
+  pypi:
+    name: Publish to PyPI
+    needs: release
+    if: vars.PYPI_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-package
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
   homebrew:
     name: Homebrew-test (${{ matrix.os }})
     needs: release
@@ -321,7 +375,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15, ubuntu-22.04]
+        os: [macos-15, ubuntu-22.04, ubuntu-22.04-arm]
     env:
       HOMEBREW_NO_AUTO_UPDATE: "1"
       HOMEBREW_NO_INSTALL_CLEANUP: "1"

@@ -9,7 +9,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+from .paths import root as _root  # noqa: E402
+ROOT = _root()
 
 
 def tui_command() -> list[str]:
