@@ -22,13 +22,13 @@ out.mkdir()
 
 from converter import samples  # noqa: E402  (from the installed package)
 
-cases = [("png", "webp"), ("png", "pdf"), ("csv", "json"), ("json", "yaml"), ("docx", "pdf"), ("zip", "tar")]
+cases = [("png", "webp"), ("png", "pdf"), ("csv", "json"), ("json", "yaml"), ("docx", "txt"), ("zip", "tar")]
 if shutil.which("ffmpeg"):
     cases += [("wav", "mp3"), ("mp4", "mov")]
 else:
     print("(no ffmpeg on the PATH: skipping video/audio)")
 if FULL:
-    cases += [("pdf", "png"), ("zip", "7z")]
+    cases += [("pdf", "png"), ("docx", "pdf"), ("zip", "7z")]
 
 fails = []
 for src_ext, to in cases:

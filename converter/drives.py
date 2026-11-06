@@ -115,7 +115,10 @@ def parse_lsblk(data: dict) -> list[Drive]:
 
 def _list_linux() -> list[Drive]:
     if not shutil.which("lsblk"):
-        raise ConversionError("lsblk was not found (util-linux).")
+        if "bsd" in sys.platform or "dragonfly" in sys.platform:
+            raise ConversionError("Listing and formatting drives is not available on BSD yet "
+                                  "(use 'geom disk list' and 'smartctl -a <disk>').")
+        raise ConversionError("lsblk was not found (install util-linux).")
     r = _run(["lsblk", "-J", "-b", "-o", "NAME,PATH,SIZE,MODEL,VENDOR,TRAN,RM,HOTPLUG,TYPE,MOUNTPOINTS,FSTYPE,LABEL,"
                                          "ROTA,SERIAL"])
     if r.returncode != 0:  # older lsblk: MOUNTPOINT instead of MOUNTPOINTS
