@@ -585,7 +585,7 @@ HelpScreen {{ align: center middle; background: $background 70%; }}
 
         def relayout(self, width: int) -> None:
             logo = self.query_one("#logo", Static)
-            tall = self.size.height >= 56  # groot logo alleen als er ruimte over is
+            tall = self.size.height >= 38  # the big block logo whenever there is room (12 lines)
             if ascii_mode:
                 logo.update(LOGO_ASCII if width >= 84 and self.size.height >= 40 else "ANYTHING CONVERTER")
             else:
