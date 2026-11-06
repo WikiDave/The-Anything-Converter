@@ -15,18 +15,34 @@ cat > "$PKG/usr/share/applications/anything-converter.desktop" <<DESKTOP
 [Desktop Entry]
 Type=Application
 Name=Anything Converter
-Comment=Converteer, verklein, vergroot en knip bestanden
-Exec=/opt/anything-converter/AnythingConverter
+Comment=Convert, shrink, enlarge and trim files
+Exec=/opt/anything-converter/AnythingConverter %F
 Icon=anything-converter
 Terminal=false
 Categories=AudioVideo;Graphics;Utility;
+MimeType=video/mp4;video/x-matroska;video/quicktime;video/webm;video/x-msvideo;video/x-ms-wmv;video/mpeg;video/x-flv;audio/mpeg;audio/x-wav;audio/wav;audio/flac;audio/ogg;audio/mp4;audio/aac;audio/x-m4a;audio/opus;image/jpeg;image/png;image/gif;image/webp;image/heic;image/heif;image/avif;image/svg+xml;image/tiff;image/bmp;image/x-icon;application/pdf;application/msword;application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/vnd.ms-excel;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;application/vnd.ms-powerpoint;application/vnd.openxmlformats-officedocument.presentationml.presentation;application/vnd.oasis.opendocument.text;application/vnd.oasis.opendocument.spreadsheet;application/rtf;application/epub+zip;application/zip;application/x-7z-compressed;application/vnd.rar;application/x-tar;application/gzip;application/x-iso9660-image;application/x-cue;text/plain;text/csv;text/markdown;text/html;application/json;application/xml;application/x-subrip;text/vtt;font/ttf;font/otf;model/stl;application/x-sqlite3;application/octet-stream;
 DESKTOP
+# KDE Dolphin: right-click > Convert with Anything Converter
+mkdir -p "$PKG/usr/share/kio/servicemenus"
+cat > "$PKG/usr/share/kio/servicemenus/anything-converter.desktop" <<DESKTOP
+[Desktop Entry]
+Type=Service
+MimeType=all/allfiles;
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+Actions=convert;
+
+[Desktop Action convert]
+Name=Convert with Anything Converter
+Icon=anything-converter
+Exec=/opt/anything-converter/AnythingConverter %F
+DESKTOP
+chmod +x "$PKG/usr/share/kio/servicemenus/anything-converter.desktop"
 cat > "$PKG/usr/share/applications/anything-converter-tui.desktop" <<DESKTOP
 [Desktop Entry]
 Type=Application
 Name=Anything Converter (terminal)
-Comment=Terminalversie van Anything Converter
-Exec=/opt/anything-converter/anything-converter-tui
+Comment=Terminal version of Anything Converter
+Exec=/opt/anything-converter/anything-converter-tui %f
 Icon=anything-converter
 Terminal=true
 Categories=AudioVideo;Graphics;Utility;ConsoleOnly;

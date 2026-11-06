@@ -31,6 +31,10 @@ resolution, frame rate, bitrates, audio tracks, sample rate, channels, tags, cha
 - **Streams**: main video + first audio track, or all audio tracks + subtitles.
 - **Metadata**: keep, edit (title, artist, album, date, comment) or remove everything for privacy.
 
+**Hardware acceleration**: H.264, H.265 and AV1 are encoded on the video card (NVIDIA NVENC, Intel Quick Sync,
+AMD AMF, Apple VideoToolbox, Linux VAAPI) when one works, often 5-20x faster. If a hardware encode fails it is redone
+in software automatically. Setting: *HARDWARE (VIDEO CARD)* in the app, `--hw auto|on|off` in the terminal.
+
 Example: MP4 with H.264, 1080p, 25 fps → MOV with H.265, AAC, 720p, 30 fps. If a container cannot hold a codec
 (e.g. H.265 in WebM) you get a clear message with the codecs that do fit. In the terminal:
 
@@ -76,6 +80,14 @@ The start screen has **TOOLS** tiles: choose a tile, choose a file, done.
 | Website | save as PDF, PNG or JPG |
 | Text editor / database | edit text files; view tables and run SQL on SQLite, .sql, CSV and Excel |
 | **Drives** | USB sticks, hard disks, SSDs and CD/DVD: **health** (SMART) and **safe formatting** (see below) |
+
+## Right-click: "Convert with Anything Converter"
+
+- **Windows** (.msi): right-click any file > *Convert with Anything Converter* (Windows 11: *Show more options*).
+  Uninstalling removes the menu item again.
+- **Linux** (.deb / AppImage): *Open with > Anything Converter* in every file manager; in KDE Dolphin also a
+  right-click item.
+- If the app is already open, the file opens in that window instead of starting a second copy.
 
 ## Drives: health and safe formatting
 

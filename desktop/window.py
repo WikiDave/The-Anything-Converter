@@ -168,6 +168,21 @@ def run(url: str, storage: str | None = None, icon: str | None = None, on_start=
     webview.start(on_start, **kwargs)
 
 
+def focus() -> None:
+    """Bring the main window to the front (a file was opened from the file manager)."""
+    import webview
+    if not webview.windows:
+        return
+    w = webview.windows[0]
+    try:
+        w.restore()
+        w.show()
+        w.on_top = True   # briefly on top: the reliable way to come forward on Windows
+        w.on_top = False
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def close_all() -> None:
     import webview
     for w in list(webview.windows):

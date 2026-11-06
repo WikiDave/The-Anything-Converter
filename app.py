@@ -8,6 +8,8 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
+import shutil
 import uuid
 from pathlib import Path
 
@@ -295,6 +297,50 @@ def drives_format():
         return jsonify(error=str(e)), 400
     job = jobs.submit(WORK / uuid.uuid4().hex, "format", opts, kind="format")
     return jsonify(job.public())
+
+
+# --------------------------------------------------------------------------- open files from the file manager
+PENDING: list[str] = []  # paths handed over by "Open with" / right-click, waiting for the interface
+
+
+@app.post("/api/open")
+def open_paths():
+    """A second start of the app (right-click > Convert with ...) hands its files to this running app."""
+    if not DESKTOP or request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify(error="Only available in the desktop app."), 403
+    data = request.get_json(force=True, silent=True) or {}
+    paths = [str(x) for x in data.get("paths") or [] if Path(str(x)).is_file()]
+    PENDING.extend(paths)
+    focus = app.config.get("FOCUS")
+    if focus:
+        threading.Thread(target=focus, daemon=True).start()
+    return jsonify(ok=True, queued=len(paths))
+
+
+@app.get("/api/pending")
+def pending_files():
+    """Files waiting to be opened: copied into the work folder and loaded like an upload."""
+    if not DESKTOP or request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify(files=[])
+    out = []
+    while PENDING:
+        src = Path(PENDING.pop(0))
+        if not src.is_file():
+            continue
+        uid = uuid.uuid4().hex
+        folder = WORK / uid
+        folder.mkdir(parents=True, exist_ok=True)
+        dst = folder / safe_name(src.name)
+        try:
+            try:
+                os.link(src, dst)  # same disk: instant, no copy
+            except OSError:
+                shutil.copy2(src, dst)
+            info = register_upload(uid, dst)
+            out.append(dict(info, local_path=str(src)))
+        except (OSError, ConversionError) as e:
+            out.append({"error": f"{src.name}: {e}"})
+    return jsonify(files=out)
 
 
 @app.get("/api/update")

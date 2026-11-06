@@ -640,6 +640,22 @@ fetch("/api/ping").then((r) => r.json()).then((p) => {
     $("verLabel").after(a);
   }).catch(() => {});
   if (!p.desktop) return;
+  // Files from "Open with" / right-click > Convert with Anything Converter
+  const takePending = async () => {
+    try {
+      const r = await fetch("/api/pending");
+      const d = await r.json();
+      const ok = (d.files || []).filter((f) => !f.error);
+      (d.files || []).filter((f) => f.error).forEach((f) => status("ERROR: " + f.error));
+      if (ok.length) {
+        localFile = null;
+        setup(ok[0]);
+        if (ok.length > 1) status(`opened ${ok[0].name}; ${ok.length - 1} more file(s) were given: open them one by one`);
+      }
+    } catch {}
+  };
+  takePending();
+  setInterval(takePending, 1500);
   $("modeLabel").textContent = "DESKTOP-APP";
   show($("termBtn"), true);
   document.querySelectorAll('.tool[data-fmt="drives"]').forEach((b) => b.classList.remove("hidden"));
