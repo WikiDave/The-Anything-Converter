@@ -203,6 +203,8 @@ def build_parser(with_file: bool = False) -> argparse.ArgumentParser:
     m.add_argument("--crf", type=int, help="constant quality (lower = better), e.g. 23")
     m.add_argument("--preset", choices=["ultrafast", "veryfast", "fast", "medium", "slow", "veryslow"])
     m.add_argument("--10bit", dest="tenbit", action="store_true", help="10-bit colour (H.265/AV1/VP9)")
+    m.add_argument("--hw", choices=["auto", "on", "off"], default="auto",
+                   help="video card encoding (NVIDIA/Intel/AMD/Apple): auto = when it works, on = also for --target")
     m.add_argument("--all-streams", action="store_true", help="keep all audio tracks and subtitles")
     m.add_argument("--acodec", choices=["aac", "mp3", "opus", "vorbis", "flac", "alac", "ac3", "eac3", "pcm",
                                         "pcm24", "copy"])
@@ -314,6 +316,7 @@ def cmd_convert(a) -> int:
             opts[k] = v
     if a.tenbit:
         opts["pix_fmt"] = "10bit"
+    opts["hw"] = a.hw
     if a.all_streams:
         opts["streams"] = "all"
     if a.strip_metadata:
@@ -354,6 +357,10 @@ def cmd_formats(a) -> int:
                 say("  #" + str(st["index"]) + " " + ", ".join(b for b in bits if b))
             for k, v in d["tags"].items():
                 say(f"  tag {k}: {v}")
+            if info["category"] == "video":
+                from .media import hw_available
+                hw = [e for e in hw_available().values() if e]
+                say("  video card: " + (", ".join(hw) if hw else "no hardware encoder found (software)"))
         except ConversionError:
             pass
     say("can become:")

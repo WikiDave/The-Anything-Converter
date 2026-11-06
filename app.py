@@ -340,7 +340,8 @@ def media_details(uid):
     if not up or not up["path"].exists():
         return jsonify(error="File not found."), 404
     try:
-        return jsonify(media_info(up["path"]))
+        from converter.media import hw_available
+        return jsonify(dict(media_info(up["path"]), hw=hw_available()))
     except (ConversionError, ValueError) as e:
         return jsonify(error=str(e)), 400
 

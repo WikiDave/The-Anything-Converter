@@ -366,6 +366,61 @@ def _scale_filter(height: Optional[int]) -> list[str]:
     return [f"scale=-2:{int(height)}:flags=lanczos"] if height else []
 
 
+
+# --------------------------------------------------------------------------- hardware video encoding
+# The video card encodes many times faster than the CPU. Only encoders that pass a short test encode are used,
+# and a failing hardware encode is redone in software, so the result is always there.
+import sys as _sys
+
+HW_FAMILY = {"libx264": "h264", "libx265": "hevc", "libsvtav1": "av1", "libaom-av1": "av1"}
+_HW_ORDER = (["videotoolbox"] if _sys.platform == "darwin" else
+             ["nvenc", "qsv", "amf"] + (["vaapi"] if _sys.platform.startswith("linux") else []))
+_hw_ok: dict[str, str | None] = {}
+VAAPI_DEVICE = "/dev/dri/renderD128"
+
+
+def _hw_test(enc: str) -> bool:
+    pre = ["-vaapi_device", VAAPI_DEVICE] if enc.endswith("_vaapi") else []
+    vf = ["-vf", "format=nv12,hwupload"] if enc.endswith("_vaapi") else []
+    try:
+        r = subprocess.run(["ffmpeg", "-hide_banner", "-v", "error", *pre, "-f", "lavfi", "-i",
+                            "color=black:s=256x144:d=0.3", *vf, "-c:v", enc, "-f", "null", "-"],
+                           capture_output=True, timeout=20, **NO_WINDOW)
+        return r.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def hw_encoder(family: str) -> str | None:
+    """The first working hardware encoder for h264/hevc/av1 on this computer, or None."""
+    if family not in _hw_ok:
+        have = encoders()
+        _hw_ok[family] = next((f"{family}_{kind}" for kind in _HW_ORDER
+                               if f"{family}_{kind}" in have and _hw_test(f"{family}_{kind}")), None)
+    return _hw_ok[family]
+
+
+def hw_available() -> dict:
+    """{'h264': 'h264_nvenc', 'hevc': None, ...} for the settings panel (tests each encoder once)."""
+    return {f: hw_encoder(f) for f in ("h264", "hevc", "av1")}
+
+
+def _hw_rate(enc: str, quality: str, opts: dict, kbps: int | None) -> list[str]:
+    if kbps:  # target size / given bitrate: one pass with a bitrate
+        return ["-b:v", f"{kbps}k", "-maxrate", f"{int(kbps * 1.5)}k", "-bufsize", f"{kbps * 2}k"]
+    q = {"high": 21, "medium": 26, "low": 32}[quality]
+    if opts.get("crf") not in (None, ""):
+        q = int(_num(opts["crf"]))
+    if enc.endswith("_nvenc"):
+        return ["-preset", "p5", "-rc", "vbr", "-cq", str(q), "-b:v", "0"]
+    if enc.endswith("_qsv"):
+        return ["-global_quality", str(q)]
+    if enc.endswith("_amf"):
+        return ["-rc", "cqp", "-qp_i", str(q), "-qp_p", str(q + 2)]
+    if enc.endswith("_vaapi"):
+        return ["-qp", str(q)]
+    return ["-q:v", str({"high": 70, "medium": 58, "low": 45}[quality])]  # videotoolbox: 0-100, higher = better
+
 SVT_PRESET = {"ultrafast": 12, "superfast": 11, "veryfast": 10, "faster": 9, "fast": 8, "medium": 6, "slow": 4,
               "slower": 3, "veryslow": 2}
 SUB_CODEC = {"mp4": "mov_text", "m4v": "mov_text", "mov": "mov_text", "webm": "webvtt", "mkv": "copy"}
@@ -471,6 +526,44 @@ def _video(src, dst, fmt, trim_args, duration, info, opts, target, quality, prog
         return out + (extra if extra else info.get("fix_layout", []))
 
     vf = ["-vf", ",".join(filters)] if filters else []
+    # Hardware: automatically for quality-based encodes; for a target size only when asked ('on'),
+    # because one hardware pass hits an exact size less precisely than two software passes.
+    hw_mode = (opts.get("hw") or "auto").lower()
+    family = HW_FAMILY.get(vcodec)
+    if family and hw_mode != "off" and pix == "yuv420p" and (not target or hw_mode == "on"):
+        enc = hw_encoder(family)
+        if enc:
+            kbps = None
+            if target and duration > 0:
+                total = target * 8 * CONTAINER_OVERHEAD / duration / 1000
+                a_k = _audio_bitrate_for(total) if keep_audio else 0
+                kbps = max(30, int(total - a_k))
+            elif opts.get("video_bitrate"):
+                kbps = int(_num(opts["video_bitrate"]))
+            hw_v = ["-c:v", enc, *_hw_rate(enc, quality, opts, kbps)]
+            pre, hw_f = [], list(filters)
+            if enc.endswith("_vaapi"):
+                pre, hw_f = ["-vaapi_device", VAAPI_DEVICE], hw_f + ["format=nv12", "hwupload"]
+            elif enc.endswith("_qsv"):
+                hw_v += ["-pix_fmt", "nv12"]
+            else:
+                hw_v += ["-pix_fmt", "yuv420p"]
+            if family == "hevc" and fmt in ("mp4", "mov", "m4v"):
+                hw_v += ["-tag:v", "hvc1"]
+            hw_vf = ["-vf", ",".join(hw_f)] if hw_f else []
+            a_kbps = None
+            if target and duration > 0 and keep_audio:
+                a_kbps = _audio_bitrate_for(target * 8 * CONTAINER_OVERHEAD / duration / 1000)
+            try:
+                _run_ffmpeg([*pre, *base_in, *hw_v, *hw_vf, *audio_args(a_kbps), *subs, *meta, *tail, str(dst)],
+                            duration, progress, label=f"Encoding video ({enc.split('_')[-1].upper()} hardware)")
+                return dst
+            except ConversionError as e:
+                _hw_ok[family] = None  # do not try this encoder again in this session
+                print("hardware encoding failed, using software:", str(e)[:300])
+                dst.unlink(missing_ok=True)
+                if progress:
+                    progress(0.0, "Hardware encoding failed; encoding in software")
     if not target:
         crf = CRF.get(vcodec) or CRF_EXTRA.get(vcodec)
         if opts.get("video_bitrate"):

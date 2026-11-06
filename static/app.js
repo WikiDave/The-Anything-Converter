@@ -521,7 +521,7 @@ $("goBtn").addEventListener("click", async () => {
   if ((cat === "video" || cat === "audio") && !$("avBox").classList.contains("hidden")) {
     Object.assign(opts, {
       vcodec: $("avVcodec").value, fps: $("avFps").value, video_bitrate: $("avVbr").value, crf: $("avCrf").value,
-      preset: $("avPreset").value, pix_fmt: $("avPix").value, streams: $("avStreams").value,
+      preset: $("avPreset").value, pix_fmt: $("avPix").value, streams: $("avStreams").value, hw: $("avHw").value,
       acodec: $("avAcodec").value, audio_bitrate: $("avAbr").value, sample_rate: $("avRate").value,
       channels: $("avCh").value, volume: $("avVol").value, metadata: $("avMeta").value,
       meta_title: $("metaTitle").value, meta_artist: $("metaArtist").value, meta_album: $("metaAlbum").value,
@@ -1048,6 +1048,8 @@ async function loadMediaInfo() {
     const tags = Object.entries(d.tags || {}).filter(([k]) => !/^(major_brand|minor_version|compatible_brands|encoder)$/i.test(k));
     if (tags.length) lines.push("TAGS    " + tags.map(([k, v]) => `${k}=${v}`).join(" · "));
     if (d.chapters) lines.push(`CHAPTERS ${d.chapters}`);
+    const hw = Object.values(d.hw || {}).filter(Boolean);
+    lines.push("GPU     " + (hw.length ? hw.join(" · ") + " (used automatically for H.264/H.265/AV1)" : "no hardware encoder found; encoding in software"));
     box.textContent = lines.join("\n");
     const t = d.tags || {}, low = Object.fromEntries(Object.entries(t).map(([k, v]) => [k.toLowerCase(), v]));
     $("metaTitle").placeholder = low.title || "keep"; $("metaArtist").placeholder = low.artist || "keep";
